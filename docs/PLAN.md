@@ -76,7 +76,7 @@ D:\LearnMath\
 │   ├── diagnose/          ← 卡点诊断（核心）
 │   ├── recommend/         ← 下一步推荐（核心）
 │   └── llm/               ← LLM 封装（精简）
-├── web/                   ← 单页 Next.js demo（三栏布局）
+├── web/                   ← 单页 Vite demo（三栏布局）
 ├── tests/                 ← 端到端 demo 测试
 ├── start.bat              ← 一键启动
 └── pyproject.toml
@@ -127,7 +127,7 @@ D:\LearnMath\
 - **降级**：如果 LLM 不可用，反问引擎降级为模板填充
 
 ### 5.5 前端栈
-- **Next.js + React + TypeScript**（与 ai-math 一致）
+- **Vite + React + TypeScript**（与 ai-math 实际一致，原 Next.js 为误写，2026-08-14 修正）
 - **样式**：Tailwind CSS（与 ai-math 一致）
 - **三栏布局**（响应式先不做）
 
@@ -209,7 +209,7 @@ D:\LearnMath\
 - [ ] 阶段 1 范围（只做"错题 → 反问 → 诊断 → 推荐"）是否同意？
 - [ ] 6 周里程碑节奏是否同意？
 - [ ] 搬运清单（7 项搬、若干不搬）是否同意？
-- [ ] 前端栈用 Next.js + React + D3 是否同意？
+- [ ] 前端栈用 Vite + React + D3 是否同意？
 - [ ] LLM 沿用 ai-math 配置是否同意？
 - [ ] 第 1 周第一天先盘点 ai-math 现有 KG 格式（不写代码只盘数据）是否同意？
 

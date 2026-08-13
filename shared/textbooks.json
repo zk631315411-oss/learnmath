@@ -1,0 +1,58 @@
+[
+  {
+    "id": "gaodai_shang",
+    "display_name": "高等代数（上册）丘维声",
+    "subject": "gaodai",
+    "volume": 1,
+    "pdf_path": "frontend/public/gaodai_vol1.pdf",
+    "web_path": "/gaodai_vol1.pdf",
+    "neo4j_prefix": "gaodai_shang",
+    "page_image_base": "",
+    "page_count": 0,
+    "page_width": 0,
+    "page_height": 0,
+    "page_offset": 0
+  },
+  {
+    "id": "gaodai_xia",
+    "display_name": "高等代数（下册）丘维声",
+    "subject": "gaodai",
+    "volume": 2,
+    "pdf_path": "frontend/public/高等代数下册_丘维声.pdf",
+    "web_path": "/高等代数下册_丘维声.pdf",
+    "neo4j_prefix": "gaodai_xia",
+    "page_image_base": "",
+    "page_count": 0,
+    "page_width": 0,
+    "page_height": 0,
+    "page_offset": 0
+  },
+  {
+    "id": "gaoshu_shang",
+    "display_name": "高等数学（上册）黄立宏",
+    "subject": "gaoshu",
+    "volume": 1,
+    "pdf_path": "frontend/public/高等数学第二版上册黄立宏主编.pdf",
+    "web_path": "/高等数学第二版上册黄立宏主编.pdf",
+    "neo4j_prefix": "gaoshu_shang",
+    "page_image_base": "/textbook-pages/gaoshu-shang",
+    "page_count": 284,
+    "page_width": 992,
+    "page_height": 1402,
+    "page_offset": 0
+  },
+  {
+    "id": "gaoshu_xia",
+    "display_name": "高等数学（下册）黄立宏",
+    "subject": "gaoshu",
+    "volume": 2,
+    "pdf_path": "frontend/public/高等数学第二版下册黄立宏主编.pdf",
+    "web_path": "/高等数学第二版下册黄立宏主编.pdf",
+    "neo4j_prefix": "gaoshu_xia",
+    "page_image_base": "/textbook-pages/gaoshu-xia",
+    "page_count": 274,
+    "page_width": 992,
+    "page_height": 1402,
+    "page_offset": 0
+  }
+]
