@@ -2,6 +2,9 @@
 data/textbooks/*.pdf
 frontend/public/*.pdf
 
+# git worktree（backend 是独立工作树，内容走 backend-dev 分支）
+backend/
+
 # 依赖与构建产物
 node_modules/
 dist/
