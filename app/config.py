@@ -1,0 +1,55 @@
+import os
+from pathlib import Path
+
+# 项目根目录：config.py 位于 app/ 下，上一级即后端根目录
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = BASE_DIR / ".env"
+
+# 手动解析 .env，保证 python-dotenv 未安装时核心配置仍可用
+if ENV_FILE.exists():
+    with open(ENV_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip())
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
+if load_dotenv:
+    load_dotenv(ENV_FILE)
+
+# 运行时数据目录：SQLite 数据库放这里
+DATA_DIR = BASE_DIR / "data"
+
+
+class Config:
+    BASE_DIR: Path = BASE_DIR
+    DATA_DIR: Path = DATA_DIR
+
+    @classmethod
+    def ensure_dirs(cls):
+        # 数据库文件写入前必须保证父目录存在，否则 sqlite3.connect 直接报错
+        cls.DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    # QA 文字回答用的 LLM（OpenAI 兼容协议）
+    QA_LLM_API_KEY: str = os.getenv("QA_LLM_API_KEY", "")
+    QA_LLM_API_BASE: str = os.getenv(
+        "QA_LLM_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    )
+    QA_LLM_MODEL: str = os.getenv("QA_LLM_MODEL", "qwen3.6-plus")
+
+    # 截图问答用的 VL 多模态模型
+    QA_VL_MODEL: str = os.getenv("QA_VL_MODEL", "qwen3-vl-plus")
+
+    # SQLite 数据库路径，可用环境变量覆盖以便隔离测试（空值回退默认路径）
+    DB_PATH: str = os.getenv("AI_MATH_DB_PATH") or str(DATA_DIR / "learning.db")
+
+    # JWT 签名密钥，生产环境必须通过环境变量注入强随机值
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
+
+
+config = Config()
