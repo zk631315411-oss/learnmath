@@ -92,7 +92,7 @@ def prepare_screenshot_context(turn_input: QATurnInput) -> dict:
         md_match_confidence=None,
         md_match_text=None,
         locator_signals=None,
-        vision_model=config.QA_VL_MODEL,
+        vision_model=config.QA_LLM_MODEL,
     )
     return {
         "cache_id": cache_id,

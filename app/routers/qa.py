@@ -15,7 +15,7 @@ from app.services.image_processing import (
     ImageProcessingError,
     normalize_image_bytes,
 )
-from app.services.qa import QATurnInput, answer_turn, has_screenshot_context
+from app.services.qa import QATurnInput, answer_turn
 
 router = APIRouter(prefix="/api/qa", tags=["题目答疑"])
 
@@ -127,12 +127,11 @@ async def solve_question_stream(
             user_id, _ = get_user_id_and_profile(request)
             marker_id = request.marker_id or request.page_id or request.chat_id
 
-            visual_input = QATurnInput(
+            turn_input = QATurnInput(
                 user_id=user_id or "anonymous",
                 chat_id=request.chat_id,
                 marker_id=marker_id,
                 question=question,
-                input_type="mixed" if question else "image",
                 textbook_id=request.textbook_id,
                 page_number=request.page_number,
                 history=request.history,
@@ -143,23 +142,8 @@ async def solve_question_stream(
                 screenshot_context_id=request.screenshot_context_id,
                 token=request.token,
             )
-            # 没有图片/截图上下文时退回纯文字问答
-            if not has_screenshot_context(visual_input):
-                visual_input = QATurnInput(
-                    user_id=user_id or "anonymous",
-                    chat_id=request.chat_id,
-                    marker_id=marker_id,
-                    question=question,
-                    input_type="text",
-                    textbook_id=request.textbook_id,
-                    page_number=request.page_number,
-                    history=request.history,
-                    teaching_mode=request.teaching_mode or "socratic",
-                    socratic_submode=request.socratic_submode or "unclassified",
-                    token=request.token,
-                )
 
-            async for event in answer_turn(visual_input):
+            async for event in answer_turn(turn_input):
                 yield event
         except asyncio.CancelledError:
             # 客户端断开时静默终止，不产生 error 事件

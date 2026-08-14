@@ -1,4 +1,4 @@
-"""QA 回答模块的数据契约 — 阶段 1 精简版。
+"""QA 回答模块的数据契约 — 统一多模态版。
 
 这些对象只描述一次问答如何发生，不负责诊断学生长期状态。
 """
@@ -15,7 +15,6 @@ class QATurnInput:
 
     user_id: str
     question: str
-    input_type: str = "text"
     chat_id: str | None = None
     marker_id: str | None = None
     textbook_id: str | None = None

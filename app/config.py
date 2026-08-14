@@ -40,10 +40,7 @@ class Config:
     QA_LLM_API_BASE: str = os.getenv(
         "QA_LLM_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
-    QA_LLM_MODEL: str = os.getenv("QA_LLM_MODEL", "qwen3.6-plus")
-
-    # 截图问答用的 VL 多模态模型
-    QA_VL_MODEL: str = os.getenv("QA_VL_MODEL", "qwen3-vl-plus")
+    QA_LLM_MODEL: str = os.getenv("QA_LLM_MODEL", "kimi-k2.7-code")
 
     # SQLite 数据库路径，可用环境变量覆盖以便隔离测试（空值回退默认路径）
     DB_PATH: str = os.getenv("AI_MATH_DB_PATH") or str(DATA_DIR / "learning.db")

@@ -59,7 +59,7 @@ shared/
 start.bat
 ```
 
-后端跑在 `http://localhost:8000`，前端（`frontend/`）跑在 `http://localhost:5173`。
+后端默认跑在 `http://localhost:8001`，前端跑在 `http://localhost:5173`。使用独立的 8001 端口可避免误连仍在 8000 运行的 `ai-math` 服务；如需改端口，启动前设置 `LEARNMATH_API_PORT`。
 首次运行请先创建 venv 并安装依赖：`python -m venv venv && venv\Scripts\pip install -r requirements.txt`，
 再把 `.env.example` 复制为 `.env` 并填入真实的 `JWT_SECRET` 与 `QA_LLM_API_KEY`。
 
