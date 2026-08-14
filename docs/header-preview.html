@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LearnMath Header 方案对比</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background:#f5f5f5; color:#334155; }
+
+    /* 切换按钮栏 */
+    .tabs { display:flex; gap:8px; padding:12px 16px; background:#fff; border-bottom:1px solid #e2e8f0; flex-wrap:wrap; }
+    .tabs button { padding:6px 14px; border-radius:6px; border:1px solid #e2e8f0; font-size:13px; cursor:pointer; background:#fff; color:#64748b; transition:all 0.15s; }
+    .tabs button.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+    .tabs button:hover:not(.active) { border-color:#93c5fd; color:#2563eb; }
+
+    /* 每个方案容器 */
+    .preview { display:none; }
+    .preview.active { display:block; }
+
+    /* 预览提示 */
+    .tip { background:#fffbeb; border-bottom:1px solid #fde68a; padding:8px 16px; font-size:12px; color:#92400e; text-align:center; }
+
+    /* ---- 方案 A：紧凑商务 ---- */
+    .ha { background:#fff; border-bottom:1px solid #e2e8f0; padding:0 20px; height:48px; display:flex; align-items:center; gap:16px; font-size:14px; }
+    .ha .logo { width:28px; height:28px; border-radius:6px; background:#2563eb; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; flex-shrink:0; }
+    .ha .brand { font-weight:600; color:#1e293b; }
+    .ha .spacer { flex:1; }
+    .ha select { font-size:12px; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; color:#64748b; background:#fff; }
+    .ha .login { font-size:12px; color:#64748b; cursor:pointer; border:none; background:none; }
+    .ha .login:hover { color:#1e293b; }
+
+    /* ---- 方案 B：居中学院 ---- */
+    .hb { background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:12px 16px 10px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .hb .row1 { display:flex; align-items:center; gap:10px; }
+    .hb .logo { width:32px; height:32px; border-radius:50%; background:#1e293b; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; }
+    .hb .brand { font-size:15px; font-weight:600; color:#1e293b; letter-spacing:-0.3px; }
+    .hb .row2 { display:flex; align-items:center; gap:10px; font-size:12px; }
+    .hb select { border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; color:#64748b; background:#fff; }
+    .hb .sep { color:#e2e8f0; }
+    .hb .login { color:#64748b; cursor:pointer; border:none; background:none; font-size:12px; }
+
+    /* ---- 方案 C：极简留白 ---- */
+    .hc { background:#fff; border-bottom:1px solid #f1f5f9; padding:0 20px; height:44px; display:flex; align-items:center; justify-content:space-between; }
+    .hc .brand { font-size:13px; font-weight:500; color:#475569; }
+    .hc select { font-size:11px; border:1px solid #f1f5f9; border-radius:4px; padding:3px 6px; color:#94a3b8; background:transparent; border:1px solid #e2e8f0; }
+
+    /* ---- 方案 D：深色撞色 ---- */
+    .hd { background:#0f172a; padding:0 20px; height:48px; display:flex; align-items:center; gap:12px; }
+    .hd .logo { width:28px; height:28px; border-radius:6px; background:#22d3ee; color:#0f172a; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+    .hd .brand { font-size:14px; font-weight:600; color:#fff; }
+    .hd .spacer { flex:1; }
+    .hd select { font-size:12px; border:1px solid #334155; border-radius:6px; padding:4px 8px; color:#94a3b8; background:#1e293b; }
+    .hd .login { font-size:12px; color:#64748b; cursor:pointer; border:none; background:none; }
+    .hd .login:hover { color:#e2e8f0; }
+
+    /* 主体占位 */
+    .body-placeholder { margin:16px; padding:60px 20px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; text-align:center; color:#94a3b8; font-size:13px; }
+
+    /* 说明卡片 */
+    .desc { margin:0 16px; padding:12px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:12px; color:#64748b; line-height:1.6; }
+    .desc strong { color:#334155; }
+  </style>
+</head>
+<body>
+
+  <div class="tip">🔍 选择一种方案查看效果，确定后我替换到真正的 React 页面里</div>
+
+  <div class="tabs">
+    <button class="active" onclick="show('a',this)">A. 紧凑商务</button>
+    <button onclick="show('b',this)">B. 居中学院</button>
+    <button onclick="show('c',this)">C. 极简留白</button>
+    <button onclick="show('d',this)">D. 深色撞色</button>
+  </div>
+
+  <!-- 方案 A -->
+  <div class="preview active" id="a">
+    <div class="ha">
+      <div class="logo">LM</div>
+      <div class="brand">学数有道</div>
+      <div class="spacer"></div>
+      <select><option>高等代数（上册）丘维声</option><option>高等代数（下册）丘维声</option></select>
+      <button class="login">登录</button>
+    </div>
+    <div class="body-placeholder">PDF 阅读区域 + 右侧 AI 问答面板</div>
+    <div class="desc">
+      <strong>A. 紧凑商务</strong> — 白底，Logo 蓝色小方块，品牌名加粗，右侧教材下拉 + 登录，一行搞定。参考飞书/Notion 的侧边栏头。
+    </div>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="preview" id="b">
+    <div class="hb">
+      <div class="row1">
+        <div class="logo">∫</div>
+        <div class="brand">学数有道</div>
+      </div>
+      <div class="row2">
+        <select><option>高等代数（上册）丘维声</option></select>
+        <span class="sep">|</span>
+        <button class="login">登录</button>
+      </div>
+    </div>
+    <div class="body-placeholder">PDF 阅读区域 + 右侧 AI 问答面板</div>
+    <div class="desc">
+      <strong>B. 居中学院</strong> — 浅灰底，居中排列，∫ 数学符号深色圆形 logo，两行结构（上品牌 / 下工具），有学院气质。
+    </div>
+  </div>
+
+  <!-- 方案 C -->
+  <div class="preview" id="c">
+    <div class="hc">
+      <div class="brand">LearnMath</div>
+      <select><option>选择教材</option></select>
+    </div>
+    <div class="body-placeholder">PDF 阅读区域 + 右侧 AI 问答面板</div>
+    <div class="desc">
+      <strong>C. 极简留白</strong> — 仅一行，左侧产品名，右侧下拉。无 logo 无副标题，极度克制，适合工具型产品。
+    </div>
+  </div>
+
+  <!-- 方案 D -->
+  <div class="preview" id="d">
+    <div class="hd">
+      <div class="logo">∑</div>
+      <div class="brand">学数有道</div>
+      <div class="spacer"></div>
+      <select><option>高等代数（上册）丘维声</option></select>
+      <button class="login">登录</button>
+    </div>
+    <div class="body-placeholder">PDF 阅读区域 + 右侧 AI 问答面板</div>
+    <div class="desc">
+      <strong>D. 深色撞色</strong> — 深色背景 #0f172a，亮青色 ∑ logo，白字。深沉专业感，适合数学工具。
+    </div>
+  </div>
+
+  <script>
+    function show(id, btn) {
+      document.querySelectorAll('.preview').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+  </script>
+
+</body>
+</html>

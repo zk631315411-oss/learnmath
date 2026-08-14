@@ -1,7 +1,6 @@
-import type { TokenResponse, UserProfile, UserProfileUpdate } from '../types';
-import { request, get, post, put, del } from './request';
+import type { TokenResponse, UserProfile, UserProfileUpdate, CropBBox } from '../types';
+import { request, get, post, put, patch, del } from './request';
 import { prepareImageUpload } from '../utils/imageProcessing';
-import type { CropBBox } from '../types';
 
 // === 用户认证相关 API ===
 
@@ -57,7 +56,6 @@ export async function createChatHistory(data: {
   return post('/chat/history', data);
 }
 
-import { patch } from './request';
 export async function patchChatHistory(chatId: string, data: Record<string, unknown>): Promise<void> {
   await patch(`/chat/history/${chatId}`, data);
 }
@@ -69,14 +67,6 @@ export async function migrateMarkers(oldUserId: string, newUserId: string): Prom
 }
 
 // === SSE 流式问答 ===
-
-type CropBBoxPayload = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  unit?: 'page_ratio';
-};
 
 export async function fetchWithStage(
   userId: string,
@@ -93,7 +83,7 @@ export async function fetchWithStage(
   pageNumber?: number,
   chatId?: string,
   markerId?: string,
-  cropBBox?: CropBBoxPayload | null,
+  cropBBox?: { x: number; y: number; width: number; height: number; unit?: 'page_ratio' } | null,
   screenshotContextId?: string | null,
 ): Promise<{ answer: string; sources: any[]; thinking: string; screenshot_context_id?: string | null }> {
   const payload: Record<string, unknown> = {
@@ -169,10 +159,4 @@ export async function fetchWithStage(
     }
   }
   return { answer: fullContent, sources, thinking, screenshot_context_id: screenshotContextIdResult };
-}
-
-// === 教材选择（preference 只用 localStorage，无云端） ===
-
-export async function getTextbookPreference(): Promise<{ textbook_id: null; page_number: null }> {
-  return { textbook_id: null, page_number: null };
 }

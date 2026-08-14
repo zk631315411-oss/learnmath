@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>学数有道 LearnMath</title>
+    <script>
+      if (!Promise.withResolvers) {
+        Promise.withResolvers = function() {
+          var resolve, reject;
+          var p = new Promise(function(res, rej) { resolve = res; reject = rej; });
+          return { promise: p, resolve: resolve, reject: reject };
+        };
+      }
+      if (!URL.parse) {
+        URL.parse = function(url, base) {
+          try { return new URL(url, base); } catch(e) { return null; }
+        };
+      }
+    </script>
+  </head>
+  <body class="bg-slate-50 text-slate-700 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

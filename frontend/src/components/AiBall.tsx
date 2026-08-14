@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ChatPanel from './ChatPanel';
-import type { Message, PracticeDraft } from '../types';
+import type { Message } from '../types';
 
 interface Props {
   messages: Message[];
@@ -9,28 +9,15 @@ interface Props {
   isLoading: boolean;
   pendingImage?: string | null;
   onClearPendingImage?: () => void;
-  thinkingStage: string;
-  thinkingContent?: string;
-  isThinking: boolean;
-  thinkingExpanded: boolean;
-  setThinkingExpanded: (v: boolean) => void;
+  thinkingStage?: string;
   hasUnread: boolean;
   onRead: () => void;
-  token?: string;
-  onGenerateAnimation?: (visualizationId: string) => Promise<void>;
-  onOpenPractice?: (draft: PracticeDraft) => void;
-  onRegeneratePractice?: (draft: PracticeDraft) => void;
-  onRequestPractice?: (turnId: string, nodeId?: string) => void;
-  autoPreparePractice?: boolean;
-  onAutoPreparePracticeChange?: (value: boolean) => void;
 }
 
 export default function AiBall({
   messages, onSendMessage, onClearMessages, isLoading,
   pendingImage, onClearPendingImage,
-  thinkingStage, thinkingContent: _thinkingContent, isThinking, thinkingExpanded, setThinkingExpanded,
-  hasUnread, onRead, token, onGenerateAnimation,
-  onOpenPractice, onRegeneratePractice, onRequestPractice, autoPreparePractice, onAutoPreparePracticeChange,
+  thinkingStage, hasUnread, onRead,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -118,7 +105,7 @@ export default function AiBall({
           style={{ left: pos.x, top: pos.y, touchAction: 'none' }}
         >
           <div className={`w-full h-full rounded-full flex items-center justify-center text-white text-lg font-bold
-            ${isLoading ? 'bg-blue-400 animate-pulse' : 'bg-blue-500/80 backdrop-blur hover:bg-blue-600'}`}
+            ${isLoading ? 'bg-blue-500 animate-pulse' : 'bg-blue-600'}`}
           >
             {isLoading ? '⋯' : 'AI'}
           </div>
@@ -132,12 +119,12 @@ export default function AiBall({
       {expanded && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 dark:bg-black/50 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) setExpanded(false); }}>
-          <div className="w-full bg-white dark:bg-slate-800 rounded-t-2xl shadow-xl flex flex-col overflow-hidden animate-slide-up"
+          <div className="w-full bg-white rounded-t-2xl shadow-xl flex flex-col overflow-hidden animate-slide-up"
             style={{ maxWidth: panelMaxWidth, height: panelHeight }}>
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">学数有道</span>
+                <span className="text-sm font-semibold text-slate-800">学数有道</span>
               </div>
               <button onClick={() => setExpanded(false)}
                 className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
@@ -150,16 +137,7 @@ export default function AiBall({
                 onClearMessages={onClearMessages} isLoading={isLoading}
                 pendingImage={pendingImage} onClearPendingImage={onClearPendingImage}
                 thinkingStage={thinkingStage}
-                isThinking={isThinking} thinkingExpanded={thinkingExpanded}
-                setThinkingExpanded={setThinkingExpanded}
-                onGenerateAnimation={onGenerateAnimation}
-                onOpenPractice={onOpenPractice}
-                onRegeneratePractice={onRegeneratePractice}
-                onRequestPractice={onRequestPractice}
-                autoPreparePractice={autoPreparePractice}
-                onAutoPreparePracticeChange={onAutoPreparePracticeChange}
                 compact
-                token={token}
               />
             </div>
           </div>
