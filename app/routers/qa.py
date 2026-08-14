@@ -16,6 +16,7 @@ from app.services.image_processing import (
     normalize_image_bytes,
 )
 from app.services.qa import QATurnInput, answer_turn
+from app.services.qa.answer_service import answer_turn_with_tools
 
 router = APIRouter(prefix="/api/qa", tags=["题目答疑"])
 
@@ -143,8 +144,13 @@ async def solve_question_stream(
                 token=request.token,
             )
 
-            async for event in answer_turn(turn_input):
-                yield event
+            # 文字问答走 Agent 工具循环（LLM 自主决定是否调 KG），截图走直接回答
+            if image_data_url:
+                async for event in answer_turn(turn_input):
+                    yield event
+            else:
+                async for event in answer_turn_with_tools(turn_input):
+                    yield event
         except asyncio.CancelledError:
             # 客户端断开时静默终止，不产生 error 事件
             raise

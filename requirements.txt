@@ -9,3 +9,4 @@ python-dotenv>=1.0.0
 sse-starlette>=2.0.0
 httpx>=0.28.0
 pillow>=10.2.0
+neo4j>=5.0.0

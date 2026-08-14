@@ -1,5 +1,7 @@
 """
-大模型服务 — 阶段 1：统一多模态客户端，文字和截图都走同一个 chat 接口。
+大模型服务 — LearnMath 阶段 1。
+
+统一多模态客户端（文字/截图同模型），同时提供 chat_with_tools() 支持 Agent function calling。
 """
 from typing import Any
 
@@ -9,7 +11,7 @@ from app.config import config
 
 
 class LLMService:
-    """统一的 LLM 服务：所有问答（文字/截图）都走多模态接口。"""
+    """统一的 LLM 服务：所有问答都走多模态接口，支持工具调用。"""
 
     def __init__(self):
         self._client = None
@@ -40,6 +42,26 @@ class LLMService:
             messages=messages,
             stream=stream,
             **({"stream_options": {"include_usage": True}} if stream else {}),
+            temperature=temperature,
+        )
+
+    def chat_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        *,
+        tool_choice: str = "auto",
+        temperature: float = 0.3,
+    ) -> Any:
+        """非流式调用，支持 Function Calling（Agent tool loop 用）。"""
+        if not self._client:
+            raise RuntimeError("LLM 服务未初始化")
+        return self._client.chat.completions.create(
+            model=config.QA_LLM_MODEL,
+            messages=messages,
+            tools=tools,
+            tool_choice=tool_choice,
+            stream=False,
             temperature=temperature,
         )
 

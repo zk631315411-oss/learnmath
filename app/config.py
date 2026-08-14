@@ -48,5 +48,10 @@ class Config:
     # JWT 签名密钥，生产环境必须通过环境变量注入强随机值
     JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
 
+    # Neo4j Aura（与 ai-math 共用同一个实例）
+    NEO4J_URI: str = os.getenv("NEO4J_URI", "")
+    NEO4J_USER: str = os.getenv("NEO4J_USER", "")
+    NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "")
+
 
 config = Config()
