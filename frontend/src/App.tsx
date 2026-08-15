@@ -149,7 +149,10 @@ export default function App() {
                   onClearMessages={chat.clearMessages}
                   isLoading={chat.isLoading}
                   token={user.token}
-                  pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
+                  pendingImages={chat.pendingImages}
+                  onRemovePendingImage={chat.removePendingImage}
+                  onClearPendingImages={chat.clearPendingImages}
+                  error={chat.error}
                   thinkingStage={chat.thinkingStage}
                   isThinking={chat.isThinking}
                 />
@@ -171,7 +174,10 @@ export default function App() {
                   onClearMessages={chat.clearMessages}
                   isLoading={chat.isLoading}
                   token={user.token}
-                  pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
+                  pendingImages={chat.pendingImages}
+                  onRemovePendingImage={chat.removePendingImage}
+                  onClearPendingImages={chat.clearPendingImages}
+                  error={chat.error}
                   thinkingStage={chat.thinkingStage}
                   isThinking={chat.isThinking}
                   hasUnread={chat.unreadCount > 0} onRead={chat.markRead}

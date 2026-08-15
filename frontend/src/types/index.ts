@@ -93,6 +93,14 @@ export interface CropBBox {
   unit?: 'page_ratio';
 }
 
+// 待发送截图：每张截图携带自己的裁剪框，支持多图连发
+// （当前后端 /solve-stream 一次只收一张，前端发送时只取第一张，其余保留在待发列表）
+export interface PendingImage {
+  id: string;
+  data: string; // base64 图片数据
+  cropBBox: CropBBox;
+}
+
 // === 用户认证 ===
 
 export interface User {

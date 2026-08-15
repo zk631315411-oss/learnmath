@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ChatPanel from './ChatPanel';
-import type { Message } from '../types';
+import type { Message, PendingImage } from '../types';
 
 interface Props {
   messages: Message[];
-  onSendMessage: (content: string, image?: string) => void;
+  onSendMessage: (content: string) => void;
   onClearMessages: () => void;
   isLoading: boolean;
   token?: string | null;
-  pendingImage?: string | null;
-  onClearPendingImage?: () => void;
+  pendingImages?: PendingImage[];
+  onRemovePendingImage?: (id: string) => void;
+  onClearPendingImages?: () => void;
+  error?: string | null;
   thinkingStage?: string;
   isThinking?: boolean;
   hasUnread: boolean;
@@ -20,8 +22,8 @@ interface Props {
 
 export default function AiBall({
   messages, onSendMessage, onClearMessages, isLoading,
-  token, pendingImage, onClearPendingImage,
-  thinkingStage, isThinking, hasUnread, onRead, onVisibleChange,
+  token, pendingImages, onRemovePendingImage, onClearPendingImages,
+  error, thinkingStage, isThinking, hasUnread, onRead, onVisibleChange,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -53,14 +55,14 @@ export default function AiBall({
   const isLandscape = screenSize.w > screenSize.h;
   const panelMaxWidth = isLandscape ? '60vw' : '28rem';
 
-  // 截图后自动展开
+  // 截图后自动展开：待发列表长度变化即代表有新截图进入（发送移除第一张时面板本已展开，重复展开无害）
   useEffect(() => {
-    if (pendingImage) {
+    if (pendingImages && pendingImages.length > 0) {
       setExpanded(true);
       onRead();
       onVisibleChange?.(true);
     }
-  }, [pendingImage]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingImages?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- 拖拽：用 pointer 事件，不用 setPointerCapture（避免抑制 click） ---
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -148,7 +150,10 @@ export default function AiBall({
                 messages={messages} onSendMessage={onSendMessage}
                 onClearMessages={onClearMessages} isLoading={isLoading}
                 token={token}
-                pendingImage={pendingImage} onClearPendingImage={onClearPendingImage}
+                pendingImages={pendingImages}
+                onRemovePendingImage={onRemovePendingImage}
+                onClearPendingImages={onClearPendingImages}
+                error={error}
                 thinkingStage={thinkingStage}
                 isThinking={isThinking}
                 compact

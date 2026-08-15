@@ -4,16 +4,19 @@ import MarkdownRenderer from './MarkdownRenderer';
 import FormulaComposer from './formula/FormulaComposer';
 import EmptyGuideCard from './EmptyGuideCard';
 import AgentActivity from './AgentActivity';
-import type { Message } from '../types';
+import type { Message, PendingImage } from '../types';
 
 interface Props {
   messages: Message[];
-  onSendMessage: (content: string, image?: string) => void;
+  onSendMessage: (content: string) => void;
   onClearMessages: () => void;
   isLoading: boolean;
   token?: string | null;
-  pendingImage?: string | null;
-  onClearPendingImage?: () => void;
+  pendingImages?: PendingImage[];
+  onRemovePendingImage?: (id: string) => void;
+  onClearPendingImages?: () => void;
+  /** 全局提示（含截图超量拒绝），显示在输入框上方的提示条 */
+  error?: string | null;
   thinkingStage?: string;
   isThinking?: boolean;
   compact?: boolean;
@@ -62,7 +65,8 @@ function LoadingStatus({ text }: { text?: string }) {
 
 function ChatPanelInner({
   messages, onSendMessage, onClearMessages, isLoading,
-  token, pendingImage, onClearPendingImage, thinkingStage, isThinking = false, compact,
+  token, pendingImages, onRemovePendingImage, onClearPendingImages,
+  error, thinkingStage, isThinking = false, compact,
 }: Props) {
   const [input, setInput] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -106,10 +110,11 @@ function ChatPanelInner({
   }, [messages, thinkingStage, isLoading, shouldAutoScroll]);
 
   const handleSubmit = () => {
-    if ((input.trim() || pendingImage) && !isLoading) {
-      onSendMessage(input.trim() || '请解答这张图片中的题目', pendingImage || undefined);
+    const hasImage = !!pendingImages && pendingImages.length > 0;
+    if ((input.trim() || hasImage) && !isLoading) {
+      onSendMessage(input.trim() || '请解答这张图片中的题目');
       setInput('');
-      onClearPendingImage?.();
+      // 第一张的移除由 useChat 在发送时处理，其余截图保留在待发列表
     }
   };
 
@@ -184,18 +189,40 @@ function ChatPanelInner({
         )}
       </div>
 
-      {pendingImage && (
+      {pendingImages && pendingImages.length > 0 && (
         <div className="px-4 py-3 border-t border-slate-200 bg-blue-50/60">
-          <div className="flex items-start gap-2">
-            <img src={pendingImage} alt="待发送截图" className="max-w-[120px] max-h-[100px] rounded-lg shadow-sm border border-indigo-200" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-blue-600 mb-1 font-medium">截图已捕获</p>
-              <button type="button" onClick={onClearPendingImage} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
-                <X className="w-3 h-3" />
-                删除图片
-              </button>
-            </div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-blue-600 font-medium">截图已捕获（{pendingImages.length}/3）</p>
+            <button type="button" onClick={onClearPendingImages}
+              className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
+              <X className="w-3 h-3" />
+              清空
+            </button>
           </div>
+          {/* 后端未支持多图前，多余截图会留在列表等下一轮提问，提示用户避免误以为丢失 */}
+          {pendingImages.length > 1 && (
+            <p className="text-xs text-amber-600 mb-2">当前版本一次发送 1 张，其余保留在待发列表</p>
+          )}
+          <div className="flex gap-2 overflow-x-auto">
+            {pendingImages.map((item) => (
+              <div key={item.id} className="relative shrink-0">
+                <img src={item.data} alt="待发送截图"
+                  className="w-16 h-16 object-cover rounded-lg shadow-sm border border-indigo-200" />
+                <button type="button"
+                  onClick={() => onRemovePendingImage?.(item.id)}
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-white hover:bg-red-500 transition-colors"
+                  aria-label="删除该截图" title="删除该截图">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="px-4 py-2 border-t border-red-200 bg-red-50 text-xs text-red-600" role="alert">
+          {error}
         </div>
       )}
 
@@ -206,7 +233,7 @@ function ChatPanelInner({
             <FormulaComposer value={input} onChange={setInput} token={token ?? undefined}
               placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit} />
           </div>
-          <button type="submit" disabled={(!input.trim() && !pendingImage) || isLoading}
+          <button type="submit" disabled={(!input.trim() && !(pendingImages && pendingImages.length > 0)) || isLoading}
             aria-label="发送" title="发送"
             className="px-4 sm:px-5 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all  active:scale-95 whitespace-nowrap">
             <Send className="w-4 h-4" />

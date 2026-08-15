@@ -9,7 +9,10 @@ import {
   fetchWithStage, createChatHistory, patchChatHistory,
 } from '../services/api';
 import type { Marker } from '../components/PageMarker';
-import type { Message, CropBBox, ToolActivity, User } from '../types';
+import type { Message, CropBBox, PendingImage, ToolActivity, User } from '../types';
+
+// 一次提问最多接收的待发截图数：超量截图直接拒绝并提示（后端未支持 images[] 前一次只发一张）
+const MAX_PENDING_IMAGES = 3;
 
 function generateId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -55,8 +58,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const [pendingCropBBox, setPendingCropBBox] = useState<CropBBox | null>(null);
+  // 待发送截图列表：每张截图带独立裁剪框，支持多图连发（当前一次只发第一张）
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [thinkingStage, setThinkingStage] = useState<string>('');
   const [isThinking, setIsThinking] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -108,9 +111,14 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMarker?.id]);
 
-  const clearPendingImage = useCallback(() => {
-    setPendingImage(null);
-    setPendingCropBBox(null);
+  // 清空整个待发列表（待发送区的「清空」按钮）
+  const clearPendingImages = useCallback(() => {
+    setPendingImages([]);
+  }, []);
+
+  // 按 id 移除单张待发截图（待发送区缩略图的单张删除）
+  const removePendingImage = useCallback((id: string) => {
+    setPendingImages(prev => prev.filter(item => item.id !== id));
   }, []);
 
   // 面板展开/用户主动查看时清零未读角标
@@ -118,8 +126,11 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setUnreadCount(0);
   }, []);
 
-  const handleSendMessage = useCallback(async (content: string, image?: string) => {
+  const handleSendMessage = useCallback(async (content: string) => {
     const trimmed = content.trim();
+    // 本次提问取待发列表第一张；后端 /solve-stream 未支持 images[] 前一次只发单张
+    const image = pendingImages[0]?.data;
+    const firstCropBBox = pendingImages[0]?.cropBBox ?? null;
     if ((!trimmed && !image) || isLoading) return;
 
     const userIdVal = user.userId || user.deviceId;
@@ -127,12 +138,12 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     const markerType: Marker['marker_type'] = image ? 'screenshot' : 'text';
     // 截图提问用真实选区：marker_y_ratio 取选区中心 Y，cropBBox 优先真实选区，缺失时兜底走旧的中间 80%
     const markerYRatio = image
-      ? pendingCropBBox
-        ? (pendingCropBBox.y + pendingCropBBox.height / 2) * 100
+      ? firstCropBBox
+        ? (firstCropBBox.y + firstCropBBox.height / 2) * 100
         : 50
       : 0;
     const cropBBox = image
-      ? pendingCropBBox ?? { x: 0.1, y: 0.1, width: 0.8, height: 0.8, unit: 'page_ratio' as const }
+      ? firstCropBBox ?? { x: 0.1, y: 0.1, width: 0.8, height: 0.8, unit: 'page_ratio' as const }
       : undefined;
     const isNewThread = !activeThreadId;
     const threadMarker = activeThreadId ? getMarkerById(activeThreadId) : undefined;
@@ -159,7 +170,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     const question = trimmed || (image ? '请解答这张图片中的题目' : '');
     const newUserMsg: Message = { id: generateId(), role: 'user', content: question, image };
     setMessages(prev => [...prev, newUserMsg]);
-    setPendingImage(null);
+    // 本次提问已取走第一张：立即移除，其余截图保留在待发列表（多图连发）
+    setPendingImages(prev => prev.slice(1));
     setError(null);
     setIsLoading(true);
     setIsThinking(false);
@@ -307,7 +319,6 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         } catch {}
       }
       refreshMarkers();
-      setPendingCropBBox(null);
     } catch (e) {
       const msg = (e instanceof Error ? e.message : '回答失败，请重试');
       if (isMountedRef.current) setError(msg);
@@ -326,15 +337,19 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     }
   }, [
     user, currentPage, textbookId, isLoading, messages, activeThreadId,
-    pendingCropBBox,
+    pendingImages,
     addMarker, updateMarker, getMarkerById, refreshMarkers,
     setActiveThreadId, setActiveMarker,
   ]);
 
   const handleCapture = useCallback((imageData: string, cropBBox: CropBBox) => {
-    setPendingImage(imageData);
-    setPendingCropBBox(cropBBox);
-  }, []);
+    // 超量时拒绝新截图并提示，避免静默丢图
+    if (pendingImages.length >= MAX_PENDING_IMAGES) {
+      setError('一次最多待发 3 张截图');
+      return;
+    }
+    setPendingImages(prev => [...prev, { id: generateId(), data: imageData, cropBBox }]);
+  }, [pendingImages]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -347,13 +362,13 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     messages,
     isLoading,
     error,
-    pendingImage,
-    pendingCropBBox,
+    pendingImages,
     thinkingStage,
     isThinking,
     handleSendMessage,
     handleCapture,
-    clearPendingImage,
+    removePendingImage,
+    clearPendingImages,
     clearMessages,
     setError,
     unreadCount,
