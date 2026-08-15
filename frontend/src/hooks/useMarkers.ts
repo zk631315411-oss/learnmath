@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 
 import { loadString, saveString, removeString } from '../utils/storage';
+import { normalizeChatHistoryRecord } from '../utils/chatHistory';
 import { getChatHistoryByUser, deleteChatHistory } from '../services/api';
 import type { Marker } from '../components/PageMarker';
 import type { User } from '../types';
@@ -29,37 +30,8 @@ export function useMarkers(user: User, currentPage: number) {
     try {
       const data = await getChatHistoryByUser(uid, currentPage, 50);
       if (Array.isArray(data)) {
-        const normalized = data.map((d: any) => {
-        let follow_ups = d.follow_ups || [];
-        if (typeof follow_ups === 'string') {
-          try { follow_ups = JSON.parse(follow_ups); } catch { follow_ups = []; }
-        }
-        let crop_bbox = d.crop_bbox || null;
-        if (typeof crop_bbox === 'string') {
-          try { crop_bbox = JSON.parse(crop_bbox); } catch { crop_bbox = null; }
-        }
-        let tool_activities = d.tool_activities || [];
-        if (typeof tool_activities === 'string') {
-          try { tool_activities = JSON.parse(tool_activities); } catch { tool_activities = []; }
-        }
-        return {
-          ...d,
-          crop_bbox,
-          thinking: d.thinking || null,
-          tool_activities: Array.isArray(tool_activities) ? tool_activities : [],
-          follow_ups: follow_ups.map((fu: any) => ({
-            ...fu,
-            thinking: fu.thinking || null,
-            tool_activities: (() => {
-              if (Array.isArray(fu.tool_activities)) return fu.tool_activities;
-              if (typeof fu.tool_activities === 'string') {
-                try { return JSON.parse(fu.tool_activities); } catch { return []; }
-              }
-              return [];
-            })(),
-          })),
-        };
-        });
+        // 归一化收敛到共享函数：徽标列表与提问记录侧栏共用同一份解析逻辑，避免复制两份
+        const normalized = data.map(normalizeChatHistoryRecord);
         setMarkers(normalized);
         const persistedId = activeThreadStorageKey
           ? loadString(activeThreadStorageKey, null)

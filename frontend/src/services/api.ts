@@ -40,6 +40,12 @@ export async function getChatHistoryByUser(userId: string, page: number, limit: 
   return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?page=${page}&limit=${limit}`);
 }
 
+// 拉取某用户的全量提问记录（跨所有页码）供侧栏分组展示。
+// 不带 page 参数：后端 page 缺省即不过滤页码，limit 兜底控制上限。
+export async function getAllChatHistory(userId: string, limit = 500): Promise<any[]> {
+  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?limit=${limit}`);
+}
+
 export async function deleteChatHistory(chatId: string): Promise<void> {
   await del(`/chat/history/${chatId}`);
 }

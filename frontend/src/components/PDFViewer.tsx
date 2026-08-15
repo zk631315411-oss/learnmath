@@ -252,6 +252,14 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     }
   }, [textbookId]);
 
+  // 外部要求跳页（提问记录侧栏点击）时同步内部当前页：
+  // 正常翻页时 viewerPage 与内部 currentPage 始终相等（翻页经 onPageChange 同步到 App 再回传），
+  // 仅当 App 主动 setCurrentPage 时二者才会不一致，此时按新值跳页；相等时 setState 返回原引用不触发多余渲染
+  useEffect(() => {
+    if (viewerPage == null) return;
+    setCurrentPage(prev => (prev === viewerPage ? prev : viewerPage));
+  }, [viewerPage]);
+
   // 用户翻页时直接存 localStorage
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

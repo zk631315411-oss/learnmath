@@ -6,6 +6,8 @@ export interface Marker {
   page_number: number;
   marker_y_ratio: number;
   marker_type: 'screenshot' | 'text';
+  // 记录创建时间（提问记录侧栏展示用；后端 CURRENT_TIMESTAMP 存 "YYYY-MM-DD HH:MM:SS"）
+  created_at?: string | null;
   thumbnail?: string | null;
   crop_bbox?: CropBBox | string | null;
   screenshot_context_id?: string | null;
