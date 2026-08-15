@@ -24,7 +24,7 @@ async function mockAppApi(page: import('@playwright/test').Page) {
 async function openMobileChat(page: import('@playwright/test').Page, projectName: string) {
   if (projectName !== 'chromium-mobile') return;
   await page.locator('header select').selectOption({ index: 1 });
-  await page.getByTitle('打开聊天').click();
+  await page.getByTestId('ai-ball').click();
 }
 
 test('converts, inserts, serializes and sends an inline formula', async ({ page }, testInfo) => {

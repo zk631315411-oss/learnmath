@@ -103,6 +103,7 @@ export default function AiBall({
       {!expanded && (
         <div
           ref={ballRef}
+          data-testid="ai-ball"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
