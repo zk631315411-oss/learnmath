@@ -194,44 +194,48 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setThinkingStage('正在思考…');
 
     try {
-      const result = await fetchWithStage(
-        userIdVal,
-        question,
-        (stage, text) => { if (isMountedRef.current) setThinkingStage(text); },
-        requestImage,
-        'socratic',
-        (text) => {
-          streamAcc.thinking += text;
-          if (isMountedRef.current) {
-            setMessages(prev => prev.map(m => m.id === assistantMsgId
-              ? { ...m, thinking: streamAcc.thinking }
-              : m));
-          }
+      const result = await fetchWithStage({
+        request: {
+          user_id: userIdVal,
+          question,
+          teaching_mode: 'socratic',
+          image: requestImage,
+          history: historyPairs.length ? historyPairs : undefined,
+          token: user.token || undefined,
+          textbook_id: textbookId || undefined,
+          page_number: pageNumber,
+          chat_id: chatId || undefined,
+          marker_id: chatId || undefined,
+          crop_bbox: requestCropBBox,
+          screenshot_context_id: requestScreenshotContextId,
         },
-        textbookId || undefined,
-        historyPairs.length ? historyPairs : undefined,
-        (value) => { if (isMountedRef.current) setIsThinking(value); },
-        (text) => {
-          streamAcc.text += text;
-          if (isMountedRef.current) {
-            setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, content: streamAcc.text } : m));
-          }
+        callbacks: {
+          onStage: (stage, text) => { if (isMountedRef.current) setThinkingStage(text); },
+          onThinking: (text) => {
+            streamAcc.thinking += text;
+            if (isMountedRef.current) {
+              setMessages(prev => prev.map(m => m.id === assistantMsgId
+                ? { ...m, thinking: streamAcc.thinking }
+                : m));
+            }
+          },
+          onIsThinkingChange: (value) => { if (isMountedRef.current) setIsThinking(value); },
+          onContent: (text) => {
+            streamAcc.text += text;
+            if (isMountedRef.current) {
+              setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, content: streamAcc.text } : m));
+            }
+          },
+          onToolActivity: (activity) => {
+            streamAcc.toolActivities = upsertToolActivity(streamAcc.toolActivities, activity);
+            if (isMountedRef.current) {
+              setMessages(prev => prev.map(m => m.id === assistantMsgId
+                ? { ...m, toolActivities: streamAcc.toolActivities }
+                : m));
+            }
+          },
         },
-        user.token || undefined,
-        pageNumber,
-        chatId || undefined,
-        chatId || undefined,
-        requestCropBBox,
-        requestScreenshotContextId,
-        (activity) => {
-          streamAcc.toolActivities = upsertToolActivity(streamAcc.toolActivities, activity);
-          if (isMountedRef.current) {
-            setMessages(prev => prev.map(m => m.id === assistantMsgId
-              ? { ...m, toolActivities: streamAcc.toolActivities }
-              : m));
-          }
-        },
-      );
+      });
 
       const fullAnswer = streamAcc.text || result.answer;
       const fullThinking = streamAcc.thinking || result.thinking;

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
-import { loadJSON, saveJSON } from '../utils/storage';
+import { loadString, saveString, removeString } from '../utils/storage';
 import { getChatHistoryByUser, deleteChatHistory } from '../services/api';
 import type { Marker } from '../components/PageMarker';
 import type { User } from '../types';
@@ -17,9 +17,10 @@ export function useMarkers(user: User, currentPage: number) {
   const selectActiveThreadId = useCallback((threadId: string | null) => {
     setActiveThreadId(threadId);
     if (!activeThreadStorageKey) return;
-    // threadId 为 null 时 saveJSON 等价 removeItem（见 storage.ts 约定）
-    if (threadId) saveJSON(activeThreadStorageKey, threadId);
-    else saveJSON(activeThreadStorageKey, null);
+    // 该键历史遗留为裸字符串 threadId（未经 JSON 包装），读写必须保持原格式，
+    // 否则旧数据会因 JSON.parse 失败而一次性丢失；threadId 为 null 时显式删键
+    if (threadId) saveString(activeThreadStorageKey, threadId);
+    else removeString(activeThreadStorageKey);
   }, [activeThreadStorageKey]);
 
   const refreshMarkers = useCallback(async () => {
@@ -61,7 +62,7 @@ export function useMarkers(user: User, currentPage: number) {
         });
         setMarkers(normalized);
         const persistedId = activeThreadStorageKey
-          ? loadJSON<string | null>(activeThreadStorageKey, null)
+          ? loadString(activeThreadStorageKey, null)
           : null;
         const persistedMarker = normalized.find((marker: Marker) => marker.id === persistedId);
         if (persistedMarker) {

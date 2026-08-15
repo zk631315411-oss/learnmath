@@ -1,5 +1,6 @@
 import type { TokenResponse, UserProfile, UserProfileUpdate, CropBBox, ToolActivity } from '../types';
-import { request, get, post, put, patch, del } from './request';
+// request 别名 apiRequest：fetchWithStage 的 options 参数名 request 会遮蔽该导入，故在模块级改名
+import { request as apiRequest, get, post, put, patch, del } from './request';
 import { prepareImageUpload } from '../utils/imageProcessing';
 
 // === 用户认证相关 API ===
@@ -68,25 +69,39 @@ export async function migrateMarkers(oldUserId: string, newUserId: string): Prom
 
 // === SSE 流式问答 ===
 
-export async function fetchWithStage(
-  userId: string,
-  question: string,
-  onStage: (stage: string, text: string) => void,
-  imageData?: string,
-  teachingMode: string = 'socratic',
-  onThinking?: (text: string) => void,
-  textbookId?: string,
-  history?: Array<{ user: string; assistant: string }>,
-  onIsThinkingChange?: (v: boolean) => void,
-  onContent?: (text: string) => void,
-  token?: string,
-  pageNumber?: number,
-  chatId?: string,
-  markerId?: string,
-  cropBBox?: { x: number; y: number; width: number; height: number; unit?: 'page_ratio' } | null,
-  screenshotContextId?: string | null,
-  onToolActivity?: (activity: ToolActivity) => void,
-): Promise<{
+export type FetchWithStageRequest = {
+  user_id: string;
+  question: string;
+  // 教学模式可缺省：历史默认苏格拉底式软教学，组装 payload 时沿用原默认值
+  teaching_mode?: string;
+  image?: string;
+  history?: Array<{ user: string; assistant: string }>;
+  token?: string;
+  textbook_id?: string;
+  page_number?: number;
+  chat_id?: string;
+  marker_id?: string;
+  crop_bbox?: CropBBox | null;
+  screenshot_context_id?: string | null;
+};
+
+export type FetchWithStageCallbacks = {
+  // 阶段提示（如"正在思考…"）：调用方必须提供，用于驱动 UI 的阶段展示
+  onStage: (stage: string, text: string) => void;
+  // 思考流式文本增量；缺省则不展示思考块内容
+  onThinking?: (text: string) => void;
+  // 思考态切换（进入/退出思考块）
+  onIsThinkingChange?: (v: boolean) => void;
+  // 正文流式文本增量
+  onContent?: (text: string) => void;
+  // 工具活动状态流转（tool_call / tool_result 事件）
+  onToolActivity?: (activity: ToolActivity) => void;
+};
+
+export async function fetchWithStage({ request, callbacks }: {
+  request: FetchWithStageRequest;
+  callbacks: FetchWithStageCallbacks;
+}): Promise<{
   answer: string;
   sources: any[];
   thinking: string;
@@ -94,33 +109,34 @@ export async function fetchWithStage(
   screenshot_context_id?: string | null;
 }> {
   const payload: Record<string, unknown> = {
-    user_id: userId,
-    question,
-    teaching_mode: teachingMode,
+    user_id: request.user_id,
+    question: request.question,
+    // 缺省沿用历史默认教学模式，与旧签名的默认参数行为一致
+    teaching_mode: request.teaching_mode ?? 'socratic',
   };
-  if (history) payload.history = history;
-  if (token) payload.token = token;
-  if (textbookId) payload.textbook_id = textbookId;
-  if (pageNumber) payload.page_number = pageNumber;
-  if (markerId) payload.marker_id = markerId;
-  if (cropBBox) payload.crop_bbox = cropBBox;
-  if (screenshotContextId) payload.screenshot_context_id = screenshotContextId;
-  if (chatId) payload.chat_id = chatId;
+  if (request.history) payload.history = request.history;
+  if (request.token) payload.token = request.token;
+  if (request.textbook_id) payload.textbook_id = request.textbook_id;
+  if (request.page_number) payload.page_number = request.page_number;
+  if (request.marker_id) payload.marker_id = request.marker_id;
+  if (request.crop_bbox) payload.crop_bbox = request.crop_bbox;
+  if (request.screenshot_context_id) payload.screenshot_context_id = request.screenshot_context_id;
+  if (request.chat_id) payload.chat_id = request.chat_id;
 
   const formData = new FormData();
   formData.append('payload', JSON.stringify(payload));
-  if (imageData) {
-    const image = await prepareImageUpload(imageData);
+  if (request.image) {
+    const image = await prepareImageUpload(request.image);
     const extension = image.type === 'image/jpeg' ? 'jpg' : image.type.split('/')[1] || 'png';
     formData.append('image', image, `screenshot.${extension}`);
   }
 
   // SSE 流使用 rawResponse 模式，手动解析
-  const res = await request<Response>({
+  const res = await apiRequest<Response>({
     url: '/qa/solve-stream',
     method: 'POST',
     body: formData,
-    token,
+    token: request.token,
     rawResponse: true,
     headers: { Accept: 'text/event-stream' },
   });
@@ -137,7 +153,7 @@ export async function fetchWithStage(
   let screenshotContextIdResult: string | null = null;
   let currentEventType: string | null = null;
 
-  onIsThinkingChange?.(false);
+  callbacks.onIsThinkingChange?.(false);
   try {
     while (true) {
       const { done, value } = await reader.read();
@@ -155,7 +171,7 @@ export async function fetchWithStage(
           let data: any;
           try { data = JSON.parse(dataStr); } catch { continue; }
           if (data.error && currentEventType === 'error') throw new Error(data.error);
-          if (currentEventType === 'stage' && data.stage && data.text) onStage(data.stage, data.text);
+          if (currentEventType === 'stage' && data.stage && data.text) callbacks.onStage(data.stage, data.text);
           else if ((currentEventType === 'tool_call' || currentEventType === 'tool_result') && data.id) {
             const existing = toolActivities.find(activity => activity.id === data.id);
             const activity: ToolActivity = {
@@ -170,31 +186,31 @@ export async function fetchWithStage(
             toolActivities = existing
               ? toolActivities.map(item => item.id === activity.id ? activity : item)
               : [...toolActivities, activity];
-            onToolActivity?.(activity);
+            callbacks.onToolActivity?.(activity);
           }
           else if (currentEventType === 'thinking' && data.text) {
             thinking += data.text;
-            onIsThinkingChange?.(true);
-            onThinking?.(data.text);
+            callbacks.onIsThinkingChange?.(true);
+            callbacks.onThinking?.(data.text);
           }
           else if (currentEventType === 'content' && data.text) {
-            onIsThinkingChange?.(false);
+            callbacks.onIsThinkingChange?.(false);
             fullContent += data.text;
-            onContent?.(data.text);
+            callbacks.onContent?.(data.text);
           }
           else if (currentEventType === 'done') {
             if (!fullContent && data.full_text) {
               fullContent = data.full_text;
-              onContent?.(data.full_text);
+              callbacks.onContent?.(data.full_text);
             }
             if (!thinking && data.thinking) {
               thinking = data.thinking;
-              onThinking?.(data.thinking);
+              callbacks.onThinking?.(data.thinking);
             }
             if (data.sources) sources = data.sources;
             if (!toolActivities.length && Array.isArray(data.tool_activities)) {
               toolActivities = data.tool_activities;
-              toolActivities.forEach(activity => onToolActivity?.(activity));
+              toolActivities.forEach(activity => callbacks.onToolActivity?.(activity));
             }
             if (data.screenshot_context_id) screenshotContextIdResult = data.screenshot_context_id;
           }
@@ -202,7 +218,7 @@ export async function fetchWithStage(
       }
     }
   } finally {
-    onIsThinkingChange?.(false);
+    callbacks.onIsThinkingChange?.(false);
   }
   return {
     answer: fullContent,
