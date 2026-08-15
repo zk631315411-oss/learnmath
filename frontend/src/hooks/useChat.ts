@@ -25,6 +25,8 @@ export interface UseChatParams {
   user: User;
   currentPage: number;
   textbookId: string;
+  /** 聊天面板当前是否可见（由调用方判定）；用于回答收尾时决定是否累计未读 */
+  chatVisible: boolean;
   markersState: {
     markers: Marker[];
     activeMarker: Marker | null;
@@ -38,7 +40,7 @@ export interface UseChatParams {
   };
 }
 
-export function useChat({ user, currentPage, textbookId, markersState }: UseChatParams) {
+export function useChat({ user, currentPage, textbookId, chatVisible, markersState }: UseChatParams) {
   const {
     activeMarker,
     activeThreadId,
@@ -54,21 +56,30 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [pendingCropBBox, setPendingCropBBox] = useState<CropBBox | null>(null);
   const [thinkingStage, setThinkingStage] = useState<string>('');
   const [isThinking, setIsThinking] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const isMountedRef = useRef(true);
+  // SSE 长回调的闭包里读不到最新 chatVisible，用 ref 保存最新值供收尾判断，避免闭包竞态
+  const chatVisibleRef = useRef(chatVisible);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; };
   }, []);
 
+  useEffect(() => {
+    chatVisibleRef.current = chatVisible;
+  }, [chatVisible]);
+
   const userId = user.userId || user.deviceId;
 
-  // 切换用户时清空消息
+  // 切换用户时清空消息与未读计数（未读属于上一个用户的会话，不能带进新用户）
   useEffect(() => {
     setMessages([]);
     setError(null);
+    setUnreadCount(0);
   }, [userId]);
 
   // 当 activeMarker 变化，若它属于当前页，则把其问答加载进聊天面板
@@ -99,6 +110,12 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
 
   const clearPendingImage = useCallback(() => {
     setPendingImage(null);
+    setPendingCropBBox(null);
+  }, []);
+
+  // 面板展开/用户主动查看时清零未读角标
+  const markRead = useCallback(() => {
+    setUnreadCount(0);
   }, []);
 
   const handleSendMessage = useCallback(async (content: string, image?: string) => {
@@ -108,8 +125,15 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
     const userIdVal = user.userId || user.deviceId;
     const pageNumber = currentPage;
     const markerType: Marker['marker_type'] = image ? 'screenshot' : 'text';
-    const markerYRatio = image ? 50 : 0;
-    const cropBBox = image ? { x: 0.1, y: 0.1, width: 0.8, height: 0.8, unit: 'page_ratio' as const } : undefined;
+    // 截图提问用真实选区：marker_y_ratio 取选区中心 Y，cropBBox 优先真实选区，缺失时兜底走旧的中间 80%
+    const markerYRatio = image
+      ? pendingCropBBox
+        ? (pendingCropBBox.y + pendingCropBBox.height / 2) * 100
+        : 50
+      : 0;
+    const cropBBox = image
+      ? pendingCropBBox ?? { x: 0.1, y: 0.1, width: 0.8, height: 0.8, unit: 'page_ratio' as const }
+      : undefined;
     const isNewThread = !activeThreadId;
     const threadMarker = activeThreadId ? getMarkerById(activeThreadId) : undefined;
     const inheritedImage = !image && threadMarker?.marker_type === 'screenshot'
@@ -279,6 +303,7 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
         } catch {}
       }
       refreshMarkers();
+      setPendingCropBBox(null);
     } catch (e) {
       const msg = (e instanceof Error ? e.message : '回答失败，请重试');
       if (isMountedRef.current) setError(msg);
@@ -291,16 +316,20 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
         setIsLoading(false);
         setIsThinking(false);
         setThinkingStage('');
+        // done 与 error 两种结束都会走到这里：收尾时若聊天面板不可见，累计一条未读提醒用户
+        if (!chatVisibleRef.current) setUnreadCount(prev => prev + 1);
       }
     }
   }, [
     user, currentPage, textbookId, isLoading, messages, activeThreadId,
+    pendingCropBBox,
     addMarker, updateMarker, getMarkerById, refreshMarkers,
     setActiveThreadId, setActiveMarker,
   ]);
 
-  const handleCapture = useCallback((imageData: string) => {
+  const handleCapture = useCallback((imageData: string, cropBBox: CropBBox) => {
     setPendingImage(imageData);
+    setPendingCropBBox(cropBBox);
   }, []);
 
   const clearMessages = useCallback(() => {
@@ -315,6 +344,7 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
     isLoading,
     error,
     pendingImage,
+    pendingCropBBox,
     thinkingStage,
     isThinking,
     handleSendMessage,
@@ -322,5 +352,7 @@ export function useChat({ user, currentPage, textbookId, markersState }: UseChat
     clearPendingImage,
     clearMessages,
     setError,
+    unreadCount,
+    markRead,
   };
 }

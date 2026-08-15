@@ -4,7 +4,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
 import AuthModal from './components/AuthModal';
 import AiBall from './components/AiBall';
-import MobileChatPanel from './components/MobileChatPanel';
 import type { Marker } from './components/PageMarker';
 import { useAuth } from './hooks/useAuth';
 import { useTextbookPreference, PRESET_PDFS } from './hooks/useTextbookPreference';
@@ -30,25 +29,29 @@ export default function App() {
     authPassword, setAuthPassword, authError, handleAuthSubmit, handleLogout,
   } = useAuth();
 
-  const { selectedPdf, textbookId, setTextbookId, saveCurrentPage } = useTextbookPreference();
+  const { selectedPdf, textbookId, setTextbookId } = useTextbookPreference();
 
   const [isCapturing, setIsCapturing] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
-  const [showMobileChat, setShowMobileChat] = useState(false);
+  // AiBall 面板展开态：移动端聊天面板是否可见的唯一来源
+  const [aiBallExpanded, setAiBallExpanded] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
+  // 桌面端右栏聊天常驻可见，永不累计未读；移动端只有 AiBall 展开才算可见
+  const chatVisible = isDesktop ? true : aiBallExpanded;
   const markers = useMarkers(user, currentPage);
-  const chat = useChat({ user, currentPage, textbookId, markersState: markers });
+  const chat = useChat({ user, currentPage, textbookId, chatVisible, markersState: markers });
 
   const handleMarkerClick = (marker: Marker) => {
     markers.handleMarkerClick(marker);
     markers.setActiveMarker(marker);
   };
 
-  const handleCapture = (imageData: string, _pageRatioX: number, _pageRatioY: number, _cropBBox: CropBBox) => {
+  // 透传真实选区 cropBBox 给 useChat（pageRatioX/Y 暂无用例，保留占位）
+  const handleCapture = (imageData: string, _pageRatioX: number, _pageRatioY: number, cropBBox: CropBBox) => {
     setIsCapturing(false);
-    chat.handleCapture(imageData);
+    chat.handleCapture(imageData, cropBBox);
   };
 
   useEffect(() => {
@@ -158,27 +161,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-              {selectedPdf && !showMobileChat && (
-                <button onClick={() => setShowMobileChat(true)}
-                  className="fixed bottom-24 right-4 z-30 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all"
-                  title="打开聊天">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </button>
-              )}
-              {showMobileChat && (
-                <MobileChatPanel
-                  messages={chat.messages} onSendMessage={chat.handleSendMessage}
-                  onClearMessages={chat.clearMessages}
-                  isLoading={chat.isLoading}
-                  token={user.token}
-                  pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
-                  thinkingStage={chat.thinkingStage}
-                  isThinking={chat.isThinking}
-                  onClose={() => setShowMobileChat(false)}
-                />
-              )}
               {selectedPdf && (
                 <AiBall
                   messages={chat.messages} onSendMessage={chat.handleSendMessage}
@@ -188,7 +170,8 @@ export default function App() {
                   pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
                   thinkingStage={chat.thinkingStage}
                   isThinking={chat.isThinking}
-                  hasUnread={false} onRead={() => {}}
+                  hasUnread={chat.unreadCount > 0} onRead={chat.markRead}
+                  onVisibleChange={setAiBallExpanded}
                 />
               )}
             </div>

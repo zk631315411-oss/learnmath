@@ -14,12 +14,14 @@ interface Props {
   isThinking?: boolean;
   hasUnread: boolean;
   onRead: () => void;
+  /** 展开/收起面板时回调，供调用方同步面板可见性 */
+  onVisibleChange?: (visible: boolean) => void;
 }
 
 export default function AiBall({
   messages, onSendMessage, onClearMessages, isLoading,
   token, pendingImage, onClearPendingImage,
-  thinkingStage, isThinking, hasUnread, onRead,
+  thinkingStage, isThinking, hasUnread, onRead, onVisibleChange,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -56,6 +58,7 @@ export default function AiBall({
     if (pendingImage) {
       setExpanded(true);
       onRead();
+      onVisibleChange?.(true);
     }
   }, [pendingImage]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -91,7 +94,8 @@ export default function AiBall({
     }
     setExpanded(true);
     onRead();
-  }, [onRead]);
+    onVisibleChange?.(true);
+  }, [onRead, onVisibleChange]);
 
   return (
     <>
@@ -120,7 +124,12 @@ export default function AiBall({
       {/* Expanded panel */}
       {expanded && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 dark:bg-black/50 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setExpanded(false); }}>
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setExpanded(false);
+              onVisibleChange?.(false);
+            }
+          }}>
           <div className="w-full bg-white rounded-t-2xl shadow-xl flex flex-col overflow-hidden animate-slide-up"
             style={{ maxWidth: panelMaxWidth, height: panelHeight }}>
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700">
@@ -128,7 +137,7 @@ export default function AiBall({
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                 <span className="text-sm font-semibold text-slate-800">学数有道</span>
               </div>
-              <button onClick={() => setExpanded(false)}
+              <button onClick={() => { setExpanded(false); onVisibleChange?.(false); }}
                 className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
                 −
               </button>
