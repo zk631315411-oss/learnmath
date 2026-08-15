@@ -8,6 +8,69 @@ export interface Source {
   snippet: string;
 }
 
+export type ToolActivityStatus = 'running' | 'success' | 'error' | 'skipped' | 'cancelled';
+
+export type KGRetrievalFocus =
+  | 'prerequisites'
+  | 'successors'
+  | 'supporting'
+  | 'applications'
+  | 'rules'
+  | 'structure'
+  | 'overview';
+
+export interface KGFocusStat {
+  returned_count: number;
+  truncated: boolean;
+}
+
+export interface KGNodeReference {
+  node_id?: string;
+  name?: string;
+  type?: string;
+  match_type?: string;
+  relationship_type?: string;
+  direction?: 'incoming' | 'outgoing';
+  source_code?: string;
+}
+
+export interface KGToolResult {
+  status?: 'resolved' | 'ambiguous' | 'not_found';
+  kg_basis_available?: boolean;
+  found?: boolean;
+  message?: string;
+  node?: KGNodeReference;
+  support_nodes?: KGNodeReference[];
+  lookahead_nodes?: KGNodeReference[];
+  selected_node?: KGNodeReference;
+  candidates?: KGNodeReference[];
+  requested_focus?: KGRetrievalFocus[];
+  retrieved_focus?: KGRetrievalFocus[];
+  empty_focus?: KGRetrievalFocus[];
+  focus_stats?: Partial<Record<KGRetrievalFocus, KGFocusStat>>;
+  relationships?: {
+    explicit_prerequisites?: KGNodeReference[];
+    explicit_successors?: KGNodeReference[];
+    supporting_knowledge?: KGNodeReference[];
+    applications_and_extensions?: KGNodeReference[];
+    structural_context?: KGNodeReference[];
+  };
+  rule_case_count?: number;
+}
+
+export interface ToolActivity {
+  id: string;
+  tool: string;
+  label: string;
+  status: ToolActivityStatus;
+  arguments: Record<string, unknown>;
+  round?: number;
+  result?: KGToolResult;
+  duration_ms?: number;
+  error_code?: string | null;
+  error_message?: string | null;
+}
+
 // === 聊天消息 ===
 
 export interface Message {
@@ -18,6 +81,7 @@ export interface Message {
   sources?: Source[];
   knowledge_points?: string[];
   thinking?: string; // AI 思考过程
+  toolActivities?: ToolActivity[];
 }
 
 // 截图裁剪框

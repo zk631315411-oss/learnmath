@@ -37,6 +37,113 @@ body {
 .chat-message .katex-display > .katex { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 .chat-message .katex { max-width: 100%; word-break: break-all; }
 
+/* === 混合文字与公式输入 === */
+.formula-editor-shell {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 52px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 5px 6px 5px 10px;
+}
+.formula-editor-shell:focus-within { border-color: #2563eb; box-shadow: 0 0 0 2px rgb(37 99 235 / 16%); }
+.formula-prosemirror { min-height: 40px; max-height: 132px; overflow-y: auto; padding: 6px 0; outline: none; font-size: 14px; line-height: 1.55; color: #1e293b; }
+.formula-prosemirror.is-compact { min-height: 28px; max-height: 92px; padding: 3px 0; }
+.formula-prosemirror p { margin: 0; min-height: 1.55em; }
+.formula-prosemirror p + p { margin-top: 4px; }
+.formula-prosemirror .tiptap-mathematics-render { max-width: 100%; cursor: pointer; border-radius: 4px; transition: background-color 120ms; }
+.formula-prosemirror .tiptap-mathematics-render:hover { background: #dbeafe; }
+.formula-prosemirror div.tiptap-mathematics-render { overflow-x: auto; padding: 5px 2px; }
+.formula-placeholder { position: absolute; top: 6px; left: 0; pointer-events: none; color: #94a3b8; font-size: 14px; }
+.formula-trigger { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border-radius: 6px; color: #2563eb; background: #eff6ff; }
+.formula-trigger:hover { background: #dbeafe; }
+.formula-trigger:disabled { opacity: .4; cursor: not-allowed; }
+.formula-undo-redo { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 6px; color: #64748b; }
+.formula-undo-redo:hover:not(:disabled) { background: #f1f5f9; color: #1e293b; }
+.formula-undo-redo:disabled { opacity: .35; cursor: not-allowed; }
+
+.formula-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgb(15 23 42 / 48%); }
+.formula-dialog { width: min(620px, 100%); max-height: min(760px, calc(100vh - 32px)); overflow: hidden; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; box-shadow: 0 20px 45px rgb(15 23 42 / 24%); }
+.formula-dialog-header { height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #e2e8f0; }
+.formula-dialog-header h3 { margin: 0; color: #0f172a; font-size: 16px; font-weight: 650; }
+.formula-dialog-header p { margin: 1px 0 0; color: #64748b; font-size: 11px; }
+.formula-dialog-header button { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 6px; color: #64748b; }
+.formula-dialog-header button:hover { background: #f1f5f9; }
+.formula-dialog-body { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 90px); overflow-y: auto; padding: 16px 18px 18px; }
+.formula-description-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.formula-description-row input { min-width: 0; height: 40px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 11px; color: #0f172a; outline: none; }
+.formula-description-row input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgb(37 99 235 / 14%); }
+.formula-convert-button, .formula-insert-button { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; padding: 0 14px; background: #2563eb; color: #fff; font-size: 13px; font-weight: 600; }
+.formula-convert-button:hover, .formula-insert-button:hover { background: #1d4ed8; }
+.formula-convert-button:disabled, .formula-insert-button:disabled { opacity: .4; cursor: not-allowed; }
+.formula-error { margin: -5px 0 0; color: #b91c1c; font-size: 12px; }
+.formula-preview { min-height: 62px; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; padding: 9px 12px; color: #0f172a; }
+.formula-preview > span { display: block; margin-bottom: 5px; color: #64748b; font-size: 11px; font-weight: 600; }
+.formula-preview > em { color: #94a3b8; font-size: 13px; font-style: normal; }
+.formula-preview .katex-display { margin: 4px 0; overflow-x: auto; overflow-y: hidden; }
+.formula-visual-editor { overflow-x: auto; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; }
+.formula-mathfield { width: 100%; min-width: 420px; min-height: 58px; border: 0; padding: 10px 12px; font-size: 20px; background: transparent; }
+.formula-mathfield::part(menu-toggle) { display: none; }
+.formula-toolbar { display: grid; grid-template-columns: repeat(10, minmax(38px, 1fr)); gap: 5px; }
+.formula-toolbar button, .formula-more-symbols button { height: 36px; display: grid; place-items: center; border: 1px solid #e2e8f0; border-radius: 5px; background: #f8fafc; color: #334155; font-size: 13px; }
+.formula-toolbar button:hover, .formula-more-symbols button:hover { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+.formula-more-symbols { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 8px; border-radius: 6px; background: #f1f5f9; }
+.formula-matrix-panel { overflow-x: auto; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+.matrix-editor { display: flex; min-width: 360px; flex-direction: column; align-items: center; gap: 10px; }
+.matrix-dimensions { display: flex; align-items: center; gap: 6px; }
+.matrix-dimensions button { height: 28px; border-radius: 5px; background: #f1f5f9; padding: 0 8px; color: #475569; font-size: 12px; }
+.matrix-dimensions button:disabled { opacity: .35; }
+.matrix-dimensions span { width: 46px; text-align: center; color: #64748b; font-size: 12px; }
+.matrix-grid { border-left: 2px solid #64748b; border-right: 2px solid #64748b; border-radius: 5px; padding: 5px 10px; }
+.matrix-row { display: flex; gap: 6px; margin: 5px 0; }
+.matrix-row input { width: 60px; height: 32px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; outline: none; }
+.matrix-row input:focus { border-color: #2563eb; }
+.matrix-insert { align-self: flex-end; height: 32px; border-radius: 5px; background: #2563eb; padding: 0 11px; color: #fff; font-size: 12px; font-weight: 600; }
+.formula-dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+.formula-display-toggle { display: grid; grid-template-columns: repeat(3, 1fr); overflow: hidden; border: 1px solid #cbd5e1; border-radius: 6px; }
+.formula-display-toggle button { min-width: 54px; height: 32px; border-right: 1px solid #cbd5e1; color: #475569; font-size: 12px; }
+.formula-display-toggle button:last-child { border-right: 0; }
+.formula-display-toggle button.is-active { background: #e0f2fe; color: #075985; font-weight: 600; }
+.formula-insert-button { height: 36px; }
+.formula-example { align-self: flex-start; margin-top: -5px; border: 0; background: none; padding: 0; color: #2563eb; font-size: 12px; text-align: left; cursor: pointer; }
+.formula-example:hover { text-decoration: underline; }
+.formula-error-row { display: flex; align-items: center; gap: 10px; margin-top: -5px; }
+.formula-retry-button { height: 26px; flex: 0 0 auto; border: 1px solid #fca5a5; border-radius: 5px; background: #fef2f2; padding: 0 10px; color: #b91c1c; font-size: 12px; }
+.formula-retry-button:hover { background: #fee2e2; }
+.formula-retry-button:disabled { opacity: .5; cursor: not-allowed; }
+.formula-preview-render { color: #0f172a; font-size: 14px; }
+.formula-preview-error { margin: 2px 0 0; color: #b45309; font-size: 12px; }
+.formula-common, .formula-favorites { border-top: 1px solid #e2e8f0; padding-top: 10px; }
+.formula-section-label { display: block; margin-bottom: 6px; color: #64748b; font-size: 11px; font-weight: 600; }
+.formula-common-list, .formula-favorites-list, .formula-history-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.formula-common-list button { height: 30px; border: 1px solid #e2e8f0; border-radius: 5px; background: #f8fafc; padding: 0 10px; color: #334155; font-size: 12px; }
+.formula-common-list button:hover { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+.formula-favorites-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.formula-save-favorite { height: 28px; display: inline-flex; align-items: center; gap: 5px; border: 1px dashed #cbd5e1; border-radius: 5px; background: #f8fafc; padding: 0 10px; color: #64748b; font-size: 12px; }
+.formula-save-favorite:hover:not(:disabled) { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
+.formula-save-favorite:disabled { opacity: .4; cursor: not-allowed; }
+.formula-saved-tip { color: #16a34a; font-size: 11px; }
+.formula-favorite-item, .formula-history-item { display: inline-flex; align-items: center; border: 1px solid #e2e8f0; border-radius: 5px; background: #f8fafc; }
+.formula-favorite-item:hover, .formula-history-item:hover { border-color: #93c5fd; }
+.formula-favorite-insert, .formula-history-insert { height: 30px; border: 0; background: none; padding: 0 4px 0 10px; color: #334155; font-size: 12px; }
+.formula-favorite-insert:hover, .formula-history-insert:hover { color: #1d4ed8; }
+.formula-favorite-remove, .formula-history-remove { width: 24px; display: grid; place-items: center; border: 0; background: none; color: #94a3b8; }
+.formula-favorite-remove:hover, .formula-history-remove:hover { color: #b91c1c; }
+.formula-history { border-top: 1px solid #e2e8f0; padding-top: 10px; }
+
+@media (max-width: 640px) {
+  .formula-dialog-backdrop { align-items: end; padding: 0; }
+  .formula-dialog { width: 100%; max-height: min(760px, 92dvh); border-radius: 8px 8px 0 0; border-bottom: 0; }
+  .formula-dialog-body { max-height: calc(92dvh - 58px); padding: 14px; }
+  .formula-toolbar { grid-template-columns: repeat(5, 1fr); }
+  .formula-more-symbols { grid-template-columns: repeat(4, 1fr); }
+  .formula-mathfield { min-width: 340px; }
+  .formula-dialog-footer { align-items: stretch; flex-direction: column; }
+  .formula-insert-button { width: 100%; }
+}
+
 /* === 滚动条 === */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

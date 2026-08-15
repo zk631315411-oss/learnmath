@@ -1,0 +1,10 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/backend/Dockerfile
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/frontend/Dockerfile
+

@@ -7,15 +7,17 @@ interface Props {
   onSendMessage: (content: string, image?: string) => void;
   onClearMessages: () => void;
   isLoading: boolean;
+  token?: string | null;
   pendingImage?: string | null;
   onClearPendingImage?: () => void;
   thinkingStage?: string;
+  isThinking?: boolean;
   onClose: () => void;
 }
 
 function MobileChatPanelInner({
   messages, onSendMessage, onClearMessages, isLoading,
-  pendingImage, onClearPendingImage, thinkingStage, onClose,
+  token, pendingImage, onClearPendingImage, thinkingStage, isThinking, onClose,
 }: Props) {
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col animate-slide-up">
@@ -33,8 +35,10 @@ function MobileChatPanelInner({
         <ChatPanel
           messages={messages} onSendMessage={onSendMessage}
           onClearMessages={onClearMessages} isLoading={isLoading}
+          token={token}
           pendingImage={pendingImage} onClearPendingImage={onClearPendingImage}
           thinkingStage={thinkingStage}
+          isThinking={isThinking}
           compact
         />
       </div>

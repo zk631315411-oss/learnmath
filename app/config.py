@@ -42,6 +42,14 @@ class Config:
     )
     QA_LLM_MODEL: str = os.getenv("QA_LLM_MODEL", "kimi-k2.7-code")
 
+    # 公式转写默认复用问答模型，也可通过 FORMULA_* 使用独立模型。
+    FORMULA_API_KEY: str = os.getenv("FORMULA_API_KEY") or QA_LLM_API_KEY
+    FORMULA_API_BASE: str = os.getenv("FORMULA_API_BASE") or QA_LLM_API_BASE
+    FORMULA_MODEL: str = os.getenv("FORMULA_MODEL") or QA_LLM_MODEL
+    FORMULA_CONVERSION_TIMEOUT_SECONDS: float = float(
+        os.getenv("FORMULA_CONVERSION_TIMEOUT_SECONDS", "8")
+    )
+
     # SQLite 数据库路径，可用环境变量覆盖以便隔离测试（空值回退默认路径）
     DB_PATH: str = os.getenv("AI_MATH_DB_PATH") or str(DATA_DIR / "learning.db")
 

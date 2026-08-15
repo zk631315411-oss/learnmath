@@ -8,6 +8,7 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Literal
 
 from app.services.agents.tool_def import ToolDef
@@ -22,7 +23,10 @@ from app.services.agents.tool_executor import (
 logger = logging.getLogger("tool_runtime")
 
 
-RuntimeEventType = Literal["tool_call", "tool_result", "visualization", "final"]
+RuntimeEventType = Literal[
+    "tool_call", "tool_result", "visualization",
+    "thinking_delta", "content_delta", "final",
+]
 ModelCall = Callable[..., Awaitable[Any]]
 ArtifactHandler = Callable[[dict[str, Any], ToolOutcome], Awaitable[dict[str, Any] | None]]
 TraceHandler = Callable[[dict[str, Any]], Awaitable[None]]
@@ -53,6 +57,7 @@ class RuntimeEvent:
 @dataclass
 class ToolRuntimeResult:
     content: str
+    reasoning: str
     messages: list[dict[str, Any]]
     visualizations: list[dict[str, Any]] = field(default_factory=list)
     degraded: bool = False
@@ -88,6 +93,7 @@ class ToolRuntime:
         degraded = False
         degradation_code: str | None = None
         rounds = 0
+        reasoning_parts: list[str] = []
 
         while rounds < self.config.max_model_rounds:
             rounds += 1
@@ -96,11 +102,28 @@ class ToolRuntime:
                 tools=[tool.to_openai_tool() for tool in self.tools],
                 tool_choice="auto",
             )
-            message = response.choices[0].message
+            if hasattr(response, "choices"):
+                message = response.choices[0].message
+                reasoning = str(getattr(message, "reasoning_content", "") or "")
+                if reasoning:
+                    reasoning_parts.append(reasoning)
+                    yield RuntimeEvent("thinking_delta", {"text": reasoning})
+                content = str(getattr(message, "content", "") or "")
+                if content:
+                    yield RuntimeEvent("content_delta", {"text": content})
+            else:
+                streamed = _StreamedMessage()
+                async for chunk in _iterate_stream(response):
+                    for event in streamed.consume(chunk):
+                        if event.type == "thinking_delta":
+                            reasoning_parts.append(str(event.data.get("text") or ""))
+                        yield event
+                message = streamed.message()
             calls = list(getattr(message, "tool_calls", None) or [])
             if not calls:
                 result = ToolRuntimeResult(
                     content=str(getattr(message, "content", "") or ""),
+                    reasoning="".join(reasoning_parts),
                     messages=working,
                     visualizations=visualizations,
                     degraded=degraded,
@@ -121,12 +144,21 @@ class ToolRuntime:
                 name = str(getattr(call.function, "name", ""))
                 display_name = self._tool_map.get(name).display_name if name in self._tool_map else "调用辅助工具"
                 status_text = display_name if display_name.startswith("正在") else f"正在{display_name}"
-                yield RuntimeEvent("tool_call", {
-                    "tool_call_id": str(call.id), "name": name,
-                    "status_text": status_text, "round": rounds,
-                })
                 stats["called"] += 1
                 prepared = prepare_tool_call(call, self.tools)
+                arguments = (
+                    prepared.normalized_arguments
+                    if isinstance(prepared, ToolOutcome)
+                    else prepared.arguments
+                )
+                yield RuntimeEvent("tool_call", {
+                    "tool_call_id": str(call.id),
+                    "name": name,
+                    "display_name": display_name,
+                    "status_text": status_text,
+                    "arguments": arguments,
+                    "round": rounds,
+                })
                 if isinstance(prepared, ToolOutcome):
                     immediate.append((call, prepared, _raw_fingerprint(context.turn_id, name, call.function.arguments)))
                     continue
@@ -192,8 +224,12 @@ class ToolRuntime:
                 yield RuntimeEvent("tool_result", {
                     "tool_call_id": outcome.tool_call_id,
                     "name": outcome.tool_name,
-                    "status": "success" if outcome.status == "success" else "skipped" if outcome.status == "skipped" else "error",
+                    "status": outcome.status,
                     "error_code": outcome.error_code,
+                    "error_message": outcome.error_message,
+                    "arguments": outcome.normalized_arguments,
+                    "result": outcome.public_result,
+                    "duration_ms": outcome.duration_ms,
                 })
                 for accepted in accepted_artifacts:
                     yield RuntimeEvent("visualization", accepted)
@@ -225,9 +261,26 @@ class ToolRuntime:
             tools=[tool.to_openai_tool() for tool in self.tools],
             tool_choice="none",
         )
-        final_message = final_response.choices[0].message
+        if hasattr(final_response, "choices"):
+            final_message = final_response.choices[0].message
+            reasoning = str(getattr(final_message, "reasoning_content", "") or "")
+            if reasoning:
+                reasoning_parts.append(reasoning)
+                yield RuntimeEvent("thinking_delta", {"text": reasoning})
+            content = str(getattr(final_message, "content", "") or "")
+            if content:
+                yield RuntimeEvent("content_delta", {"text": content})
+        else:
+            streamed = _StreamedMessage()
+            async for chunk in _iterate_stream(final_response):
+                for event in streamed.consume(chunk):
+                    if event.type == "thinking_delta":
+                        reasoning_parts.append(str(event.data.get("text") or ""))
+                    yield event
+            final_message = streamed.message()
         result = ToolRuntimeResult(
             content=str(getattr(final_message, "content", "") or ""),
+            reasoning="".join(reasoning_parts),
             messages=working,
             visualizations=visualizations,
             degraded=degraded,
@@ -236,6 +289,90 @@ class ToolRuntime:
             model_rounds=rounds + 1,
         )
         yield RuntimeEvent("final", {"result": result})
+
+
+class _StreamedMessage:
+    """Rebuild one assistant message while forwarding stream deltas."""
+
+    def __init__(self) -> None:
+        self.content_parts: list[str] = []
+        self.reasoning_parts: list[str] = []
+        self.tool_calls: dict[int, dict[str, str]] = {}
+
+    def consume(self, chunk: Any) -> list[RuntimeEvent]:
+        choices = getattr(chunk, "choices", None) or []
+        if not choices:
+            return []
+        delta = getattr(choices[0], "delta", None)
+        if delta is None:
+            return []
+
+        events: list[RuntimeEvent] = []
+        reasoning = str(getattr(delta, "reasoning_content", "") or "")
+        if reasoning:
+            self.reasoning_parts.append(reasoning)
+            events.append(RuntimeEvent("thinking_delta", {"text": reasoning}))
+
+        content = str(getattr(delta, "content", "") or "")
+        if content:
+            self.content_parts.append(content)
+            events.append(RuntimeEvent("content_delta", {"text": content}))
+
+        for item in list(getattr(delta, "tool_calls", None) or []):
+            index = int(getattr(item, "index", 0) or 0)
+            current = self.tool_calls.setdefault(index, {"id": "", "name": "", "arguments": ""})
+            call_id = str(getattr(item, "id", "") or "")
+            if call_id:
+                current["id"] = call_id
+            function = getattr(item, "function", None)
+            if function is not None:
+                current["name"] += str(getattr(function, "name", "") or "")
+                current["arguments"] += str(getattr(function, "arguments", "") or "")
+        return events
+
+    def message(self) -> Any:
+        calls = [
+            SimpleNamespace(
+                id=value["id"],
+                function=SimpleNamespace(name=value["name"], arguments=value["arguments"]),
+            )
+            for _, value in sorted(self.tool_calls.items())
+        ]
+        return SimpleNamespace(
+            content="".join(self.content_parts),
+            reasoning_content="".join(self.reasoning_parts),
+            tool_calls=calls,
+        )
+
+
+_STREAM_END = object()
+
+
+def _next_stream_item(iterator: Any) -> Any:
+    try:
+        return next(iterator)
+    except StopIteration:
+        return _STREAM_END
+
+
+async def _iterate_stream(response: Any):
+    """Iterate provider streams without blocking the asyncio event loop."""
+    if hasattr(response, "__aiter__"):
+        async for chunk in response:
+            yield chunk
+        return
+
+    iterator = iter(response)
+    try:
+        while True:
+            chunk = await asyncio.to_thread(_next_stream_item, iterator)
+            if chunk is _STREAM_END:
+                break
+            yield chunk
+    finally:
+        close = getattr(response, "close", None)
+        if callable(close):
+            await asyncio.to_thread(close)
 
 
 def call_fingerprint(turn_id: str, tool_name: str, arguments: dict[str, Any]) -> str:
@@ -248,13 +385,17 @@ def _raw_fingerprint(turn_id: str, tool_name: str, arguments: str) -> str:
 
 
 def _assistant_message(message: Any, calls: list[Any]) -> dict[str, Any]:
-    return {
+    value = {
         "role": "assistant", "content": getattr(message, "content", None),
         "tool_calls": [{
             "id": str(call.id), "type": "function",
             "function": {"name": str(call.function.name), "arguments": str(call.function.arguments)},
         } for call in calls],
     }
+    reasoning = getattr(message, "reasoning_content", None)
+    if reasoning:
+        value["reasoning_content"] = reasoning
+    return value
 
 
 def _skipped(call: Any, name: str, code: str, message: str) -> ToolOutcome:

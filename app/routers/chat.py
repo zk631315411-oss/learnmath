@@ -27,6 +27,9 @@ class SaveChatRequest(BaseModel):
     screenshot_context_id: Optional[str] = None
     sources: Optional[str] = None
     knowledge_points: Optional[str] = None
+    thinking: Optional[str] = None
+    tool_activities: Optional[str] = None
+    follow_ups: Optional[str] = None
 
 
 class UpdateChatRequest(BaseModel):
@@ -34,6 +37,9 @@ class UpdateChatRequest(BaseModel):
     screenshot_context_id: Optional[str] = None
     thumbnail: Optional[str] = None
     crop_bbox: Optional[str] = None
+    thinking: Optional[str] = None
+    tool_activities: Optional[str] = None
+    follow_ups: Optional[str] = None
 
 
 @router.get("/history/{user_id}")
@@ -50,6 +56,9 @@ def create_history(req: SaveChatRequest):
         marker_type=req.marker_type, thumbnail=req.thumbnail,
         crop_bbox=req.crop_bbox, screenshot_context_id=req.screenshot_context_id,
         sources=req.sources, knowledge_points=req.knowledge_points,
+        thinking=req.thinking,
+        tool_activities=req.tool_activities,
+        follow_ups=req.follow_ups or "[]",
     )
     return {"id": chat_id}
 
@@ -63,6 +72,9 @@ def update_history(chat_id: str, req: UpdateChatRequest):
         screenshot_context_id=req.screenshot_context_id,
         thumbnail=req.thumbnail,
         crop_bbox=req.crop_bbox,
+        thinking=req.thinking,
+        tool_activities=req.tool_activities,
+        follow_ups=req.follow_ups,
     )
     return {"status": "ok"}
 

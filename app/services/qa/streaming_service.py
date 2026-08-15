@@ -18,6 +18,18 @@ def sse_text(text: str) -> dict:
     return sse_event("content", {"text": text})
 
 
+def sse_thinking(text: str) -> dict:
+    return sse_event("thinking", {"text": text})
+
+
+def sse_tool_call(data: dict) -> dict:
+    return sse_event("tool_call", data)
+
+
+def sse_tool_result(data: dict) -> dict:
+    return sse_event("tool_result", data)
+
+
 def sse_done(**data) -> dict:
     return sse_event("done", data)
 

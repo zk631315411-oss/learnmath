@@ -52,8 +52,9 @@ class LLMService:
         *,
         tool_choice: str = "auto",
         temperature: float = 0.3,
+        stream: bool = False,
     ) -> Any:
-        """非流式调用，支持 Function Calling（Agent tool loop 用）。"""
+        """支持流式 Function Calling，Agent 可转发思考与答案增量。"""
         if not self._client:
             raise RuntimeError("LLM 服务未初始化")
         return self._client.chat.completions.create(
@@ -61,7 +62,8 @@ class LLMService:
             messages=messages,
             tools=tools,
             tool_choice=tool_choice,
-            stream=False,
+            stream=stream,
+            **({"stream_options": {"include_usage": True}} if stream else {}),
             temperature=temperature,
         )
 

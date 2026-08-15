@@ -15,7 +15,7 @@ from app.services.image_processing import (
     ImageProcessingError,
     normalize_image_bytes,
 )
-from app.services.qa import QATurnInput, answer_turn
+from app.services.qa import QATurnInput
 from app.services.qa.answer_service import answer_turn_with_tools
 
 router = APIRouter(prefix="/api/qa", tags=["题目答疑"])
@@ -41,13 +41,21 @@ async def _generate_with_heartbeat(generate):
     task = asyncio.create_task(_heartbeat(events))
 
     async def producer():
+        cancelled = False
         try:
             async for event in generate:
                 events.put_nowait(event)
+                # Some async generators wrap synchronous SDK iterators. Give the
+                # SSE consumer a scheduling opportunity after every event.
+                await asyncio.sleep(0)
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
         finally:
             task.cancel()
             # 消费完所有事件后，放入 sentinel 标记结束
-            events.put_nowait(None)
+            if not cancelled:
+                events.put_nowait(None)
 
     producer_task = asyncio.create_task(producer())
 
@@ -144,13 +152,9 @@ async def solve_question_stream(
                 token=request.token,
             )
 
-            # 文字问答走 Agent 工具循环（LLM 自主决定是否调 KG），截图走直接回答
-            if image_data_url:
-                async for event in answer_turn(turn_input):
-                    yield event
-            else:
-                async for event in answer_turn_with_tools(turn_input):
-                    yield event
+            # 文字与截图统一进入多模态 Agent，由 LLM 自主决定是否查询 KG。
+            async for event in answer_turn_with_tools(turn_input):
+                yield event
         except asyncio.CancelledError:
             # 客户端断开时静默终止，不产生 error 事件
             raise

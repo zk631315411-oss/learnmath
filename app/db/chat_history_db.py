@@ -43,7 +43,10 @@ def save_chat_history(user_id: str, question: str, answer: Optional[str] = None,
                       crop_bbox: Optional[str] = None,
                       screenshot_context_id: Optional[str] = None,
                       sources: Optional[str] = None,
-                      knowledge_points: Optional[str] = None) -> str:
+                      knowledge_points: Optional[str] = None,
+                      thinking: Optional[str] = None,
+                      tool_activities: Optional[str] = None,
+                      follow_ups: str = "[]") -> str:
     """插入一条问答记录，返回 chat_id；answer 可为空（SSE 完成后再补）。"""
     chat_id = _uid()
     conn = get_conn()
@@ -51,11 +54,12 @@ def save_chat_history(user_id: str, question: str, answer: Optional[str] = None,
         conn.execute("""
             INSERT INTO chat_history (id, user_id, question, answer, page_number,
                                       marker_y_ratio, marker_type, thumbnail, sources, knowledge_points,
-                                      crop_bbox, screenshot_context_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                      crop_bbox, screenshot_context_id, thinking, tool_activities,
+                                      follow_ups)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (chat_id, user_id, question, answer or '', page_number, marker_y_ratio,
               marker_type, thumbnail, sources, knowledge_points,
-              crop_bbox, screenshot_context_id))
+              crop_bbox, screenshot_context_id, thinking, tool_activities, follow_ups))
         conn.commit()
     finally:
         conn.close()
@@ -68,6 +72,9 @@ def update_chat_answer(
     screenshot_context_id: Optional[str] = None,
     thumbnail: Optional[str] = None,
     crop_bbox: Optional[str] = None,
+    thinking: Optional[str] = None,
+    tool_activities: Optional[str] = None,
+    follow_ups: Optional[str] = None,
 ):
     """SSE 完成后回填 answer / 截图上下文等字段（只更新显式传入的字段）。"""
     sets = []
@@ -84,6 +91,15 @@ def update_chat_answer(
     if crop_bbox is not None:
         sets.append("crop_bbox=?")
         params.append(crop_bbox)
+    if thinking is not None:
+        sets.append("thinking=?")
+        params.append(thinking)
+    if tool_activities is not None:
+        sets.append("tool_activities=?")
+        params.append(tool_activities)
+    if follow_ups is not None:
+        sets.append("follow_ups=?")
+        params.append(follow_ups)
     if not sets:
         return
     params.append(chat_id)

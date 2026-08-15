@@ -14,6 +14,31 @@ class TextbookId(str, Enum):
     GAOSHU_XIA = "gaoshu_xia"
 
 
+# Keep the identifiers visible to the agent/tool contract.  The KG stores
+# these values on every node, so an invented value such as ``linear_algebra``
+# must never be treated as an equivalent alias.
+TEXTBOOK_LABELS: dict[str, str] = {
+    TextbookId.GAODAI_SHANG.value: "高等代数上册",
+    TextbookId.GAODAI_XIA.value: "高等代数下册",
+    TextbookId.GAOSHU_SHANG.value: "高等数学上册",
+    TextbookId.GAOSHU_XIA.value: "高等数学下册",
+}
+
+
+def textbook_scope_description(textbook_id: str | None) -> str:
+    """Return a model-facing description of the backend-bound KG scope."""
+    clean = (textbook_id or "").strip().lower()
+    if not clean:
+        return "当前未绑定单一教材，检索会在全部已配置教材范围内进行。"
+    label = TEXTBOOK_LABELS.get(clean)
+    if label:
+        return f"当前绑定教材：{clean}（{label}）。"
+    return (
+        f"当前请求携带的教材代号是 {clean}，它不是已注册的教材代号；"
+        "在此范围内匹配不到节点时必须报告教材范围不匹配。"
+    )
+
+
 _CANONICAL_MAP: dict[str, TextbookId] = {
     "gaodai_shang": TextbookId.GAODAI_SHANG,
     "gaodai_xia": TextbookId.GAODAI_XIA,

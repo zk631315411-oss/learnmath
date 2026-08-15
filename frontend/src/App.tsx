@@ -139,8 +139,10 @@ export default function App() {
                   onSendMessage={chat.handleSendMessage}
                   onClearMessages={chat.clearMessages}
                   isLoading={chat.isLoading}
+                  token={user.token}
                   pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
                   thinkingStage={chat.thinkingStage}
+                  isThinking={chat.isThinking}
                 />
               </div>
             </>
@@ -170,8 +172,10 @@ export default function App() {
                   messages={chat.messages} onSendMessage={chat.handleSendMessage}
                   onClearMessages={chat.clearMessages}
                   isLoading={chat.isLoading}
+                  token={user.token}
                   pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
                   thinkingStage={chat.thinkingStage}
+                  isThinking={chat.isThinking}
                   onClose={() => setShowMobileChat(false)}
                 />
               )}
@@ -180,8 +184,10 @@ export default function App() {
                   messages={chat.messages} onSendMessage={chat.handleSendMessage}
                   onClearMessages={chat.clearMessages}
                   isLoading={chat.isLoading}
+                  token={user.token}
                   pendingImage={chat.pendingImage} onClearPendingImage={chat.clearPendingImage}
                   thinkingStage={chat.thinkingStage}
+                  isThinking={chat.isThinking}
                   hasUnread={false} onRead={() => {}}
                 />
               )}

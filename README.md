@@ -1,14 +1,14 @@
 # LearnMath 后端：错题→反问→诊断→推荐的极简基础底座
 
 本目录是 LearnMath 的后端，从 `D:\ai-math`（只读原材料库）极简复刻而来。
-ai-math 是一个功能完整但体量庞大的教学系统；LearnMath 只保留"错题 → 反问 → 诊断 → 推荐"
-最小闭环所需的地基，其余模块（画像、KG、练习、可视化、干预等）一律不搬。
+ai-math 是一个功能完整但体量庞大的教学系统；LearnMath 当前只实现阶段 1 的
+“KG 定位 → 引导教学 → 继续验证”闭环，学习画像、练习、考试和干预等暂不迁移。
 
 ## 为什么精简
 
-- **只保留最小闭环**：认证 + 问答历史 + SSE 问答就够撑起阶段 1 的演示闭环。
-- **少一半依赖，少一半维护**：剪掉 Neo4j、Redis、S3、Worker 等基建，单机 SQLite 即可跑通。
-- **后续模块按需追加**：QA services、诊断服务放在下一个任务补，目录结构已为此留好位置。
+- **只保留最小闭环**：统一多模态 Agent + Neo4j 只读 KG 工具 + 原始问答历史。
+- **基础设施有界**：保留 Neo4j 和 SQLite，暂不引入 Redis、S3、Worker 等服务。
+- **现实版优先**：教学逻辑由 Prompt 软约束，显式状态机、掌握度和学习画像留作未来演进。
 
 ## 当前包含的模块
 
@@ -23,6 +23,7 @@ app/
 │   ├── auth_db.py        # 账号 CRUD（完整复刻自 ai-math）
 │   ├── user_profile_db.py# 用户画像读写（完整复刻自 ai-math）
 │   ├── chat_history_db.py# 问答历史 CRUD + migrate_user_id（匿名→登录迁移）
+│   ├── kg_v44.py         # Neo4j 只读定位与定向关系检索
 │   └── screenshot_context_cache_db.py  # 截图上下文缓存读写（完整复刻自 ai-math）
 ├── models/
 │   └── schemas.py        # Pydantic 请求/响应模型（认证 4 端点 + QA 请求）
@@ -31,13 +32,14 @@ app/
 │   ├── chat.py           # 历史 CRUD（/history） + /migrate 徽标迁移
 │   └── qa.py             # POST /solve-stream：SSE 流式问答（文字+图片多模态）
 └── services/
-    ├── llm_service.py    # qa_client / qa_async / vision_chat（精简自 ai-math）
+    ├── llm_service.py    # 统一多模态、流式工具调用客户端
     ├── image_processing.py  # 图片预处理（完整复刻自 ai-math，多模态必需）
+    ├── agents/           # ToolRuntime 与 retrieve_kg_context 工具
     └── qa/
-        ├── prompt_builder.py       # 苏格拉底 4 段 prompt 模板（精简版）
+        ├── prompt_builder.py       # Prompt 驱动的软教学流程与四级脚手架
         ├── contracts.py            # QATurnInput 数据契约
-        ├── answer_service.py       # 文字/视觉双路径编排
-        ├── streaming_service.py    # SSE 事件构造（stage/content/done/error/heartbeat）
+        ├── answer_service.py       # 文字/截图统一 ToolRuntime 编排
+        ├── streaming_service.py    # SSE 事件构造
         └── vision_context_service.py # 截图上下文缓存读写 + 判定
 shared/
 └── textbooks.json        # 4 本教材元数据（完整复刻自 ai-math）
@@ -48,12 +50,26 @@ shared/
 | 事件 | data 字段 |
 |------|-----------|
 | `stage` | `{stage, text}` |
+| `thinking` | `{text}` |
+| `tool_call` / `tool_result` | KG 工具参数、状态与可展示结果 |
 | `content` | `{text}` |
-| `done` | `{full_text, thinking, sources, sequence_id, qa_turn_id}`（视觉路径追加 `screenshot_context_id`） |
+| `done` | `{full_text, thinking, sources, tool_activities, qa_turn_id}`（截图追加 `screenshot_context_id`） |
 | `error` | `{error}` |
 | `heartbeat` | `{text: ""}` |
 
 ## 如何启动
+
+### Windows 一键部署
+
+正式发布包分为两个部分：单独的 Docker Desktop 安装包，以及 LearnMath 应用包（容器镜像、四本教材和启动脚本）。新电脑先运行 Docker 安装包，再在 LearnMath 应用包中双击：
+
+```bat
+Install-LearnMath.bat
+```
+
+安装脚本会首次询问模型 API Key 和 Neo4j Aura 凭据，启动容器，等待完整健康检查后自动打开浏览器。用户不需要安装 Python、Node.js 或本地 Neo4j。两个安装包的制作方式和 Docker Desktop 授权注意事项见 `deploy/README.md`。
+
+### 开发模式
 
 ```bat
 start.bat
@@ -65,11 +81,11 @@ start.bat
 
 ## 数据库
 
-SQLite 单文件（默认 `data/learning.db`），启动时自动建表（幂等）。
-当前只有四张表：`users`（账号）、`user_profiles`（画像）、`chat_history`（问答历史，
+SQLite 保存应用数据（默认 `data/learning.db`），Neo4j 保存教材知识图谱。SQLite 启动时自动建表（幂等）。
+核心表包括：`users`（账号）、`user_profiles`（现有兼容表）、`chat_history`（问答历史，
 含 page_number/marker_y_ratio/marker_type/thumbnail/crop_bbox/screenshot_context_id，
-即前端徽标的持久化依据）、`screenshot_context_cache`（截图上下文缓存，多模态问答去重复用）。
-诊断/推荐所需的新表在后续任务补。
+以及同徽标 `follow_ups`、思考和工具活动）、`screenshot_context_cache`（截图上下文缓存）。
+当前不根据对话写入正式学习画像；结构化教学状态和证据表在未来版本再设计。
 
 ## 无 LLM key 时的行为
 

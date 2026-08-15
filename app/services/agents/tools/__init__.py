@@ -1,17 +1,22 @@
-"""Agent tool implementations — LearnMath 阶段 1 工具集。
+"""Stage-one tools for the unified text and screenshot teaching agent."""
 
-阶段 1 只启用 lookup_kg_node（查知识图谱）。
-search_textbook / verify_math / create_math_visualization 留到阶段 2 再加。
-"""
 from __future__ import annotations
 
 from app.services.agents.tool_def import ToolDef
 
 
-def get_qa_tool_defs() -> list[ToolDef]:
-    from app.services.agents.tools.lookup_kg_node import lookup_kg_node_tool
+def get_qa_tool_defs(
+    *,
+    textbook_id: str | None = None,
+    page_number: int | None = None,
+) -> list[ToolDef]:
+    from app.services.agents.tools.retrieve_kg_context import build_retrieve_kg_context_tool
+
     return [
-        lookup_kg_node_tool,
+        build_retrieve_kg_context_tool(
+            textbook_id=textbook_id,
+            page_number=page_number,
+        )
     ]
 
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 
 
 ToolKind = Literal["read_only", "artifact"]
+ToolResultPresenter = Callable[[dict[str, Any]], dict[str, Any]]
 
 
 def _default_tool_timeout() -> float:
@@ -33,6 +34,7 @@ class ToolDef:
     max_calls_per_round: int = 3
     max_calls_per_turn: int = 3
     kind: ToolKind = "read_only"
+    present_result: ToolResultPresenter | None = None
 
     def schema(self) -> dict[str, Any]:
         if self.input_model is not None:

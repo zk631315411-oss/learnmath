@@ -2,9 +2,6 @@
 data/textbooks/*.pdf
 frontend/public/*.pdf
 
-# git worktree（backend 是独立工作树，内容走 backend-dev 分支）
-backend/
-
 # 依赖与构建产物
 node_modules/
 dist/
@@ -18,3 +15,11 @@ __pycache__/
 # 日志与临时文件
 *.log
 tmp/
+data/*.pre-consolidation-*.db
+
+# One-click deployment runtime and large offline assets
+deploy/runtime.env
+deploy/assets/installers/
+deploy/assets/images/
+deploy/runtime/
+release/

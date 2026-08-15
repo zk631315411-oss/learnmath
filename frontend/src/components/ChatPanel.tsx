@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, memo } from 'react';
+import { ArrowDown, BrainCircuit, ChevronDown } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import FormulaComposer from './FormulaComposer';
+import AgentActivity from './AgentActivity';
 import type { Message } from '../types';
 
 interface Props {
@@ -8,20 +10,99 @@ interface Props {
   onSendMessage: (content: string, image?: string) => void;
   onClearMessages: () => void;
   isLoading: boolean;
+  token?: string | null;
   pendingImage?: string | null;
   onClearPendingImage?: () => void;
   thinkingStage?: string;
+  isThinking?: boolean;
   compact?: boolean;
+}
+
+function ThinkingBlock({ content, active }: { content: string; active: boolean }) {
+  const [expanded, setExpanded] = useState(active);
+
+  useEffect(() => {
+    if (active) setExpanded(true);
+  }, [active]);
+
+  return (
+    <div className="mb-3 border-b border-slate-200 pb-3">
+      <button
+        type="button"
+        onClick={() => setExpanded(value => !value)}
+        className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-500 hover:text-slate-700"
+        aria-expanded={expanded}
+      >
+        <BrainCircuit className={`h-4 w-4 ${active ? 'animate-pulse text-blue-500' : 'text-slate-400'}`} />
+        <span className="flex-1">{active ? '正在分析' : '模型分析'}</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+      {expanded && (
+        <div className="mt-2 max-h-48 overflow-y-auto border-l-2 border-blue-200 pl-3 text-slate-500">
+          <MarkdownRenderer className="text-xs leading-6 markdown-body">{content}</MarkdownRenderer>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoadingStatus({ text }: { text?: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-slate-500">
+      <div className="flex gap-1" aria-hidden="true">
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500" />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-cyan-500" style={{ animationDelay: '150ms' }} />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '300ms' }} />
+      </div>
+      <span>{text || '正在准备回答…'}</span>
+    </div>
+  );
 }
 
 function ChatPanelInner({
   messages, onSendMessage, onClearMessages, isLoading,
-  pendingImage, onClearPendingImage, thinkingStage, compact,
+  token, pendingImage, onClearPendingImage, thinkingStage, isThinking = false, compact,
 }: Props) {
   const [input, setInput] = useState('');
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
-  useEffect(() => { if (!isLoading) scrollToBottom(); }, [messages, isLoading]);
+  const previousMessageCountRef = useRef(messages.length);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  };
+
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const nearBottom = distanceFromBottom <= 80;
+    setShouldAutoScroll(nearBottom);
+    if (nearBottom) setShowScrollToBottom(false);
+  };
+
+  useEffect(() => {
+    if (messages.length === 0 && previousMessageCountRef.current > 0) {
+      setInput('');
+    }
+    const newUserMessageStarted = messages.length > previousMessageCountRef.current
+      && messages[messages.length - 1]?.role === 'user';
+    previousMessageCountRef.current = messages.length;
+    if (newUserMessageStarted) {
+      setShouldAutoScroll(true);
+      setShowScrollToBottom(false);
+      return;
+    }
+    if (shouldAutoScroll) {
+      scrollToBottom(isLoading ? 'auto' : 'smooth');
+    } else if (isLoading) {
+      setShowScrollToBottom(true);
+    }
+  }, [messages, thinkingStage, isLoading, shouldAutoScroll]);
 
   const handleSubmit = () => {
     if ((input.trim() || pendingImage) && !isLoading) {
@@ -47,7 +128,11 @@ function ChatPanelInner({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleMessagesScroll}
+        className="relative flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center mb-3 ">
@@ -60,10 +145,12 @@ function ChatPanelInner({
           </div>
         )}
 
-        {messages.map((msg) => (
+        {messages.map((msg, index) => {
+          const isActiveAssistant = isLoading && msg.role === 'assistant' && index === messages.length - 1;
+          return (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className="flex flex-col items-start max-w-[88%]">
-              <div className={`chat-message rounded-2xl px-4 py-3 ${
+            <div className="flex min-w-0 max-w-[88%] flex-col items-start">
+              <div className={`chat-message min-w-0 max-w-full rounded-2xl px-4 py-3 ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-md'
                   : 'bg-white text-slate-700 shadow-sm border border-slate-100 rounded-bl-md'
@@ -72,29 +159,38 @@ function ChatPanelInner({
                   <img src={msg.image} alt="用户截图" className="mb-2 max-w-full rounded-lg"
                     style={{ maxHeight: '200px' }} />
                 )}
-                <MarkdownRenderer className="text-sm leading-relaxed markdown-body">{msg.content}</MarkdownRenderer>
+                {msg.role === 'assistant' && msg.toolActivities && msg.toolActivities.length > 0 && (
+                  <AgentActivity activities={msg.toolActivities} active={isActiveAssistant} />
+                )}
+                {msg.role === 'assistant' && msg.thinking && (
+                  <ThinkingBlock content={msg.thinking} active={isActiveAssistant && isThinking} />
+                )}
+                {msg.content ? (
+                  <MarkdownRenderer className="text-sm leading-relaxed markdown-body">{msg.content}</MarkdownRenderer>
+                ) : isActiveAssistant ? (
+                  <LoadingStatus text={thinkingStage} />
+                ) : null}
               </div>
             </div>
           </div>
-        ))}
-
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white shadow-sm border border-slate-100 rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%]">
-              {thinkingStage && (
-                <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <span>{thinkingStage || 'AI 正在思考…'}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+          );
+        })}
         <div ref={messagesEndRef} />
+        {showScrollToBottom && (
+          <button
+            type="button"
+            onClick={() => {
+              setShouldAutoScroll(true);
+              setShowScrollToBottom(false);
+              requestAnimationFrame(() => scrollToBottom('smooth'));
+            }}
+            className="sticky bottom-3 ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:bg-slate-50 hover:text-slate-700"
+            aria-label="回到底部"
+            title="回到底部"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {pendingImage && (
@@ -116,10 +212,11 @@ function ChatPanelInner({
         className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0">
         <div className="flex gap-2 items-end">
           <div className="min-w-0 flex-1">
-            <FormulaComposer value={input} onChange={setInput}
+            <FormulaComposer value={input} onChange={setInput} token={token ?? undefined}
               placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit} />
           </div>
           <button type="submit" disabled={(!input.trim() && !pendingImage) || isLoading}
+            aria-label="发送" title="发送"
             className="px-4 sm:px-5 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all  active:scale-95 whitespace-nowrap">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

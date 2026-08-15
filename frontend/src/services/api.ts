@@ -1,4 +1,4 @@
-import type { TokenResponse, UserProfile, UserProfileUpdate, CropBBox } from '../types';
+import type { TokenResponse, UserProfile, UserProfileUpdate, CropBBox, ToolActivity } from '../types';
 import { request, get, post, put, patch, del } from './request';
 import { prepareImageUpload } from '../utils/imageProcessing';
 
@@ -73,11 +73,11 @@ export async function fetchWithStage(
   question: string,
   onStage: (stage: string, text: string) => void,
   imageData?: string,
-  teachingMode: string = 'direct',
-  _onThinking?: (text: string) => void,
+  teachingMode: string = 'socratic',
+  onThinking?: (text: string) => void,
   textbookId?: string,
   history?: Array<{ user: string; assistant: string }>,
-  _onIsThinkingChange?: (v: boolean) => void,
+  onIsThinkingChange?: (v: boolean) => void,
   onContent?: (text: string) => void,
   token?: string,
   pageNumber?: number,
@@ -85,7 +85,14 @@ export async function fetchWithStage(
   markerId?: string,
   cropBBox?: { x: number; y: number; width: number; height: number; unit?: 'page_ratio' } | null,
   screenshotContextId?: string | null,
-): Promise<{ answer: string; sources: any[]; thinking: string; screenshot_context_id?: string | null }> {
+  onToolActivity?: (activity: ToolActivity) => void,
+): Promise<{
+  answer: string;
+  sources: any[];
+  thinking: string;
+  toolActivities: ToolActivity[];
+  screenshot_context_id?: string | null;
+}> {
   const payload: Record<string, unknown> = {
     user_id: userId,
     question,
@@ -126,37 +133,102 @@ export async function fetchWithStage(
   let fullContent = '';
   let sources: any[] = [];
   let thinking = '';
+  let toolActivities: ToolActivity[] = [];
   let screenshotContextIdResult: string | null = null;
   let currentEventType: string | null = null;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) { currentEventType = null; continue; }
-      if (trimmed.startsWith('event:')) { currentEventType = trimmed.slice(6).trim(); continue; }
-      if (trimmed.startsWith('data:')) {
-        const dataStr = trimmed.slice(5).trim();
-        if (!dataStr) continue;
-        let data: any;
-        try { data = JSON.parse(dataStr); } catch { continue; }
-        if (data.error && currentEventType === 'error') throw new Error(data.error);
-        if (currentEventType === 'stage' && data.stage && data.text) onStage(data.stage, data.text);
-        else if (currentEventType === 'content' && data.text) {
-          fullContent += data.text;
-          if (onContent) onContent(data.text);
-        }
-        else if (currentEventType === 'done') {
-          if (!fullContent && data.full_text) fullContent = data.full_text;
-          if (data.sources) sources = data.sources;
-          if (data.screenshot_context_id) screenshotContextIdResult = data.screenshot_context_id;
+  onIsThinkingChange?.(false);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) { currentEventType = null; continue; }
+        if (trimmed.startsWith('event:')) { currentEventType = trimmed.slice(6).trim(); continue; }
+        if (trimmed.startsWith('data:')) {
+          const dataStr = trimmed.slice(5).trim();
+          if (!dataStr) continue;
+          let data: any;
+          try { data = JSON.parse(dataStr); } catch { continue; }
+          if (data.error && currentEventType === 'error') throw new Error(data.error);
+          if (currentEventType === 'stage' && data.stage && data.text) onStage(data.stage, data.text);
+          else if ((currentEventType === 'tool_call' || currentEventType === 'tool_result') && data.id) {
+            const existing = toolActivities.find(activity => activity.id === data.id);
+            const activity: ToolActivity = {
+              ...(existing || {}),
+              ...data,
+              id: String(data.id),
+              tool: String(data.tool || existing?.tool || ''),
+              label: String(data.label || existing?.label || '调用辅助工具'),
+              status: data.status || existing?.status || 'running',
+              arguments: data.arguments || existing?.arguments || {},
+            };
+            toolActivities = existing
+              ? toolActivities.map(item => item.id === activity.id ? activity : item)
+              : [...toolActivities, activity];
+            onToolActivity?.(activity);
+          }
+          else if (currentEventType === 'thinking' && data.text) {
+            thinking += data.text;
+            onIsThinkingChange?.(true);
+            onThinking?.(data.text);
+          }
+          else if (currentEventType === 'content' && data.text) {
+            onIsThinkingChange?.(false);
+            fullContent += data.text;
+            onContent?.(data.text);
+          }
+          else if (currentEventType === 'done') {
+            if (!fullContent && data.full_text) {
+              fullContent = data.full_text;
+              onContent?.(data.full_text);
+            }
+            if (!thinking && data.thinking) {
+              thinking = data.thinking;
+              onThinking?.(data.thinking);
+            }
+            if (data.sources) sources = data.sources;
+            if (!toolActivities.length && Array.isArray(data.tool_activities)) {
+              toolActivities = data.tool_activities;
+              toolActivities.forEach(activity => onToolActivity?.(activity));
+            }
+            if (data.screenshot_context_id) screenshotContextIdResult = data.screenshot_context_id;
+          }
         }
       }
     }
+  } finally {
+    onIsThinkingChange?.(false);
   }
-  return { answer: fullContent, sources, thinking, screenshot_context_id: screenshotContextIdResult };
+  return {
+    answer: fullContent,
+    sources,
+    thinking,
+    toolActivities,
+    screenshot_context_id: screenshotContextIdResult,
+  };
+}
+
+// === 公式转换 API ===
+
+export type FormulaConversion = {
+  latex: string;
+  display_mode: 'inline' | 'block';
+};
+
+export async function convertFormula(
+  description: string,
+  preferredDisplay: 'auto' | 'inline' | 'block',
+  token?: string,
+): Promise<FormulaConversion> {
+  return post<FormulaConversion>(
+    '/formula/convert',
+    { description, preferred_display: preferredDisplay },
+    token,
+    { timeout: 8_000, maxRetries: 0 },
+  );
 }

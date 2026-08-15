@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # === 用户认证相关模型 ===
@@ -33,6 +33,26 @@ class TokenResponse(BaseModel):
     user_id: str
     username: str
     is_anonymous: bool = False
+
+
+# === 公式转写相关模型 ===
+
+class FormulaConvertRequest(BaseModel):
+    description: str = Field(..., min_length=1, max_length=500)
+    preferred_display: Literal["auto", "inline", "block"] = "auto"
+
+    @field_validator("description")
+    @classmethod
+    def description_must_have_content(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("description cannot be blank")
+        return value
+
+
+class FormulaConvertResponse(BaseModel):
+    latex: str
+    display_mode: Literal["inline", "block"]
 
 
 # === 题目答疑相关模型 ===

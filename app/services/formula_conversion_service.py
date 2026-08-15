@@ -1,0 +1,258 @@
+"""Convert Chinese descriptions to safe, bare LaTeX."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import re
+import time
+from dataclasses import dataclass
+from typing import Literal, Protocol
+
+from openai import AsyncOpenAI, BadRequestError
+
+from app.config import config
+
+logger = logging.getLogger(__name__)
+
+DisplayPreference = Literal["auto", "inline", "block"]
+DisplayMode = Literal["inline", "block"]
+
+
+def _formula_example(description: str, latex: str) -> str:
+    payload = json.dumps({"latex": latex}, ensure_ascii=False, separators=(",", ":"))
+    return f"输入：{description}\n输出：{payload}"
+
+
+SYSTEM_PROMPT = "\n".join(
+    (
+        "你是数学公式转写器。把用户的中文描述转换成等价 LaTeX。",
+        "只转写，不求值、不化简、不证明、不解释。输出 JSON，且只能包含 latex 字段。",
+        "latex 必须是裸公式，不含 $、$$、\\(、\\)、代码围栏或 Markdown。",
+        "禁止 HTML、链接、文件命令、自定义宏和文档命令。",
+        "示例：",
+        _formula_example(
+            "x趋于0时sin x除以x的极限",
+            r"\lim_{x \to 0} \frac{\sin x}{x}",
+        ),
+        _formula_example(
+            "二乘二矩阵，第一行a b，第二行c d",
+            r"\begin{pmatrix} a & b \\ c & d \end{pmatrix}",
+        ),
+        _formula_example("x平方加y平方等于1", "x^2+y^2=1"),
+    )
+)
+
+FORMULA_JSON_SCHEMA_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "formula",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "latex": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "pattern": r"^[^\u0000-\u001f\u007f]*$",
+                }
+            },
+            "required": ["latex"],
+            "additionalProperties": False,
+        },
+    },
+}
+FORMULA_JSON_OBJECT_FORMAT = {"type": "json_object"}
+
+
+def build_formula_completion_request(description: str) -> dict[str, object]:
+    return {
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": description},
+        ],
+        "temperature": 0,
+        "max_tokens": 128,
+    }
+
+
+_FORBIDDEN = re.compile(
+    r"<[^>]+>|https?://|www\.|\\(?:href|url|include|input|write|openout|read|"
+    r"newcommand|renewcommand|def|gdef|edef|xdef|usepackage|documentclass|"
+    r"htmlClass|htmlId|htmlStyle)\b|\\(?:begin|end)\s*\{document\}",
+    re.IGNORECASE,
+)
+_EXPLANATION_PREFIX = re.compile(
+    r"(?:^|\s)(?:the\s+formula|the\s+answer|answer\s*:|result\s*:|"
+    r"latex\s*:|here\s+is|therefore)\b|(?:解释|答案|结果|公式)\s*(?:是|为|:|：)",
+    re.IGNORECASE,
+)
+_CJK_OUTSIDE_TEXT = re.compile(r"[\u3400-\u9fff]")
+_CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+_BLOCK_STRUCTURE = re.compile(
+    r"\\begin\s*\{(?:matrix|[bBpvV]matrix|cases|aligned|align(?:ed)?|gather(?:ed)?|split)\}"
+    r"|\\\\"
+)
+_MALFORMED_ENV_END = re.compile(
+    r"(?<!\\)\\\\end(\s*\{(?:matrix|[bBpvV]matrix|cases|aligned|align(?:ed)?|gather(?:ed)?|split)\})"
+)
+
+
+class FormulaConversionError(RuntimeError):
+    pass
+
+
+class UnsafeFormulaError(FormulaConversionError):
+    pass
+
+
+class FormulaProvider(Protocol):
+    name: str
+
+    async def convert(self, description: str, timeout: float) -> str: ...
+
+
+@dataclass
+class OpenAIFormulaProvider:
+    name: str
+    api_key: str
+    base_url: str
+    model: str
+
+    async def convert(self, description: str, timeout: float) -> str:
+        client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            timeout=timeout,
+            max_retries=0,
+        )
+        try:
+            request = {"model": self.model, **build_formula_completion_request(description)}
+            try:
+                response = await client.chat.completions.create(
+                    **request, response_format=FORMULA_JSON_SCHEMA_FORMAT
+                )
+            except BadRequestError:
+                response = await client.chat.completions.create(
+                    **request, response_format=FORMULA_JSON_OBJECT_FORMAT
+                )
+            return response.choices[0].message.content or ""
+        finally:
+            await client.close()
+
+
+def build_default_providers() -> list[FormulaProvider]:
+    if not (
+        config.FORMULA_API_BASE
+        and config.FORMULA_API_KEY
+        and config.FORMULA_MODEL
+    ):
+        return []
+    return [
+        OpenAIFormulaProvider(
+            "formula_model",
+            config.FORMULA_API_KEY,
+            config.FORMULA_API_BASE,
+            config.FORMULA_MODEL,
+        )
+    ]
+
+
+def sanitize_latex(raw: str) -> str:
+    value = raw.strip(" \r\n")
+    if value.startswith("```"):
+        value = re.sub(r"^```(?:json|latex|tex)?\s*", "", value, flags=re.IGNORECASE)
+        value = re.sub(r"\s*```$", "", value).strip()
+
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, dict):
+            if set(parsed) != {"latex"} or not isinstance(parsed.get("latex"), str):
+                raise UnsafeFormulaError("模型返回了不符合公式协议的内容")
+            value = str(parsed["latex"])
+            if _CONTROL_CHARACTERS.search(value):
+                raise UnsafeFormulaError("模型返回了包含控制字符的公式")
+            value = value.strip(" \r\n")
+        elif isinstance(parsed, str):
+            raise UnsafeFormulaError("模型返回了不符合公式协议的内容")
+    except json.JSONDecodeError:
+        pass
+
+    delimiter_pairs = (("$$", "$$"), ("\\[", "\\]"), ("\\(", "\\)"), ("$", "$"))
+    for start, end in delimiter_pairs:
+        if value.startswith(start) and value.endswith(end) and len(value) >= len(start) + len(end):
+            value = value[len(start):-len(end)].strip()
+            break
+
+    value = _MALFORMED_ENV_END.sub(r"\\end\1", value)
+
+    if not value:
+        raise FormulaConversionError("模型没有返回公式")
+    if len(value) > 2048:
+        raise FormulaConversionError("公式输出过长")
+    if _CONTROL_CHARACTERS.search(value) or _FORBIDDEN.search(value):
+        raise UnsafeFormulaError("模型返回了不安全的非数学内容")
+    text_groups_removed = re.sub(r"\\text\{[^{}]*\}", "", value)
+    if _EXPLANATION_PREFIX.search(value) or _CJK_OUTSIDE_TEXT.search(text_groups_removed):
+        raise UnsafeFormulaError("模型返回了公式外的解释文字")
+    if value.count("{") != value.count("}"):
+        raise FormulaConversionError("公式括号不平衡")
+    return value
+
+
+def choose_display_mode(latex: str, preferred: DisplayPreference) -> DisplayMode:
+    if preferred != "auto":
+        return preferred
+    return "block" if _BLOCK_STRUCTURE.search(latex) else "inline"
+
+
+class FormulaConversionService:
+    def __init__(
+        self,
+        providers: list[FormulaProvider] | None = None,
+        timeout_seconds: float | None = None,
+    ) -> None:
+        self.providers = providers if providers is not None else build_default_providers()
+        self.timeout_seconds = timeout_seconds or config.FORMULA_CONVERSION_TIMEOUT_SECONDS
+
+    async def convert(
+        self,
+        description: str,
+        preferred_display: DisplayPreference = "auto",
+    ) -> tuple[str, DisplayMode]:
+        if not self.providers:
+            raise FormulaConversionError("没有可用的公式转换提供方")
+
+        deadline = time.monotonic() + self.timeout_seconds
+        for provider in self.providers:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            started = time.monotonic()
+            status = "error"
+            error_type = ""
+            try:
+                raw = await asyncio.wait_for(
+                    provider.convert(description, remaining), timeout=remaining
+                )
+                latex = sanitize_latex(raw)
+                status = "success"
+                return latex, choose_display_mode(latex, preferred_display)
+            except Exception as exc:
+                error_type = type(exc).__name__
+            finally:
+                logger.info(
+                    "formula_conversion",
+                    extra={
+                        "provider": provider.name,
+                        "latency_ms": round((time.monotonic() - started) * 1000),
+                        "status": status,
+                        "error_type": error_type,
+                    },
+                )
+        raise FormulaConversionError("公式转换服务暂时不可用")
+
+
+formula_conversion_service = FormulaConversionService()

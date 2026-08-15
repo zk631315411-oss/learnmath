@@ -7,17 +7,19 @@ interface Props {
   onSendMessage: (content: string, image?: string) => void;
   onClearMessages: () => void;
   isLoading: boolean;
+  token?: string | null;
   pendingImage?: string | null;
   onClearPendingImage?: () => void;
   thinkingStage?: string;
+  isThinking?: boolean;
   hasUnread: boolean;
   onRead: () => void;
 }
 
 export default function AiBall({
   messages, onSendMessage, onClearMessages, isLoading,
-  pendingImage, onClearPendingImage,
-  thinkingStage, hasUnread, onRead,
+  token, pendingImage, onClearPendingImage,
+  thinkingStage, isThinking, hasUnread, onRead,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -135,8 +137,10 @@ export default function AiBall({
               <ChatPanel
                 messages={messages} onSendMessage={onSendMessage}
                 onClearMessages={onClearMessages} isLoading={isLoading}
+                token={token}
                 pendingImage={pendingImage} onClearPendingImage={onClearPendingImage}
                 thinkingStage={thinkingStage}
+                isThinking={isThinking}
                 compact
               />
             </div>

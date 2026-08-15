@@ -31,7 +31,7 @@ def init_db():
         )
     """)
 
-    # 问答历史表：一问一答一条记录，页面标记字段为前端还原定位用
+    # 问答历史表：根问答一条记录，后续原始对话保存在 follow_ups 中。
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id TEXT PRIMARY KEY,
@@ -56,6 +56,9 @@ def init_db():
         ("thumbnail", "TEXT"),
         ("crop_bbox", "TEXT"),
         ("screenshot_context_id", "TEXT"),
+        ("thinking", "TEXT"),
+        ("tool_activities", "TEXT"),
+        ("follow_ups", "TEXT DEFAULT '[]'"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE chat_history ADD COLUMN {col} {col_type}")

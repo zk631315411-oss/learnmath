@@ -1,0 +1,36 @@
+name: learnmath
+
+services:
+  api:
+    image: learnmath-api:${LEARNMATH_VERSION:-local}
+    environment:
+      AI_MATH_DB_PATH: /app/data/learning.db
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      QA_LLM_API_KEY: ${QA_LLM_API_KEY:-}
+      QA_LLM_API_BASE: ${QA_LLM_API_BASE:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      QA_LLM_MODEL: ${QA_LLM_MODEL:-qwen3.6-plus}
+      FORMULA_API_KEY: ${FORMULA_API_KEY:-}
+      FORMULA_API_BASE: ${FORMULA_API_BASE:-}
+      FORMULA_MODEL: ${FORMULA_MODEL:-}
+      FORMULA_CONVERSION_TIMEOUT_SECONDS: ${FORMULA_CONVERSION_TIMEOUT_SECONDS:-8}
+      NEO4J_URI: ${NEO4J_URI:-}
+      NEO4J_USER: ${NEO4J_USER:-}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
+      NEO4J_DATABASE: neo4j
+    volumes:
+      - app-data:/app/data
+    restart: unless-stopped
+
+  web:
+    image: learnmath-web:${LEARNMATH_VERSION:-local}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${LEARNMATH_PORT:-8080}:80"
+    volumes:
+      - ../data/textbooks:/opt/learnmath/textbooks:ro
+    restart: unless-stopped
+
+volumes:
+  app-data:

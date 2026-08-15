@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import type { CropBBox } from '../types';
+import type { CropBBox, ToolActivity } from '../types';
 
 export interface Marker {
   id: string;
@@ -12,10 +12,12 @@ export interface Marker {
   question: string;
   answer: string | null;  // null = AI 思考中
   thinking: string | null;  // AI 思维链
+  tool_activities?: ToolActivity[] | string | null;
   follow_ups: Array<{
     question: string;
     answer: string | null;
     thinking: string | null;
+    tool_activities?: ToolActivity[] | string | null;
     image?: string | null;
     crop_bbox?: CropBBox | string | null;
     screenshot_context_id?: string | null;

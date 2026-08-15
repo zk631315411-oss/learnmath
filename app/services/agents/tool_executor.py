@@ -35,6 +35,7 @@ class ToolOutcome:
     retryable: bool = False
     duration_ms: int = 0
     normalized_arguments: dict[str, Any] = field(default_factory=dict)
+    public_result: dict[str, Any] = field(default_factory=dict)
 
     def as_tool_message(self) -> dict[str, str]:
         payload = self.model_payload if self.status == "success" else {
@@ -110,6 +111,14 @@ async def execute_prepared_tool_call(prepared: PreparedToolCall) -> ToolOutcome:
             artifacts = [item for item in raw_artifacts if isinstance(item, dict)]
     if not isinstance(model_payload, dict):
         model_payload = {"result": model_payload}
+    public_result: dict[str, Any] = {}
+    if tool.present_result is not None:
+        try:
+            presented = tool.present_result(model_payload)
+            if isinstance(presented, dict):
+                public_result = presented
+        except Exception:
+            logger.exception("tool result presentation failed: %s", tool.name)
     return ToolOutcome(
         tool_call_id=prepared.tool_call_id,
         tool_name=prepared.tool_name,
@@ -118,6 +127,7 @@ async def execute_prepared_tool_call(prepared: PreparedToolCall) -> ToolOutcome:
         artifacts=artifacts,
         duration_ms=int((time.perf_counter() - started) * 1000),
         normalized_arguments=arguments,
+        public_result=public_result,
     )
 
 

@@ -1,9 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.db.connection import init_db
-from app.routers import auth, chat, qa
+from app.routers import auth, chat, formula, qa
 
 # 确保数据目录存在并初始化数据库（幂等，重复启动无副作用）
 config.ensure_dirs()
@@ -26,6 +26,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(chat.router)
+app.include_router(formula.router)
 app.include_router(qa.router)
 
 
@@ -37,3 +38,18 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/ready")
+def ready():
+    """Deployment readiness: the API, model configuration, and KG are available."""
+    from app.db.kg_v44 import _run
+    from app.services.llm_service import llm_service
+
+    if not llm_service.is_available():
+        raise HTTPException(status_code=503, detail="LLM service is not configured")
+    try:
+        _run("RETURN 1 AS ok")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Knowledge graph is unavailable") from exc
+    return {"status": "ready", "llm": "configured", "kg": "available"}

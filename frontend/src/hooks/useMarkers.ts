@@ -34,11 +34,26 @@ export function useMarkers(user: User, currentPage: number) {
         if (typeof crop_bbox === 'string') {
           try { crop_bbox = JSON.parse(crop_bbox); } catch { crop_bbox = null; }
         }
+        let tool_activities = d.tool_activities || [];
+        if (typeof tool_activities === 'string') {
+          try { tool_activities = JSON.parse(tool_activities); } catch { tool_activities = []; }
+        }
         return {
           ...d,
           crop_bbox,
-          thinking: null,
-          follow_ups: follow_ups.map((fu: any) => ({ ...fu, thinking: '' })),
+          thinking: d.thinking || null,
+          tool_activities: Array.isArray(tool_activities) ? tool_activities : [],
+          follow_ups: follow_ups.map((fu: any) => ({
+            ...fu,
+            thinking: fu.thinking || null,
+            tool_activities: (() => {
+              if (Array.isArray(fu.tool_activities)) return fu.tool_activities;
+              if (typeof fu.tool_activities === 'string') {
+                try { return JSON.parse(fu.tool_activities); } catch { return []; }
+              }
+              return [];
+            })(),
+          })),
         };
         });
         setMarkers(normalized);
