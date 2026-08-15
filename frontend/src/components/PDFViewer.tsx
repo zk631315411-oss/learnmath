@@ -250,7 +250,6 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
   // 初始时 textbookId=''，用 getCurrentTextbook() 兜底读取（此时 App restore 可能已完成）
   useEffect(() => {
     const tid = textbookId || getCurrentTextbook();
-    console.log('[PDFViewer restore effect] textbookId:', tid, 'will restore page:', getSavedPage(tid));
     if (tid) {
       const savedPage = getSavedPage(tid);
       setCurrentPage(savedPage);
@@ -260,7 +259,6 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
 
   // 用户翻页时直接存 localStorage
   const handlePageChange = (page: number) => {
-    console.log('[savePage] saving', { textbookId, page });
     setCurrentPage(page);
     savePage(textbookId, page);
     onPageChange?.(page);
@@ -268,11 +266,9 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
 
   // textbookId 变化（换教材）→ 查 localStorage 恢复该教材的页码
   useEffect(() => {
-    console.log('[PDFViewer textbookId effect]', { prev: prevTextbookId.current, next: textbookId });
     if (prevTextbookId.current !== textbookId && textbookId) {
       prevTextbookId.current = textbookId;
       const saved = getSavedPage(textbookId);
-      console.log('[PDFViewer textbookId effect] setCurrentPage:', saved);
       setCurrentPage(saved);
       onPageChange?.(saved);
     }

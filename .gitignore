@@ -9,6 +9,10 @@ venv/
 __pycache__/
 *.pyc
 
+# 前端构建/测试产物：tsbuildinfo 是 tsc 增量缓存、test-results 是 e2e 运行结果，均不入库
+frontend/tsconfig.tsbuildinfo
+frontend/test-results/
+
 # 环境变量（密钥不入库）
 .env
 
