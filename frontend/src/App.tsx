@@ -4,6 +4,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
 import AuthModal from './components/AuthModal';
 import AiBall from './components/AiBall';
+import AuthControls from './components/AuthControls';
 import type { Marker } from './components/PageMarker';
 import { useAuth } from './hooks/useAuth';
 import { useTextbookPreference, PRESET_PDFS } from './hooks/useTextbookPreference';
@@ -95,25 +96,10 @@ export default function App() {
               <span className="hidden sm:inline">框选提问</span>
             </button>
 
-            {user.token && user.isAnonymous ? (
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                <span className="text-xs text-slate-500 hidden sm:inline">游客</span>
-                <button onClick={() => { setAuthMode('login'); setShowAuthModal(true); }} className="text-xs text-blue-600 hover:underline">登录</button>
-                <span className="text-slate-300 hidden sm:inline">|</span>
-                <button onClick={() => { setAuthMode('register'); setShowAuthModal(true); }} className="text-xs text-slate-500 hover:underline hidden sm:inline">注册</button>
-              </div>
-            ) : user.token ? (
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                <span className="text-sm font-medium text-slate-700 hidden sm:inline">{user.username}</span>
-                <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-600">退出</button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
-                <button onClick={() => { setAuthMode('login'); setShowAuthModal(true); }} className="text-sm text-blue-600 hover:underline">登录</button>
-                <span className="text-slate-300 hidden sm:inline">|</span>
-                <button onClick={() => { setAuthMode('register'); setShowAuthModal(true); }} className="text-sm text-slate-400 hover:underline hidden sm:inline">注册</button>
-              </div>
-            )}
+            <AuthControls user={user}
+              onLoginClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
+              onRegisterClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
+              onLogout={handleLogout} />
           </div>
         </header>
 

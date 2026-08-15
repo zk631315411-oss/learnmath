@@ -4,6 +4,7 @@ import { Document, Page, pdfjs, type DocumentProps } from 'react-pdf';
 // v5 IIFE worker（esbuild 从 pdfjs-dist@5.4.296 构建），与 react-pdf 的 core 版本一致，兼容旧平板
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
+import { loadJSON, saveJSON } from '../utils/storage';
 import PageMarker, { type Marker } from './PageMarker';
 import { TEXTBOOKS } from '../textbooks';
 import type { TextbookId } from '../textbooks';
@@ -44,23 +45,20 @@ type PageImageConfig = { basePath: string; pageCount: number; width: number; hei
 const PAGE_IMAGE_CONFIGS: Record<string, PageImageConfig> = {};
 
 function getSavedPage(textbookId: string): number {
-  try {
-    const saved = localStorage.getItem(LS_KEY);
-    if (!saved) return 1;
-    const data = JSON.parse(saved);
-    return data[textbookId] || 1;
-  } catch { return 1; }
+  const data = loadJSON<Record<string, number>>(LS_KEY, {});
+  return data[textbookId] || 1;
 }
 
 function savePage(textbookId: string, page: number) {
+  const data = loadJSON<Record<string, number>>(LS_KEY, {});
+  data[textbookId] = page;
+  saveJSON(LS_KEY, data);
+  // 同时更新 current_textbook（让 App 的 restore effect 能读到当前教材）
   try {
-    const saved = localStorage.getItem(LS_KEY);
-    const data = saved ? JSON.parse(saved) : {};
-    data[textbookId] = page;
-    localStorage.setItem(LS_KEY, JSON.stringify(data));
-    // 同时更新 current_textbook（让 App 的 restore effect 能读到当前教材）
     localStorage.setItem('current_textbook', textbookId);
-  } catch {}
+  } catch {
+    // 写入失败（隐私模式等）静默忽略，与 LS_KEY 同一降级策略
+  }
 }
 
 function getCurrentTextbook(): string {
@@ -86,22 +84,18 @@ function getDefaultZoomMode(layout: LayoutClass): ZoomMode {
 }
 
 function getSavedZoomPreference(textbookId: string, layout: LayoutClass, fallback: ZoomMode): ZoomPreference {
-  try {
-    const data = JSON.parse(localStorage.getItem(ZOOM_PREFS_KEY) || '{}');
-    const saved = data[`${textbookId}:${layout}`];
-    if (saved?.mode === 'fit-page' || saved?.mode === 'fit-width') return saved;
-    if (saved?.mode === 'manual' && Number.isFinite(saved.scale)) return saved;
-  } catch {}
+  const data = loadJSON<Record<string, ZoomPreference>>(ZOOM_PREFS_KEY, {});
+  const saved = data[`${textbookId}:${layout}`];
+  if (saved?.mode === 'fit-page' || saved?.mode === 'fit-width') return saved;
+  if (saved?.mode === 'manual' && Number.isFinite(saved.scale)) return saved;
   return { mode: fallback };
 }
 
 function saveZoomPreference(textbookId: string, layout: LayoutClass, preference: ZoomPreference) {
   if (!textbookId) return;
-  try {
-    const data = JSON.parse(localStorage.getItem(ZOOM_PREFS_KEY) || '{}');
-    data[`${textbookId}:${layout}`] = preference;
-    localStorage.setItem(ZOOM_PREFS_KEY, JSON.stringify(data));
-  } catch {}
+  const data = loadJSON<Record<string, ZoomPreference>>(ZOOM_PREFS_KEY, {});
+  data[`${textbookId}:${layout}`] = preference;
+  saveJSON(ZOOM_PREFS_KEY, data);
 }
 
 function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdfContainerRef, onMarkerClick, viewerPage }: Props) {

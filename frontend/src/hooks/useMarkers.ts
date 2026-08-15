@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
+
+import { loadJSON, saveJSON } from '../utils/storage';
 import { getChatHistoryByUser, deleteChatHistory } from '../services/api';
 import type { Marker } from '../components/PageMarker';
 import type { User } from '../types';
@@ -15,8 +17,9 @@ export function useMarkers(user: User, currentPage: number) {
   const selectActiveThreadId = useCallback((threadId: string | null) => {
     setActiveThreadId(threadId);
     if (!activeThreadStorageKey) return;
-    if (threadId) localStorage.setItem(activeThreadStorageKey, threadId);
-    else localStorage.removeItem(activeThreadStorageKey);
+    // threadId 为 null 时 saveJSON 等价 removeItem（见 storage.ts 约定）
+    if (threadId) saveJSON(activeThreadStorageKey, threadId);
+    else saveJSON(activeThreadStorageKey, null);
   }, [activeThreadStorageKey]);
 
   const refreshMarkers = useCallback(async () => {
@@ -58,7 +61,7 @@ export function useMarkers(user: User, currentPage: number) {
         });
         setMarkers(normalized);
         const persistedId = activeThreadStorageKey
-          ? localStorage.getItem(activeThreadStorageKey)
+          ? loadJSON<string | null>(activeThreadStorageKey, null)
           : null;
         const persistedMarker = normalized.find((marker: Marker) => marker.id === persistedId);
         if (persistedMarker) {
