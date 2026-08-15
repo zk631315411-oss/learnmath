@@ -1,9 +1,10 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
-import { File, History, Image } from 'lucide-react';
+import { History, Image } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
+import EmptyGuideCard from './components/EmptyGuideCard';
 import AuthModal from './components/AuthModal';
 import AiBall from './components/AiBall';
 import AuthControls from './components/AuthControls';
@@ -138,13 +139,7 @@ export default function App() {
                   <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange}
                     markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage} /></DeferredPanel>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                    <div className="w-20 h-20 rounded-3xl bg-indigo-50 flex items-center justify-center mb-4">
-                      <File className="w-10 h-10 text-blue-400" strokeWidth={1.5} />
-                    </div>
-                    <p className="text-sm font-medium">请选择教材开始学习</p>
-                    <p className="text-xs mt-1 opacity-70">选择后可使用"框选提问"截图答疑</p>
-                  </div>
+                  <EmptyGuideCard />
                 )}
               </div>
               <div className="w-[400px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
@@ -167,9 +162,7 @@ export default function App() {
                   <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange} mobile
                     markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage} /></DeferredPanel>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                    <p className="text-sm font-medium">请选择教材</p>
-                  </div>
+                  <EmptyGuideCard />
                 )}
               </div>
               {selectedPdf && (

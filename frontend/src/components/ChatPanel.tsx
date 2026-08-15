@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { ArrowDown, BrainCircuit, ChevronDown, MessageCircle, Send, X } from 'lucide-react';
+import { ArrowDown, BrainCircuit, ChevronDown, Send, X } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import FormulaComposer from './formula/FormulaComposer';
+import EmptyGuideCard from './EmptyGuideCard';
 import AgentActivity from './AgentActivity';
 import type { Message } from '../types';
 
@@ -133,15 +134,7 @@ function ChatPanelInner({
         onScroll={handleMessagesScroll}
         className="relative flex-1 overflow-y-auto p-4 space-y-4"
       >
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400">
-            <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center mb-3 ">
-              <MessageCircle className="w-8 h-8 text-white" strokeWidth={1.5} />
-            </div>
-            <p className="text-sm font-medium">开始提问</p>
-            <p className="text-xs mt-1 opacity-70">框选教材截图或直接输入数学问题</p>
-          </div>
-        )}
+        {messages.length === 0 && <EmptyGuideCard />}
 
         {messages.map((msg, index) => {
           const isActiveAssistant = isLoading && msg.role === 'assistant' && index === messages.length - 1;
