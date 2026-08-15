@@ -14,7 +14,7 @@ import FormulaHistory, { recordFormulaUsage } from './FormulaHistory';
 import FormulaMathField from './FormulaMathField';
 import FormulaPreview from './FormulaPreview';
 import MatrixEditor from './MatrixEditor';
-import { convertFormula } from '../services/api';
+import { convertFormula } from '../../services/api';
 
 type DisplayChoice = 'auto' | 'inline' | 'block';
 type FormulaNode = { pos: number; type: 'inline' | 'block' } | null;

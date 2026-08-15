@@ -23,5 +23,5 @@
 ## 目录组织（一句话版）
 
 - `src/`：全部源码 —— components（组件）、hooks（状态逻辑）、services（API 调用）、types（类型）、utils（工具）
-- `tests/specs/`：Playwright e2e 规格；`test-results/` 为运行产物（不入库）
+- `e2e/`：Playwright e2e 规格；`test-results/` 为运行产物（不入库）
 - `public/`：静态资源（含本地 PDF 教材副本）

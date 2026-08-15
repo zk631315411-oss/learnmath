@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { ArrowDown, BrainCircuit, ChevronDown } from 'lucide-react';
+import { ArrowDown, BrainCircuit, ChevronDown, MessageCircle, Send, X } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
-import FormulaComposer from './FormulaComposer';
+import FormulaComposer from './formula/FormulaComposer';
 import AgentActivity from './AgentActivity';
 import type { Message } from '../types';
 
@@ -136,9 +136,7 @@ function ChatPanelInner({
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center mb-3 ">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
+              <MessageCircle className="w-8 h-8 text-white" strokeWidth={1.5} />
             </div>
             <p className="text-sm font-medium">开始提问</p>
             <p className="text-xs mt-1 opacity-70">框选教材截图或直接输入数学问题</p>
@@ -200,7 +198,7 @@ function ChatPanelInner({
             <div className="flex-1 min-w-0">
               <p className="text-xs text-blue-600 mb-1 font-medium">截图已捕获</p>
               <button type="button" onClick={onClearPendingImage} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <X className="w-3 h-3" />
                 删除图片
               </button>
             </div>
@@ -218,9 +216,7 @@ function ChatPanelInner({
           <button type="submit" disabled={(!input.trim() && !pendingImage) || isLoading}
             aria-label="发送" title="发送"
             className="px-4 sm:px-5 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all  active:scale-95 whitespace-nowrap">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+            <Send className="w-4 h-4" />
           </button>
         </div>
       </form>

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Document, Page, pdfjs, type DocumentProps } from 'react-pdf';
-
-// v5 IIFE worker（esbuild 从 pdfjs-dist@5.4.296 构建），与 react-pdf 的 core 版本一致，兼容旧平板
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-react';
 
 import { loadJSON, saveJSON } from '../utils/storage';
 import PageMarker, { type Marker } from './PageMarker';
 import { TEXTBOOKS } from '../textbooks';
 import type { TextbookId } from '../textbooks';
+
+// v5 IIFE worker（esbuild 从 pdfjs-dist@5.4.296 构建），与 react-pdf 的 core 版本一致，兼容旧平板
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
 interface Props {
   pdfUrl: string;
@@ -325,18 +326,14 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
           disabled={currentPage <= 1}
           className="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center disabled:opacity-30 hover:bg-slate-50 transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg>
+          <ChevronUp className="w-5 h-5" />
         </button>
         <button
           onClick={() => handlePageChange(Math.min(numPages, currentPage + 1))}
           disabled={currentPage >= numPages}
           className="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center disabled:opacity-30 hover:bg-slate-50 transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <ChevronDown className="w-5 h-5" />
         </button>
 
         {/* 缩放控制 */}
@@ -463,9 +460,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
                   disabled={currentPage <= 1}
                   className="w-12 h-12 flex items-center justify-center text-white disabled:opacity-30 active:bg-white/20 rounded-lg transition-colors"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
 
                 <div className="flex items-center gap-1">
@@ -503,9 +498,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
                   disabled={currentPage >= numPages}
                   className="w-12 h-12 flex items-center justify-center text-white disabled:opacity-30 active:bg-white/20 rounded-lg transition-colors"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-6 h-6" />
                 </button>
 
                 <div className="flex items-center gap-0.5">
@@ -548,9 +541,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
               onClick={(e) => { e.stopPropagation(); setToolbarVisible(v => !v); resetToolbarTimer(); }}
               className="absolute bottom-2 right-2 z-30 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white/70 active:bg-black/60 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-4 h-4" />
             </button>
           </>
         )}
