@@ -11,8 +11,8 @@ import {
 import type { Marker } from '../components/PageMarker';
 import type { Message, CropBBox, PendingImage, ToolActivity, User } from '../types';
 
-// 一次提问最多接收的待发截图数：超量截图直接拒绝并提示（后端未支持 images[] 前一次只发一张）
-const MAX_PENDING_IMAGES = 3;
+// 待发截图数量上限：超量截图直接拒绝并提示（后端未支持 images[] 前一次只发一张）；导出给 ChatPanel 复用，避免文案与判断条件出现两处字面量
+export const MAX_PENDING_IMAGES = 3;
 
 function generateId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -345,7 +345,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   const handleCapture = useCallback((imageData: string, cropBBox: CropBBox) => {
     // 超量时拒绝新截图并提示，避免静默丢图
     if (pendingImages.length >= MAX_PENDING_IMAGES) {
-      setError('一次最多待发 3 张截图');
+      setError(`一次最多待发 ${MAX_PENDING_IMAGES} 张截图`);
       return;
     }
     setPendingImages(prev => [...prev, { id: generateId(), data: imageData, cropBBox }]);

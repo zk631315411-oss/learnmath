@@ -5,6 +5,7 @@ import FormulaComposer from './formula/FormulaComposer';
 import EmptyGuideCard from './EmptyGuideCard';
 import AgentActivity from './AgentActivity';
 import type { Message, PendingImage } from '../types';
+import { MAX_PENDING_IMAGES } from '../hooks/useChat';
 
 interface Props {
   messages: Message[];
@@ -192,7 +193,7 @@ function ChatPanelInner({
       {pendingImages && pendingImages.length > 0 && (
         <div className="px-4 py-3 border-t border-slate-200 bg-blue-50/60">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-blue-600 font-medium">截图已捕获（{pendingImages.length}/3）</p>
+            <p className="text-xs text-blue-600 font-medium">截图已捕获（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
             <button type="button" onClick={onClearPendingImages}
               className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
               <X className="w-3 h-3" />
