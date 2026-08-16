@@ -4,23 +4,6 @@ import type { TextbookId } from '../textbooks';
 
 export const PRESET_PDFS = TEXTBOOKS.map(({ id, name, path }) => ({ name, path, textbookId: id }));
 
-const PDF_PAGE_KEY = 'learnmath_pdf_page';
-
-function getActualPage(textbookId: string): number {
-  try {
-    const data = JSON.parse(localStorage.getItem(PDF_PAGE_KEY) || '{}');
-    return data[textbookId] || 0;
-  } catch { return 0; }
-}
-
-function savePage(textbookId: string, page: number) {
-  try {
-    const data = JSON.parse(localStorage.getItem(PDF_PAGE_KEY) || '{}');
-    data[textbookId] = page;
-    localStorage.setItem(PDF_PAGE_KEY, JSON.stringify(data));
-  } catch {}
-}
-
 export function useTextbookPreference() {
   const [selectedPdf, setSelectedPdf] = useState<string>('');
   const [textbookId, setTextbookId] = useState<TextbookId | ''>(() => {
@@ -66,9 +49,5 @@ export function useTextbookPreference() {
     }
   }, [textbookId]);
 
-  const saveCurrentPage = (page: number) => {
-    if (textbookId) savePage(textbookId, page);
-  };
-
-  return { selectedPdf, textbookId, setTextbookId, saveCurrentPage, getActualPage };
+  return { selectedPdf, textbookId, setTextbookId };
 }

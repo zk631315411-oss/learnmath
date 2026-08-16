@@ -1,4 +1,5 @@
-@import url('https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css');
+/* KaTeX 样式走 npm 依赖，离线可用；@import 必须位于所有其他规则之前 */
+@import 'katex/dist/katex.min.css';
 
 @tailwind base;
 @tailwind components;
