@@ -11,6 +11,8 @@ export interface Marker {
   thumbnail?: string | null;
   crop_bbox?: CropBBox | string | null;
   screenshot_context_id?: string | null;
+  // 所属教材 ID：新记录落库时写入；老数据为 null/undefined（跨教材全可见）
+  textbook_id?: string | null;
   question: string;
   answer: string | null;  // null = AI 思考中
   thinking: string | null;  // AI 思维链

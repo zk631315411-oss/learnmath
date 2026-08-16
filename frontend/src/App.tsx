@@ -15,6 +15,8 @@ import { useTextbookPreference, PRESET_PDFS } from './hooks/useTextbookPreferenc
 import { useMarkers } from './hooks/useMarkers';
 import { useQuestionList } from './hooks/useQuestionList';
 import { useChat } from './hooks/useChat';
+import { savePage } from './utils/pagePosition';
+import type { TextbookId } from './textbooks';
 import type { CropBBox } from './types';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
@@ -48,10 +50,24 @@ export default function App() {
 
   // 桌面端右栏聊天常驻可见，永不累计未读；移动端只有 AiBall 展开才算可见
   const chatVisible = isDesktop ? true : aiBallExpanded;
-  const markers = useMarkers(user, currentPage);
+  const markers = useMarkers(user, currentPage, textbookId);
   const chat = useChat({ user, currentPage, textbookId, chatVisible, markersState: markers });
   // 提问记录侧栏：以消息条数变化作为刷新信号（新提问落库后长度必然 +1）
-  const questionList = useQuestionList(user, chat.messages.length);
+  const questionList = useQuestionList(user, chat.messages.length, textbookId);
+
+  // 切书时重置当前对话线程：旧书线程不能带到新书。
+  // 用 ref 记录上一次 textbookId 以跳过首次挂载（首帧 prev===textbookId 直接返回）。
+  const prevTextbookIdRef = useRef(textbookId);
+  useEffect(() => {
+    const prev = prevTextbookIdRef.current;
+    prevTextbookIdRef.current = textbookId;
+    if (prev === textbookId) return;
+    // 关键竞态：跨教材点击刚选中的目标线程，其 textbook_id 就是新书，不能被重置清掉，
+    // 否则「切书+落页+加载对话」会被本 effect 的 clearMessages 打断。
+    if (markers.activeMarker?.textbook_id === textbookId) return;
+    chat.clearMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textbookId]);
 
   const handleMarkerClick = (marker: Marker) => {
     markers.handleMarkerClick(marker);
@@ -62,7 +78,15 @@ export default function App() {
   // 是为了避免移动端误弹 MarkerPopover；移动端另需展开 AiBall 面板展示对话。
   const handleQuestionSelect = (marker: Marker) => {
     setQuestionDrawerOpen(false);
-    setCurrentPage(marker.page_number);
+    // 跨教材记录：先写目标教材的页码恢复键，再切书，让 PDFViewer 既有的恢复机制落到目标页。
+    // 不能切书后再 setCurrentPage——恢复 effect 会用旧页码覆盖，产生时序竞态。
+    if (marker.textbook_id && marker.textbook_id !== textbookId) {
+      savePage(marker.textbook_id, marker.page_number);
+      setTextbookId(marker.textbook_id as TextbookId);
+    } else {
+      // 同书 / NULL 老数据：维持现状直跳当前书页码
+      setCurrentPage(marker.page_number);
+    }
     markers.setActiveThreadId(marker.id);
     markers.setActiveMarker(marker);
     if (!isDesktop) setAiBallExpanded(true);

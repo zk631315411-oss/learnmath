@@ -36,14 +36,18 @@ export async function updateProfile(token: string, profile: UserProfileUpdate): 
 
 // === 聊天历史 / 徽标 API ===
 
-export async function getChatHistoryByUser(userId: string, page: number, limit: number): Promise<any[]> {
-  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?page=${page}&limit=${limit}`);
+export async function getChatHistoryByUser(userId: string, page: number, limit: number, textbookId?: string): Promise<any[]> {
+  // 仅当教材 ID 为真值时追加过滤参数：空字符串/undefined 不拼接，
+  // 避免把「未选教材」误传成后端「只查 NULL 老数据」的边界语义
+  const textbookParam = textbookId ? `&textbook_id=${encodeURIComponent(textbookId)}` : '';
+  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?page=${page}&limit=${limit}${textbookParam}`);
 }
 
 // 拉取某用户的全量提问记录（跨所有页码）供侧栏分组展示。
 // 不带 page 参数：后端 page 缺省即不过滤页码，limit 兜底控制上限。
-export async function getAllChatHistory(userId: string, limit = 500): Promise<any[]> {
-  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?limit=${limit}`);
+export async function getAllChatHistory(userId: string, limit = 500, textbookId?: string): Promise<any[]> {
+  const textbookParam = textbookId ? `&textbook_id=${encodeURIComponent(textbookId)}` : '';
+  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?limit=${limit}${textbookParam}`);
 }
 
 export async function deleteChatHistory(chatId: string): Promise<void> {
@@ -57,6 +61,8 @@ export async function createChatHistory(data: {
   page_number: number;
   marker_y_ratio: number;
   marker_type: string;
+  // 教材归属：可选，老前端未传时后端存 NULL（全教材可见），保持向后兼容
+  textbook_id?: string;
   thumbnail?: string;
   crop_bbox?: string;
 }): Promise<{ id: string }> {

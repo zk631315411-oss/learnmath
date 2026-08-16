@@ -3,6 +3,7 @@ import { Document, Page, pdfjs, type DocumentProps } from 'react-pdf';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-react';
 
 import { loadJSON, saveJSON } from '../utils/storage';
+import { getSavedPage, savePage, getCurrentTextbook } from '../utils/pagePosition';
 import PageMarker, { type Marker } from './PageMarker';
 import { TEXTBOOKS } from '../textbooks';
 import type { TextbookId } from '../textbooks';
@@ -21,7 +22,6 @@ interface Props {
   viewerPage?: number;
 }
 
-const LS_KEY = 'pdf_viewer_page_v2';
 const ZOOM_PREFS_KEY = 'pdf_view_preferences_v1';
 const VIEWER_HORIZONTAL_PADDING = 32;
 const VIEWER_VERTICAL_PADDING = 32;
@@ -44,27 +44,6 @@ type ZoomPreference = { mode: ZoomMode; scale?: number };
 
 type PageImageConfig = { basePath: string; pageCount: number; width: number; height: number; };
 const PAGE_IMAGE_CONFIGS: Record<string, PageImageConfig> = {};
-
-function getSavedPage(textbookId: string): number {
-  const data = loadJSON<Record<string, number>>(LS_KEY, {});
-  return data[textbookId] || 1;
-}
-
-function savePage(textbookId: string, page: number) {
-  const data = loadJSON<Record<string, number>>(LS_KEY, {});
-  data[textbookId] = page;
-  saveJSON(LS_KEY, data);
-  // 同时更新 current_textbook（让 App 的 restore effect 能读到当前教材）
-  try {
-    localStorage.setItem('current_textbook', textbookId);
-  } catch {
-    // 写入失败（隐私模式等）静默忽略，与 LS_KEY 同一降级策略
-  }
-}
-
-function getCurrentTextbook(): string {
-  return localStorage.getItem('current_textbook') || '';
-}
 
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';

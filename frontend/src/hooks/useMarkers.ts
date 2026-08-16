@@ -6,7 +6,7 @@ import { getChatHistoryByUser, deleteChatHistory } from '../services/api';
 import type { Marker } from '../components/PageMarker';
 import type { User } from '../types';
 
-export function useMarkers(user: User, currentPage: number) {
+export function useMarkers(user: User, currentPage: number, textbookId: string) {
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [activeMarker, setActiveMarker] = useState<Marker | null>(null);
   const [showMarkerPopover, setShowMarkerPopover] = useState(false);
@@ -28,7 +28,8 @@ export function useMarkers(user: User, currentPage: number) {
     if (!user.userId && !user.deviceId) return;
     const uid = user.userId || user.deviceId;
     try {
-      const data = await getChatHistoryByUser(uid, currentPage, 50);
+      // 透传教材 ID 过滤：徽标只在所属教材的页面上出现（NULL 老数据仍全教材可见，由后端统一处理）
+      const data = await getChatHistoryByUser(uid, currentPage, 50, textbookId);
       if (Array.isArray(data)) {
         // 归一化收敛到共享函数：徽标列表与提问记录侧栏共用同一份解析逻辑，避免复制两份
         const normalized = data.map(normalizeChatHistoryRecord);
@@ -43,7 +44,7 @@ export function useMarkers(user: User, currentPage: number) {
         }
       }
     } catch {}
-  }, [user.userId, user.deviceId, currentPage, activeThreadStorageKey]);
+  }, [user.userId, user.deviceId, currentPage, textbookId, activeThreadStorageKey]);
 
   // 翻页/登录时刷新标记
   useEffect(() => { refreshMarkers(); }, [currentPage, user.userId, refreshMarkers]);

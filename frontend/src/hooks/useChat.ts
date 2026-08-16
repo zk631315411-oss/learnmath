@@ -85,7 +85,10 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setUnreadCount(0);
   }, [userId]);
 
-  // 当 activeMarker 变化，若它属于当前页，则把其问答加载进聊天面板
+  // 当 activeMarker 变化，若它属于当前页，则把其问答加载进聊天面板。
+  // 依赖里必须带上 currentPage：跨教材点击时先选中 marker、再等 PDFViewer 加载完新教材才回写页码，
+  // 若只依赖 activeMarker?.id，effect 会在 currentPage 仍是旧书页码时命中「非当前页」守卫提前返回，
+  // 之后页码追平也不会重跑，对话会永远不加载；带上 currentPage 让页码追平时重跑一次。
   useEffect(() => {
     if (!activeMarker) return;
     if (activeMarker.page_number !== currentPage) return;
@@ -109,7 +112,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     }
     setMessages(msgs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMarker?.id]);
+  }, [activeMarker?.id, currentPage]);
 
   // 清空整个待发列表（待发送区的「清空」按钮）
   const clearPendingImages = useCallback(() => {
@@ -187,6 +190,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           page_number: pageNumber,
           marker_y_ratio: markerYRatio,
           marker_type: markerType,
+          // 记录所属教材：hook 已持有 textbookId；空教材时传 undefined（不落字段），后端存 NULL 即全教材可见的老数据语义
+          textbook_id: textbookId || undefined,
           thumbnail: image || undefined,
           crop_bbox: cropBBox ? JSON.stringify(cropBBox) : undefined,
         });
@@ -273,6 +278,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         const marker: Marker = {
           id: chatId || generateId(),
           page_number: pageNumber,
+          // 跨教材跳转判断依赖该字段：切书点击时据此识别记录所属教材；空教材记 null（与后端 NULL 老数据语义一致）
+          textbook_id: textbookId || null,
           marker_y_ratio: markerYRatio,
           marker_type: markerType,
           question,
