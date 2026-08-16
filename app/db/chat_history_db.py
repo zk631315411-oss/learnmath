@@ -11,25 +11,41 @@ def _uid():
 
 def get_chat_history(user_id: str, limit: int = 50,
                      page_number: Optional[int] = None,
-                     chat_id: Optional[str] = None) -> List[dict]:
-    """查询聊天历史：按 id 精确查 / 按页码查 / 按用户最近查。"""
+                     chat_id: Optional[str] = None,
+                     textbook_id: Optional[str] = None) -> List[dict]:
+    """查询聊天历史：按 id 精确查 / 按页码查 / 按用户最近查。
+
+    textbook_id 传入时追加教材过滤：新数据按教材精确归属，老数据
+    （textbook_id IS NULL）保持所有教材可见（不回填策略的兼容行为）。
+    """
     conn = get_conn()
     try:
         cursor = conn.cursor()
         if chat_id:
+            # 按 id 取单条记录与教材归属无关：跨教材的精确恢复不能被过滤误伤，
+            # 故 chat_id 精确查分支不追加教材过滤（lead 决策，偏离计划原文）
             cursor.execute("SELECT * FROM chat_history WHERE id=?", (chat_id,))
         elif page_number is not None:
-            cursor.execute("""
+            sql = """
                 SELECT * FROM chat_history
                 WHERE user_id=? AND page_number=?
-                ORDER BY created_at ASC LIMIT ?
-            """, (user_id, page_number, limit))
+            """
+            params = [user_id, page_number]
+            if textbook_id is not None:
+                sql += " AND (textbook_id = ? OR textbook_id IS NULL)"
+                params.append(textbook_id)
+            sql += " ORDER BY created_at ASC LIMIT ?"
+            params.append(limit)
+            cursor.execute(sql, params)
         else:
-            cursor.execute("""
-                SELECT * FROM chat_history
-                WHERE user_id=?
-                ORDER BY created_at DESC LIMIT ?
-            """, (user_id, limit))
+            sql = "SELECT * FROM chat_history WHERE user_id=?"
+            params = [user_id]
+            if textbook_id is not None:
+                sql += " AND (textbook_id = ? OR textbook_id IS NULL)"
+                params.append(textbook_id)
+            sql += " ORDER BY created_at DESC LIMIT ?"
+            params.append(limit)
+            cursor.execute(sql, params)
         return [dict(row) for row in cursor.fetchall()]
     finally:
         conn.close()
@@ -46,8 +62,12 @@ def save_chat_history(user_id: str, question: str, answer: Optional[str] = None,
                       knowledge_points: Optional[str] = None,
                       thinking: Optional[str] = None,
                       tool_activities: Optional[str] = None,
-                      follow_ups: str = "[]") -> str:
-    """插入一条问答记录，返回 chat_id；answer 可为空（SSE 完成后再补）。"""
+                      follow_ups: str = "[]",
+                      textbook_id: Optional[str] = None) -> str:
+    """插入一条问答记录，返回 chat_id；answer 可为空（SSE 完成后再补）。
+
+    textbook_id 为空时落 NULL（老数据语义：所有教材可见）。
+    """
     chat_id = _uid()
     conn = get_conn()
     try:
@@ -55,11 +75,12 @@ def save_chat_history(user_id: str, question: str, answer: Optional[str] = None,
             INSERT INTO chat_history (id, user_id, question, answer, page_number,
                                       marker_y_ratio, marker_type, thumbnail, sources, knowledge_points,
                                       crop_bbox, screenshot_context_id, thinking, tool_activities,
-                                      follow_ups)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                      follow_ups, textbook_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (chat_id, user_id, question, answer or '', page_number, marker_y_ratio,
               marker_type, thumbnail, sources, knowledge_points,
-              crop_bbox, screenshot_context_id, thinking, tool_activities, follow_ups))
+              crop_bbox, screenshot_context_id, thinking, tool_activities, follow_ups,
+              textbook_id))
         conn.commit()
     finally:
         conn.close()

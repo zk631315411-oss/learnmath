@@ -20,6 +20,7 @@ class SaveChatRequest(BaseModel):
     question: str
     answer: Optional[str] = None
     page_number: Optional[int] = None
+    textbook_id: Optional[str] = None
     marker_y_ratio: Optional[float] = None
     marker_type: str = "screenshot"
     thumbnail: Optional[str] = None
@@ -43,8 +44,11 @@ class UpdateChatRequest(BaseModel):
 
 
 @router.get("/history/{user_id}")
-def get_history(user_id: str, limit: int = 50, page: Optional[int] = None, id: Optional[str] = None):
-    return get_chat_history(user_id, limit=limit, page_number=page, chat_id=id)
+def get_history(user_id: str, limit: int = 50, page: Optional[int] = None,
+                id: Optional[str] = None, textbook_id: Optional[str] = None):
+    """查询历史；textbook_id 可选，传入时按教材过滤（老数据 NULL 仍全部可见）。"""
+    return get_chat_history(user_id, limit=limit, page_number=page, chat_id=id,
+                            textbook_id=textbook_id)
 
 
 @router.post("/history")
@@ -59,6 +63,7 @@ def create_history(req: SaveChatRequest):
         thinking=req.thinking,
         tool_activities=req.tool_activities,
         follow_ups=req.follow_ups or "[]",
+        textbook_id=req.textbook_id,
     )
     return {"id": chat_id}
 

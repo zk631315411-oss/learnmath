@@ -41,6 +41,7 @@ def init_db():
             sources TEXT,
             knowledge_points TEXT,
             page_number INTEGER,
+            textbook_id TEXT,
             marker_y_ratio REAL,
             marker_type TEXT DEFAULT 'screenshot',
             thumbnail TEXT,
@@ -59,6 +60,7 @@ def init_db():
         ("thinking", "TEXT"),
         ("tool_activities", "TEXT"),
         ("follow_ups", "TEXT DEFAULT '[]'"),
+        ("textbook_id", "TEXT"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE chat_history ADD COLUMN {col} {col_type}")
