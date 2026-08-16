@@ -84,7 +84,8 @@ start.bat
 SQLite 保存应用数据（默认 `data/learning.db`），Neo4j 保存教材知识图谱。SQLite 启动时自动建表（幂等）。
 核心表包括：`users`（账号）、`user_profiles`（现有兼容表）、`chat_history`（问答历史，
 含 page_number/marker_y_ratio/marker_type/thumbnail/crop_bbox/screenshot_context_id，
-以及同徽标 `follow_ups`、思考和工具活动）、`screenshot_context_cache`（截图上下文缓存）。
+以及同徽标 `follow_ups`、思考和工具活动；`textbook_id` 记录教材归属，
+NULL 老数据表示全教材可见，不回填）、`screenshot_context_cache`（截图上下文缓存）。
 当前不根据对话写入正式学习画像；结构化教学状态和证据表在未来版本再设计。
 
 ## 无 LLM key 时的行为

@@ -5,7 +5,6 @@ import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-
 import { loadJSON, saveJSON } from '../utils/storage';
 import { getSavedPage, savePage, getCurrentTextbook } from '../utils/pagePosition';
 import PageMarker, { type Marker } from './PageMarker';
-import { TEXTBOOKS } from '../textbooks';
 import type { TextbookId } from '../textbooks';
 
 // v5 IIFE worker（esbuild 从 pdfjs-dist@5.4.296 构建），与 react-pdf 的 core 版本一致，兼容旧平板
