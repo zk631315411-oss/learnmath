@@ -27,3 +27,14 @@ deploy/assets/installers/
 deploy/assets/images/
 deploy/runtime/
 release/
+
+# DSH 平台插件源码/运行态与本地调试脚本：与 LearnMath 产品无关，仅本机使用，不入库
+.agent-teams/
+.claude/
+dsh-agent-teams/
+dsh-agent-teams-command/
+dsh-agent-teams-provider/
+research/
+patch-log.mjs
+test-meeting-command.mjs
+verify-log.mjs
