@@ -104,7 +104,11 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     saveZoomPreference(textbookId, layoutClass, { mode: next });
   }, [layoutClass, textbookId, updateManualScale]);
   const [pageInput, setPageInput] = useState<string>('');
-  const prevTextbookId = useRef(textbookId);
+  // prevTextbookId 记录"已做过页码恢复"的 textbookId，供恢复 effect 幂等去重
+  // 初始值必须为 null（而非 textbookId）：App 只在 selectedPdf && textbookId 成立时才挂载
+  // PDFViewer，首挂载时 textbookId 恒为真值；若初始化为 textbookId，恢复 effect 会因
+  // prev === textbookId 直接 return，首次页码恢复被整个跳过，每次刷新都落到第 1 页
+  const prevTextbookId = useRef<string | null>(null);
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const toolbarTimer = useRef<ReturnType<typeof setTimeout>>();
   const pageInputRef = useRef<HTMLInputElement>(null);
@@ -219,9 +223,14 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     setMobilePageInput('');
   };
 
-  // textbookId 变化时读取 localStorage 恢复该教材的页码
-  // 初始时 textbookId=''，用 getCurrentTextbook() 兜底读取（此时 App restore 可能已完成）
+  // textbookId 变化（含首挂载）时读取 localStorage 恢复该教材的页码，且每个 textbookId 恰好恢复一次：
+  // prevTextbookId 记录已处理过的 textbookId，重复执行（如 React StrictMode 开发态双调用）幂等跳过。
+  // 初始时 textbookId=''，用 getCurrentTextbook() 兜底读取（此时 App restore 可能已完成）。
+  // 历史上这里曾有两个功能重叠的恢复 effect，每次切书各跑一次、双重恢复靠同值 bailout 暂时无害，
+  // 但属维护债：未来只改一处会导致两次恢复产出不同值、bailout 失效出现跳页闪烁，故合并为这一个。
   useEffect(() => {
+    if (prevTextbookId.current === textbookId) return;
+    prevTextbookId.current = textbookId;
     const tid = textbookId || getCurrentTextbook();
     if (tid) {
       const savedPage = getSavedPage(tid);
@@ -244,16 +253,6 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     savePage(textbookId, page);
     onPageChange?.(page);
   };
-
-  // textbookId 变化（换教材）→ 查 localStorage 恢复该教材的页码
-  useEffect(() => {
-    if (prevTextbookId.current !== textbookId && textbookId) {
-      prevTextbookId.current = textbookId;
-      const saved = getSavedPage(textbookId);
-      setCurrentPage(saved);
-      onPageChange?.(saved);
-    }
-  }, [textbookId]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
