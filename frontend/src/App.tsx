@@ -9,12 +9,14 @@ import AuthModal from './components/AuthModal';
 import AiBall from './components/AiBall';
 import AuthControls from './components/AuthControls';
 import QuestionListPanel from './components/QuestionListPanel';
+import ThemeToggle from './components/ThemeToggle';
 import type { Marker } from './components/PageMarker';
 import { useAuth } from './hooks/useAuth';
 import { useTextbookPreference, PRESET_PDFS } from './hooks/useTextbookPreference';
 import { useMarkers } from './hooks/useMarkers';
 import { useQuestionList } from './hooks/useQuestionList';
 import { useChat } from './hooks/useChat';
+import { useDarkMode } from './hooks/useDarkMode';
 import { savePage } from './utils/pagePosition';
 import type { TextbookId } from './textbooks';
 import type { CropBBox } from './types';
@@ -36,6 +38,9 @@ export default function App() {
     authMode, setAuthMode, authUsername, setAuthUsername,
     authPassword, setAuthPassword, authError, handleAuthSubmit, handleLogout,
   } = useAuth();
+
+  // 全局暗色模式：App 顶层唯一持有主题状态，暗色 class 在首帧绘制前由 hook 挂到 documentElement
+  const { isDark, toggle: toggleTheme } = useDarkMode();
 
   const { selectedPdf, textbookId, setTextbookId } = useTextbookPreference();
 
@@ -108,25 +113,25 @@ export default function App() {
     setCurrentPage(page);
   };
 
-  const selectClass = "text-sm rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors";
+  const selectClass = "text-sm rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
 
   return (
     <ErrorBoundary>
-      <div className="h-screen flex flex-col bg-slate-50">
+      <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
         {/* Header */}
-        <header className="px-6 py-3 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-sm">
+        <header className="px-6 py-3 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-sm dark:bg-slate-900 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
               LM
             </div>
-            <span className="text-lg font-bold text-slate-800">学数有道</span>
+            <span className="text-lg font-bold text-slate-800 dark:text-slate-100">学数有道</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {!isDesktop && (
               <button type="button" onClick={() => setQuestionDrawerOpen(true)}
                 aria-label="提问记录" title="提问记录"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100">
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700">
                 <History className="h-5 w-5" />
               </button>
             )}
@@ -145,6 +150,9 @@ export default function App() {
               <span className="hidden sm:inline">框选提问</span>
             </button>
 
+            {/* 主题切换：插在教材 select / 框选提问 与 AuthControls 之间，与其它图标按钮同尺寸 */}
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+
             <AuthControls user={user}
               onLoginClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
               onRegisterClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
@@ -155,10 +163,10 @@ export default function App() {
         <div className="flex-1 flex overflow-hidden p-3 gap-3">
           {isDesktop ? (
             <>
-              <div className="w-[260px] shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="w-[260px] shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                 <QuestionListPanel items={questionList.items} loading={questionList.loading} onSelect={handleQuestionSelect} />
               </div>
-              <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                 {selectedPdf && textbookId ? (
                   <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange}
                     markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage} /></DeferredPanel>
@@ -166,7 +174,7 @@ export default function App() {
                   <EmptyGuideCard />
                 )}
               </div>
-              <div className="w-[400px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+              <div className="w-[400px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shrink-0 dark:bg-slate-800 dark:border-slate-700">
                 <ChatPanel
                   messages={chat.messages}
                   onSendMessage={chat.handleSendMessage}
@@ -184,7 +192,7 @@ export default function App() {
             </>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-800 dark:border-slate-700">
                 {selectedPdf && textbookId ? (
                   <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange} mobile
                     markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage} /></DeferredPanel>
@@ -215,9 +223,9 @@ export default function App() {
         {!isDesktop && questionDrawerOpen && (
           <div className="fixed inset-0 z-[100]">
             {/* 遮罩：点击关闭抽屉 */}
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setQuestionDrawerOpen(false)} />
+            <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={() => setQuestionDrawerOpen(false)} />
             {/* 左滑面板：复用桌面侧栏同一组件，宽度由本容器控制 */}
-            <div className="absolute bottom-0 left-0 top-0 flex w-[280px] max-w-[85vw] flex-col bg-white shadow-xl">
+            <div className="absolute bottom-0 left-0 top-0 flex w-[280px] max-w-[85vw] flex-col bg-white shadow-xl dark:bg-slate-800">
               <QuestionListPanel items={questionList.items} loading={questionList.loading} onSelect={handleQuestionSelect} onClose={() => setQuestionDrawerOpen(false)} />
             </div>
           </div>

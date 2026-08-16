@@ -1,6 +1,6 @@
-import type { TokenResponse, UserProfile, UserProfileUpdate, CropBBox, ToolActivity } from '../types';
+import type { TokenResponse, UserProfile, CropBBox, ToolActivity } from '../types';
 // request 别名 apiRequest：fetchWithStage 的 options 参数名 request 会遮蔽该导入，故在模块级改名
-import { request as apiRequest, get, post, put, patch, del } from './request';
+import { request as apiRequest, get, post, patch, del } from './request';
 import { prepareImageUpload } from '../utils/imageProcessing';
 
 // === 用户认证相关 API ===
@@ -28,10 +28,6 @@ export function anonymousAccess(deviceId: string): Promise<TokenResponse> {
 
 export async function getCurrentUser(token: string): Promise<UserProfile> {
   return get<UserProfile>('/auth/me', token);
-}
-
-export async function updateProfile(token: string, profile: UserProfileUpdate): Promise<UserProfile> {
-  return put<UserProfile>('/auth/profile', profile, token);
 }
 
 // === 聊天历史 / 徽标 API ===

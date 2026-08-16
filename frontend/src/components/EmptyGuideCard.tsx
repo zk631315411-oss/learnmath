@@ -12,17 +12,17 @@ const GUIDE_STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
 export default function EmptyGuideCard() {
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-slate-400">
-      <h3 className="text-sm font-semibold text-slate-500">三步开始学习</h3>
+      <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400">三步开始学习</h3>
       <ul className="mt-4 space-y-3">
         {GUIDE_STEPS.map((step, index) => (
           <li key={step.title} className="flex items-center gap-3">
             {/* 圆形序号：与图标、文案并列，强化步骤顺序感 */}
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
               {index + 1}
             </span>
             <step.icon className="h-5 w-5 shrink-0 text-slate-400" strokeWidth={1.5} />
             <div className="text-left">
-              <p className="text-sm font-medium text-slate-600">{step.title}</p>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{step.title}</p>
               <p className="text-xs text-slate-400">{step.desc}</p>
             </div>
           </li>

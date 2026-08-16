@@ -133,12 +133,12 @@ export default function AiBall({
               onVisibleChange?.(false);
             }
           }}>
-          <div className="w-full bg-white rounded-t-2xl shadow-xl flex flex-col overflow-hidden animate-slide-up"
+          <div className="w-full bg-white rounded-t-2xl shadow-xl flex flex-col overflow-hidden animate-slide-up dark:bg-slate-800"
             style={{ maxWidth: panelMaxWidth, height: panelHeight }}>
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                <span className="text-sm font-semibold text-slate-800">学数有道</span>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">学数有道</span>
               </div>
               <button onClick={() => { setExpanded(false); onVisibleChange?.(false); }}
                 className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">

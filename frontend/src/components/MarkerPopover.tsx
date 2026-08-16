@@ -26,7 +26,7 @@ export default function MarkerPopover({ marker, onClose, onDelete }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[10001] flex items-start justify-center pt-[10vh] bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-[10001] flex items-start justify-center pt-[10vh] bg-black/30 dark:bg-black/50 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[75vh] flex flex-col">

@@ -31,11 +31,11 @@ function ThinkingBlock({ content, active }: { content: string; active: boolean }
   }, [active]);
 
   return (
-    <div className="mb-3 border-b border-slate-200 pb-3">
+    <div className="mb-3 border-b border-slate-200 pb-3 dark:border-slate-700">
       <button
         type="button"
         onClick={() => setExpanded(value => !value)}
-        className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-500 hover:text-slate-700"
+        className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         aria-expanded={expanded}
       >
         <BrainCircuit className={`h-4 w-4 ${active ? 'animate-pulse text-blue-500' : 'text-slate-400'}`} />
@@ -43,7 +43,7 @@ function ThinkingBlock({ content, active }: { content: string; active: boolean }
         <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
       {expanded && (
-        <div className="mt-2 max-h-48 overflow-y-auto border-l-2 border-blue-200 pl-3 text-slate-500">
+        <div className="mt-2 max-h-48 overflow-y-auto border-l-2 border-blue-200 pl-3 text-slate-500 dark:border-blue-800 dark:text-slate-400">
           <MarkdownRenderer className="text-xs leading-6 markdown-body">{content}</MarkdownRenderer>
         </div>
       )}
@@ -120,15 +120,15 @@ function ChatPanelInner({
   };
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden bg-white">
+    <div className="relative flex flex-col h-full overflow-hidden bg-white dark:bg-slate-800">
       {!compact && (
-        <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+        <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-            <h3 className="font-semibold text-slate-800 text-sm">AI 智能问答</h3>
+            <h3 className="font-semibold text-slate-800 text-sm dark:text-slate-100">AI 智能问答</h3>
           </div>
           {messages.length > 0 && (
-            <button onClick={onClearMessages} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+            <button onClick={onClearMessages} className="text-xs text-slate-400 hover:text-slate-600 transition-colors dark:text-slate-400 dark:hover:text-slate-300">
               清除对话
             </button>
           )}
@@ -150,7 +150,7 @@ function ChatPanelInner({
               <div className={`chat-message min-w-0 max-w-full rounded-2xl px-4 py-3 ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-md'
-                  : 'bg-white text-slate-700 shadow-sm border border-slate-100 rounded-bl-md'
+                  : 'bg-white text-slate-700 shadow-sm border border-slate-100 rounded-bl-md dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
               }`}>
                 {msg.image && (
                   <img src={msg.image} alt="用户截图" className="mb-2 max-w-full rounded-lg"
@@ -181,7 +181,7 @@ function ChatPanelInner({
               setShowScrollToBottom(false);
               requestAnimationFrame(() => scrollToBottom('smooth'));
             }}
-            className="sticky bottom-3 ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:bg-slate-50 hover:text-slate-700"
+            className="sticky bottom-3 ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
             aria-label="回到底部"
             title="回到底部"
           >
@@ -191,9 +191,9 @@ function ChatPanelInner({
       </div>
 
       {pendingImages && pendingImages.length > 0 && (
-        <div className="px-4 py-3 border-t border-slate-200 bg-blue-50/60">
+        <div className="px-4 py-3 border-t border-slate-200 bg-blue-50/60 dark:border-slate-700 dark:bg-blue-950/40">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-blue-600 font-medium">截图已捕获（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
+            <p className="text-xs text-blue-600 font-medium dark:text-blue-400">截图已捕获（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
             <button type="button" onClick={onClearPendingImages}
               className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
               <X className="w-3 h-3" />
@@ -202,7 +202,7 @@ function ChatPanelInner({
           </div>
           {/* 后端未支持多图前，多余截图会留在列表等下一轮提问，提示用户避免误以为丢失 */}
           {pendingImages.length > 1 && (
-            <p className="text-xs text-amber-600 mb-2">当前版本一次发送 1 张，其余保留在待发列表</p>
+            <p className="text-xs text-amber-600 mb-2 dark:text-amber-400">当前版本一次发送 1 张，其余保留在待发列表</p>
           )}
           <div className="flex gap-2 overflow-x-auto">
             {pendingImages.map((item) => (
@@ -222,13 +222,13 @@ function ChatPanelInner({
       )}
 
       {error && (
-        <div className="px-4 py-2 border-t border-red-200 bg-red-50 text-xs text-red-600" role="alert">
+        <div className="px-4 py-2 border-t border-red-200 bg-red-50 text-xs text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400" role="alert">
           {error}
         </div>
       )}
 
       <form onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}
-        className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0">
+        className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex gap-2 items-end">
           <div className="min-w-0 flex-1">
             <FormulaComposer value={input} onChange={setInput} token={token ?? undefined}
