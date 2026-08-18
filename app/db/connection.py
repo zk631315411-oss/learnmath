@@ -128,5 +128,37 @@ def init_db():
         ON screenshot_context_cache(image_hash, textbook_id, page_number, crop_bbox_hash, full_context_hash)
     """)
 
+    # 自评证据账本表（阶段 2：请求内 one-shot 分叉上报节点掌握状态）
+    # 与 chat_history 解耦：删除提问记录不级联删除学习痕迹（见计划 §1.4 决策 5）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS evidence_turns (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          chat_id TEXT,
+          qa_turn_id TEXT,
+          node_id TEXT NOT NULL,
+          textbook_id TEXT,
+          scaffolding_level INTEGER,
+          outcome TEXT NOT NULL,
+          source TEXT NOT NULL,
+          report_path TEXT NOT NULL,
+          model_version TEXT,
+          created_at TEXT DEFAULT (CURRENT_TIMESTAMP)
+        )
+    """)
+
+    evidence_columns = {
+        row[1] for row in cursor.execute("PRAGMA table_info(evidence_turns)").fetchall()
+    }
+    if "report_path" not in evidence_columns:
+        cursor.execute("ALTER TABLE evidence_turns ADD COLUMN report_path TEXT")
+        cursor.execute(
+            "UPDATE evidence_turns SET report_path='unknown' WHERE report_path IS NULL"
+        )
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_evidence_user_node ON evidence_turns(user_id, node_id)
+    """)
+
     conn.commit()
     conn.close()

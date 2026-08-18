@@ -6,22 +6,25 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  fetchWithStage, createChatHistory, patchChatHistory,
+  createChatHistory, patchChatHistory,
+  collapseExactRepeatedAnswer,
 } from '../services/api';
+import { streamQA } from '../services/streamQA';
 import type { Marker } from '../components/PageMarker';
-import type { Message, CropBBox, PendingImage, ToolActivity, User } from '../types';
+import type { Message, CropBBox, PendingImage, User } from '../types';
 
 // 待发截图数量上限：超量截图直接拒绝并提示（后端未支持 images[] 前一次只发一张）；导出给 ChatPanel 复用，避免文案与判断条件出现两处字面量
 export const MAX_PENDING_IMAGES = 3;
 
-function generateId() {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+export interface SendMessageOptions {
+  /** Page view starts a fresh thread even when another thread is still active in the panel. */
+  newThread?: boolean;
+  /** CaptureBubble sends its single image directly instead of entering the pending-image queue. */
+  capture?: { image: string; cropBBox: CropBBox };
 }
 
-function upsertToolActivity(items: ToolActivity[], activity: ToolActivity): ToolActivity[] {
-  return items.some(item => item.id === activity.id)
-    ? items.map(item => item.id === activity.id ? activity : item)
-    : [...items, activity];
+function generateId() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
 export interface UseChatParams {
@@ -61,8 +64,10 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   // 待发送截图列表：每张截图带独立裁剪框，支持多图连发（当前一次只发第一张）
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [thinkingStage, setThinkingStage] = useState<string>('');
+  const [thinkingStageKey, setThinkingStageKey] = useState<string>('');
   const [isThinking, setIsThinking] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [historyVersion, setHistoryVersion] = useState(0);
   const isMountedRef = useRef(true);
   // SSE 长回调的闭包里读不到最新 chatVisible，用 ref 保存最新值供收尾判断，避免闭包竞态
   const chatVisibleRef = useRef(chatVisible);
@@ -83,6 +88,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setMessages([]);
     setError(null);
     setUnreadCount(0);
+    setThinkingStageKey('');
   }, [userId]);
 
   // 当 activeMarker 变化，若它属于当前页，则把其问答加载进聊天面板。
@@ -97,7 +103,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     ];
     if (activeMarker.answer) {
       msgs.push({
-        id: `${activeMarker.id}-a`, role: 'assistant', content: activeMarker.answer,
+        id: `${activeMarker.id}-a`, role: 'assistant', content: collapseExactRepeatedAnswer(activeMarker.answer),
         thinking: activeMarker.thinking || undefined,
         toolActivities: Array.isArray(activeMarker.tool_activities) ? activeMarker.tool_activities : [],
       });
@@ -106,7 +112,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       msgs.push({ id: `${activeMarker.id}-fuq-${fu.question.slice(0, 8)}`, role: 'user', content: fu.question, image: fu.image || undefined });
       if (fu.answer) msgs.push({
         id: `${activeMarker.id}-fua-${fu.answer.slice(0, 8)}`,
-        role: 'assistant', content: fu.answer, thinking: fu.thinking || undefined,
+        role: 'assistant', content: collapseExactRepeatedAnswer(fu.answer), thinking: fu.thinking || undefined,
         toolActivities: Array.isArray(fu.tool_activities) ? fu.tool_activities : [],
       });
     }
@@ -129,12 +135,13 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setUnreadCount(0);
   }, []);
 
-  const handleSendMessage = useCallback(async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string, options: SendMessageOptions = {}): Promise<Marker | null> => {
     const trimmed = content.trim();
     // 本次提问取待发列表第一张；后端 /solve-stream 未支持 images[] 前一次只发单张
-    const image = pendingImages[0]?.data;
-    const firstCropBBox = pendingImages[0]?.cropBBox ?? null;
-    if ((!trimmed && !image) || isLoading) return;
+    const explicitCapture = options.capture;
+    const image = explicitCapture?.image || pendingImages[0]?.data;
+    const firstCropBBox = explicitCapture?.cropBBox || pendingImages[0]?.cropBBox || null;
+    if ((!trimmed && !image) || isLoading) return null;
 
     const userIdVal = user.userId || user.deviceId;
     const pageNumber = currentPage;
@@ -148,8 +155,9 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     const cropBBox = image
       ? firstCropBBox ?? { x: 0.1, y: 0.1, width: 0.8, height: 0.8, unit: 'page_ratio' as const }
       : undefined;
-    const isNewThread = !activeThreadId;
-    const threadMarker = activeThreadId ? getMarkerById(activeThreadId) : undefined;
+    const effectiveThreadId = options.newThread ? null : activeThreadId;
+    const isNewThread = !effectiveThreadId;
+    const threadMarker = effectiveThreadId ? getMarkerById(effectiveThreadId) : undefined;
     const inheritedImage = !image && threadMarker?.marker_type === 'screenshot'
       ? threadMarker.thumbnail || undefined
       : undefined;
@@ -161,7 +169,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     const requestScreenshotContextId = threadMarker?.screenshot_context_id || null;
 
     const historyPairs: Array<{ user: string; assistant: string }> = [];
-    for (let index = 0; index < messages.length; index += 1) {
+    for (let index = options.newThread ? messages.length : 0; index < messages.length; index += 1) {
       if (messages[index].role !== 'user') continue;
       const reply = messages[index + 1];
       historyPairs.push({
@@ -172,15 +180,20 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
 
     const question = trimmed || (image ? '请解答这张图片中的题目' : '');
     const newUserMsg: Message = { id: generateId(), role: 'user', content: question, image };
-    setMessages(prev => [...prev, newUserMsg]);
+    if (options.newThread) {
+      setActiveThreadId(null);
+      setActiveMarker(null);
+    }
+    setMessages(prev => options.newThread ? [newUserMsg] : [...prev, newUserMsg]);
     // 本次提问已取走第一张：立即移除，其余截图保留在待发列表（多图连发）
-    setPendingImages(prev => prev.slice(1));
+    if (!explicitCapture) setPendingImages(prev => prev.slice(1));
     setError(null);
     setIsLoading(true);
     setIsThinking(false);
     setThinkingStage('');
+    setThinkingStageKey('');
 
-    let chatId = activeThreadId || '';
+    let chatId = effectiveThreadId || '';
     if (isNewThread) {
       try {
         const res = await createChatHistory({
@@ -204,15 +217,11 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       id: assistantMsgId, role: 'assistant', content: '', thinking: '', toolActivities: [],
     }]);
 
-    // 用一个可变引用累积流式文本，避免闭包竞态
-    const streamAcc: { text: string; thinking: string; toolActivities: ToolActivity[] } = {
-      text: '', thinking: '', toolActivities: [],
-    };
     setThinkingStage('正在思考…');
+    setThinkingStageKey('');
 
     try {
-      const result = await fetchWithStage({
-        request: {
+      const result = await streamQA({
           user_id: userIdVal,
           question,
           teaching_mode: 'socratic',
@@ -225,44 +234,32 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           marker_id: chatId || undefined,
           crop_bbox: requestCropBBox,
           screenshot_context_id: requestScreenshotContextId,
+        }, {
+        onStage: (stage, text) => {
+          if (!isMountedRef.current) return;
+          setThinkingStageKey(stage);
+          setThinkingStage(text);
         },
-        callbacks: {
-          onStage: (stage, text) => { if (isMountedRef.current) setThinkingStage(text); },
-          onThinking: (text) => {
-            streamAcc.thinking += text;
-            if (isMountedRef.current) {
-              setMessages(prev => prev.map(m => m.id === assistantMsgId
-                ? { ...m, thinking: streamAcc.thinking }
-                : m));
-            }
-          },
-          onIsThinkingChange: (value) => { if (isMountedRef.current) setIsThinking(value); },
-          onContent: (text) => {
-            streamAcc.text += text;
-            if (isMountedRef.current) {
-              setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, content: streamAcc.text } : m));
-            }
-          },
-          onToolActivity: (activity) => {
-            streamAcc.toolActivities = upsertToolActivity(streamAcc.toolActivities, activity);
-            if (isMountedRef.current) {
-              setMessages(prev => prev.map(m => m.id === assistantMsgId
-                ? { ...m, toolActivities: streamAcc.toolActivities }
-                : m));
-            }
-          },
+        onThinkingChange: value => { if (isMountedRef.current) setIsThinking(value); },
+        onUpdate: snapshot => {
+          if (!isMountedRef.current) return;
+          setMessages(prev => prev.map(message => message.id === assistantMsgId ? {
+            ...message,
+            content: snapshot.answer,
+            thinking: snapshot.thinking,
+            toolActivities: snapshot.toolActivities,
+          } : message));
         },
       });
 
-      const fullAnswer = streamAcc.text || result.answer;
-      const fullThinking = streamAcc.thinking || result.thinking;
-      const fullToolActivities = streamAcc.toolActivities.length
-        ? streamAcc.toolActivities
-        : result.toolActivities;
+      const fullAnswer = result.answer;
+      const fullThinking = result.thinking;
+      const fullToolActivities = result.toolActivities;
       setMessages(prev => prev.map(m => m.id === assistantMsgId
         ? { ...m, content: fullAnswer, thinking: fullThinking, toolActivities: fullToolActivities }
         : m));
 
+      let completedMarker: Marker | null = null;
       if (isNewThread) {
         if (chatId) {
           try {
@@ -294,6 +291,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         addMarker(marker);
         setActiveThreadId(marker.id);
         setActiveMarker(marker);
+        completedMarker = marker;
       } else if (chatId && threadMarker) {
         const followUp = {
           question,
@@ -324,8 +322,11 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
               : undefined,
           });
         } catch {}
+        completedMarker = updatedMarker;
       }
-      refreshMarkers();
+      await refreshMarkers();
+      setHistoryVersion(version => version + 1);
+      return completedMarker;
     } catch (e) {
       const msg = (e instanceof Error ? e.message : '回答失败，请重试');
       if (isMountedRef.current) setError(msg);
@@ -333,11 +334,13 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         try { await patchChatHistory(chatId, { answer: `[错误] ${msg}` }); } catch {}
       }
       setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, content: `抱歉，回答时出现了问题：${msg}` } : m));
+      return null;
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
         setIsThinking(false);
         setThinkingStage('');
+        setThinkingStageKey('');
         // done 与 error 两种结束都会走到这里：收尾时若聊天面板不可见，累计一条未读提醒用户
         if (!chatVisibleRef.current) setUnreadCount(prev => prev + 1);
       }
@@ -371,6 +374,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     error,
     pendingImages,
     thinkingStage,
+    thinkingStageKey,
     isThinking,
     handleSendMessage,
     handleCapture,
@@ -380,5 +384,6 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setError,
     unreadCount,
     markRead,
+    historyVersion,
   };
 }

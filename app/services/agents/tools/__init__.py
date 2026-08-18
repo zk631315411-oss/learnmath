@@ -16,7 +16,7 @@ def get_qa_tool_defs(
         build_retrieve_kg_context_tool(
             textbook_id=textbook_id,
             page_number=page_number,
-        )
+        ),
     ]
 
 

@@ -12,13 +12,18 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 import time
 import uuid
 from typing import AsyncIterator
 
 from fastapi.concurrency import run_in_threadpool
 
+from app.services.agents.one_shot_tool import run_one_shot_tool
+from app.services.agents.tools.report_turn_outcome import build_report_turn_outcome_tool
 from app.services.llm_service import llm_service
+from app.services.qa import evidence_reporting
 from app.services.qa.contracts import QATurnInput
 from app.services.qa.prompt_builder import (
     build_system_prompt,
@@ -46,7 +51,9 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         yield sse_error("请输入问题或上传截图")
         return
 
-    turn_id = turn_input.chat_id or str(uuid.uuid4())
+    # chat_id identifies the thread/root marker; every SSE turn needs its own
+    # trace id so follow-ups can be counted independently.
+    turn_id = str(uuid.uuid4())
     started_at = time.perf_counter()
 
     try:
@@ -113,12 +120,23 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                 stream=True,
             )
 
+        async def one_shot_model_call(messages, tools, tool_choice="auto"):
+            return await asyncio.to_thread(
+                llm_service.chat_with_tools,
+                messages,
+                tools,
+                tool_choice=tool_choice,
+                temperature=0.3,
+                stream=False,
+            )
+
         # ---- 启动 ToolRuntime ----
         runtime = ToolRuntime(
             tools=tool_defs,
             model_call=model_call,
             config=ToolRuntimeConfig(
-                max_model_rounds=5,
+                max_model_rounds=7,
+                # retrieve_kg_context itself is bounded to three calls.
                 max_total_calls=3,
                 max_consecutive_failure_rounds=2,
             ),
@@ -132,6 +150,19 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         full_answer = ""
         full_thinking = ""
         tool_activities: dict[str, dict] = {}
+        evidence_log = logging.getLogger("learnmath.evidence")
+
+        # 自评证据回路的本轮/线程 resolved 节点集合：
+        # 本轮从 retrieve_kg_context 的 tool_result 累积；线程历史从已存 chat_history 恢复。
+        turn_resolved_node_ids: set[str] = set()
+        # 线程历史只在主回答完成后、判断 evidence eligibility 时读取一次。
+        thread_resolved_node_ids: set[str] | None = None
+        runtime_messages: list[dict] | None = None
+        fork_attempted = False
+        fork_tool_succeeded = False
+        report_path = "none"
+        evidence_persisted = 0
+        invalid_node_ids = 0
 
         async for event in runtime.run(initial_messages, context):
             event_type = event.type
@@ -139,9 +170,10 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
 
             if event_type == "tool_call":
                 call_id = str(data.get("tool_call_id") or "")
+                tool_name = str(data.get("name") or "")
                 activity = {
                     "id": call_id,
-                    "tool": str(data.get("name") or ""),
+                    "tool": tool_name,
                     "label": str(data.get("display_name") or "调用辅助工具"),
                     "status": "running",
                     "arguments": data.get("arguments") or {},
@@ -152,15 +184,33 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
 
             elif event_type == "tool_result":
                 call_id = str(data.get("tool_call_id") or "")
+                tool_name = str(data.get("name") or "")
+                result = data.get("result") or {}
+
+                if (
+                    tool_name == "retrieve_kg_context"
+                    and str(data.get("status") or "") == "success"
+                    and result.get("status") == "resolved"
+                ):
+                    # 累积本轮 resolved 节点；供 report_turn_outcome 的 node_id 合法性校验
+                    turn_resolved_node_ids |= evidence_reporting.extract_resolved_node_ids([
+                        {"tool": tool_name, "result": result}
+                    ])
+                    # P0-2 计数②：retrieve 出现 resolved 结果的轮次数（一次 resolved 记一行）
+                    evidence_log.info(
+                        "learnmath.evidence: resolved 结果出现 user=%s turn=%s",
+                        turn_input.user_id, turn_id,
+                    )
+
                 activity = tool_activities.setdefault(call_id, {
                     "id": call_id,
-                    "tool": str(data.get("name") or ""),
+                    "tool": tool_name,
                     "label": "调用辅助工具",
                     "arguments": data.get("arguments") or {},
                 })
                 activity.update({
                     "status": str(data.get("status") or "error"),
-                    "result": data.get("result") or {},
+                    "result": result,
                     "duration_ms": data.get("duration_ms"),
                     "error_code": data.get("error_code"),
                     "error_message": data.get("error_message"),
@@ -182,6 +232,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             elif event_type == "final":
                 result = data.get("result")
                 if result:
+                    runtime_messages = result.messages
                     # 兼容非流式 model_call；流式路径已经通过 delta 输出。
                     if not full_answer and result.content:
                         full_answer = result.content
@@ -195,7 +246,98 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         if cache_id and full_answer:
             await run_in_threadpool(update_vision_summary, cache_id, full_answer[:4000])
 
+        main_latency_ms = int((time.perf_counter() - started_at) * 1000)
+        if thread_resolved_node_ids is None:
+            thread_resolved_node_ids = evidence_reporting.load_thread_resolved_node_ids(
+                turn_input.chat_id, turn_input.user_id,
+            )
+        eligible = bool(turn_resolved_node_ids or thread_resolved_node_ids)
+        fork_latency_ms = 0
+
+        if eligible:
+            yield sse_stage("evidence_report", "正在记录学习进度…")
+            fork_started_at = time.perf_counter()
+            fork_attempted = True
+            report_tool = build_report_turn_outcome_tool()
+            allowed_node_ids = sorted(turn_resolved_node_ids | thread_resolved_node_ids)[:3]
+            # ToolRuntimeResult.messages intentionally stops before the final
+            # visible assistant answer. This keeps the rating anchored to the
+            # student's latest message and all help received before it.
+            fork_messages = [
+                *(runtime_messages or initial_messages),
+                {
+                    "role": "system",
+                    "content": (
+                        "本次评价锚点是上下文中学生最近一条消息；教师针对该消息刚生成的回复"
+                        "不在本次评价范围内。本轮可用的 selected_node.node_id 仅有："
+                        f"{json.dumps(allowed_node_ids, ensure_ascii=False)}。"
+                        "检查此前完整对话：学生未借助老师提示且自行正确作答报 independent；"
+                        "此前得到提示或拆步后正确答出报 assisted；老师此前直接讲解后学生才"
+                        "明确表示理解报 direct_taught；没有学生闭合信号报 unresolved。"
+                        "只调用 report_turn_outcome，不要输出学生可见内容。"
+                    ),
+                },
+            ]
+            try:
+                fork_result = await run_one_shot_tool(
+                    messages=fork_messages,
+                    tool=report_tool,
+                    model_call=one_shot_model_call,
+                )
+                outcome = fork_result.outcome
+                if outcome is not None and outcome.status == "success":
+                    fork_tool_succeeded = True
+                    report_path = "evidence_fork"
+                    report_args = outcome.normalized_arguments
+                    requested_node_ids = list(report_args.get("node_ids") or [])
+                    written = evidence_reporting.validate_and_report(
+                        user_id=turn_input.user_id,
+                        chat_id=turn_input.chat_id,
+                        qa_turn_id=turn_id,
+                        textbook_id=turn_input.textbook_id,
+                        node_ids=requested_node_ids,
+                        scaffolding_level=int(report_args.get("scaffolding_level") or 0),
+                        outcome=str(report_args.get("student_outcome") or ""),
+                        turn_resolved_node_ids=turn_resolved_node_ids,
+                        thread_resolved_node_ids=thread_resolved_node_ids,
+                        report_path="evidence_fork",
+                    )
+                    evidence_persisted += written
+                    invalid_node_ids += max(0, len(requested_node_ids) - written)
+                else:
+                    evidence_log.warning(
+                        "learnmath.evidence: evidence fork failed user=%s turn=%s code=%s detail=%s",
+                        turn_input.user_id,
+                        turn_id,
+                        fork_result.error_code or getattr(outcome, "error_code", None),
+                        fork_result.error_message or getattr(outcome, "error_message", None),
+                    )
+            except Exception:
+                evidence_log.exception(
+                    "learnmath.evidence: evidence fork provider failure user=%s turn=%s",
+                    turn_input.user_id,
+                    turn_id,
+                )
+            finally:
+                fork_latency_ms = int((time.perf_counter() - fork_started_at) * 1000)
+
         latency_ms = int((time.perf_counter() - started_at) * 1000)
+        turn_metrics = {
+                "qa_turn_id": turn_id,
+                "eligible": eligible,
+                "fork_attempted": fork_attempted,
+                "fork_tool_succeeded": fork_tool_succeeded,
+                "report_path": report_path,
+                "evidence_persisted": evidence_persisted,
+                "invalid_node_ids": invalid_node_ids,
+                "main_latency_ms": main_latency_ms,
+                "fork_latency_ms": fork_latency_ms,
+                "total_latency_ms": latency_ms,
+        }
+        evidence_log.info(
+            "learnmath.evidence.turn_metrics %s",
+            json.dumps(turn_metrics, ensure_ascii=False, sort_keys=True),
+        )
         yield sse_done(
             full_text=full_answer, thinking=full_thinking, sources=[],
             tool_activities=list(tool_activities.values()),

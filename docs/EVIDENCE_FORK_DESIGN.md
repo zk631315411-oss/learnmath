@@ -2,8 +2,10 @@
 
 > 日期：2026-08-18
 > 触发：前端重构测试轮的真实 LLM 抽测（结果见 `docs/FRONTEND_REDESIGN_TEST_REPORT.md`）
-> 状态：方案已与产品决策人对齐，待实施
+> 状态：已实施并通过自动化与真实 LLM 验收
 > 范围：`app/services/qa/`、`app/services/agents/`、`app/services/qa/prompt_builder.py`、前端收尾状态和相关测试；不改现有 SSE 事件结构，不改 evidence 表结构
+
+> 实施记录（2026-08-18）：`python -m pytest -q` 为 83 passed / 3 skipped / 23 subtests passed；前端 build 通过；Playwright 为 22 passed / 20 按项目条件 skipped。真实 Kimi 同线程两轮均出现 `content → stage(evidence_report) → done`，分别落 `unresolved / level 0` 与 `direct_taught / level 4`，`report_path=evidence_fork`、`invalid_node_ids=0`。第二轮为 direct_taught，是因为第一轮老师已直接给出完整定义，学生随后正确复述，符合快照 rubric。地图节点投影为 `learning`、`closed_evidence_count=1`、`chat.available=true`。
 
 ## 一、发现与定性
 

@@ -19,8 +19,10 @@ interface Props {
   /** 全局提示（含截图超量拒绝），显示在输入框上方的提示条 */
   error?: string | null;
   thinkingStage?: string;
+  thinkingStageKey?: string;
   isThinking?: boolean;
   compact?: boolean;
+  emptyState?: React.ReactNode;
 }
 
 function ThinkingBlock({ content, active }: { content: string; active: boolean }) {
@@ -38,12 +40,12 @@ function ThinkingBlock({ content, active }: { content: string; active: boolean }
         className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         aria-expanded={expanded}
       >
-        <BrainCircuit className={`h-4 w-4 ${active ? 'animate-pulse text-blue-500' : 'text-slate-400'}`} />
+        <BrainCircuit className={`h-4 w-4 ${active ? 'animate-pulse text-indigo-500' : 'text-slate-400'}`} />
         <span className="flex-1">{active ? '正在分析' : '模型分析'}</span>
         <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
       {expanded && (
-        <div className="mt-2 max-h-48 overflow-y-auto border-l-2 border-blue-200 pl-3 text-slate-500 dark:border-blue-800 dark:text-slate-400">
+        <div className="mt-2 max-h-48 overflow-y-auto border-l-2 border-indigo-200 pl-3 text-slate-500 dark:border-indigo-800 dark:text-slate-400">
           <MarkdownRenderer className="text-xs leading-6 markdown-body">{content}</MarkdownRenderer>
         </div>
       )}
@@ -55,8 +57,8 @@ function LoadingStatus({ text }: { text?: string }) {
   return (
     <div className="flex items-center gap-2 text-sm text-slate-500">
       <div className="flex gap-1" aria-hidden="true">
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500" />
-        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-cyan-500" style={{ animationDelay: '150ms' }} />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500" />
+        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-violet-400" style={{ animationDelay: '150ms' }} />
         <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: '300ms' }} />
       </div>
       <span>{text || '正在准备回答…'}</span>
@@ -67,7 +69,7 @@ function LoadingStatus({ text }: { text?: string }) {
 function ChatPanelInner({
   messages, onSendMessage, onClearMessages, isLoading,
   token, pendingImages, onRemovePendingImage, onClearPendingImages,
-  error, thinkingStage, isThinking = false, compact,
+  error, thinkingStage, thinkingStageKey, isThinking = false, compact, emptyState,
 }: Props) {
   const [input, setInput] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +126,7 @@ function ChatPanelInner({
       {!compact && (
         <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
             <h3 className="font-semibold text-slate-800 text-sm dark:text-slate-100">AI 智能问答</h3>
           </div>
           {messages.length > 0 && (
@@ -140,7 +142,7 @@ function ChatPanelInner({
         onScroll={handleMessagesScroll}
         className="relative flex-1 overflow-y-auto p-4 space-y-4"
       >
-        {messages.length === 0 && <EmptyGuideCard />}
+        {messages.length === 0 && (emptyState || <EmptyGuideCard />)}
 
         {messages.map((msg, index) => {
           const isActiveAssistant = isLoading && msg.role === 'assistant' && index === messages.length - 1;
@@ -149,8 +151,8 @@ function ChatPanelInner({
             <div className="flex min-w-0 max-w-[88%] flex-col items-start">
               <div className={`chat-message min-w-0 max-w-full rounded-2xl px-4 py-3 ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-md'
-                  : 'bg-white text-slate-700 shadow-sm border border-slate-100 rounded-bl-md dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+                  ? 'bg-indigo-600 text-white rounded-br-md'
+                  : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-md dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
               }`}>
                 {msg.image && (
                   <img src={msg.image} alt="用户截图" className="mb-2 max-w-full rounded-lg"
@@ -167,6 +169,11 @@ function ChatPanelInner({
                 ) : isActiveAssistant ? (
                   <LoadingStatus text={thinkingStage} />
                 ) : null}
+                {isActiveAssistant && msg.content && thinkingStageKey === 'evidence_report' && (
+                  <div data-testid="evidence-report-status" className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+                    <LoadingStatus text={thinkingStage} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -191,9 +198,9 @@ function ChatPanelInner({
       </div>
 
       {pendingImages && pendingImages.length > 0 && (
-        <div className="px-4 py-3 border-t border-slate-200 bg-blue-50/60 dark:border-slate-700 dark:bg-blue-950/40">
+        <div className="px-4 py-3 border-t border-slate-200 bg-indigo-50/60 dark:border-slate-700 dark:bg-indigo-950/40">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-blue-600 font-medium dark:text-blue-400">截图已捕获（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
+            <p className="text-xs text-indigo-600 font-medium dark:text-indigo-300">截图已捕获（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
             <button type="button" onClick={onClearPendingImages}
               className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
               <X className="w-3 h-3" />
@@ -236,7 +243,7 @@ function ChatPanelInner({
           </div>
           <button type="submit" disabled={(!input.trim() && !(pendingImages && pendingImages.length > 0)) || isLoading}
             aria-label="发送" title="发送"
-            className="px-4 sm:px-5 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all  active:scale-95 whitespace-nowrap">
+            className="px-4 sm:px-5 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 whitespace-nowrap">
             <Send className="w-4 h-4" />
           </button>
         </div>

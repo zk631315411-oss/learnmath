@@ -1,8 +1,10 @@
 """问答历史 API — 聊天记录 CRUD 与匿名→登录账号迁移。"""
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
+
+from app.auth.jwt_handler import decode_token
 
 from app.db.chat_history_db import (
     delete_chat_history,
@@ -41,6 +43,10 @@ class UpdateChatRequest(BaseModel):
     thinking: Optional[str] = None
     tool_activities: Optional[str] = None
     follow_ups: Optional[str] = None
+
+
+class MigrateChatRequest(BaseModel):
+    old_token: str
 
 
 @router.get("/history/{user_id}")
@@ -91,7 +97,17 @@ def delete_history(chat_id: str):
 
 
 @router.post("/migrate")
-def migrate_markers(old_user_id: str, new_user_id: str):
-    """匿名→登录后，将旧账号的 chat_history 记录迁到新账号。"""
+def migrate_markers(req: MigrateChatRequest, authorization: Optional[str] = Header(None)):
+    """由新旧 token 推导双方身份后，原子迁移聊天记录与 evidence。"""
+    parts = (authorization or "").split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="未登录或token无效")
+    try:
+        old_user_id = decode_token(req.old_token).get("user_id")
+        new_user_id = decode_token(parts[1]).get("user_id")
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="未登录或token无效") from exc
+    if not old_user_id or not new_user_id:
+        raise HTTPException(status_code=401, detail="未登录或token无效")
     count = migrate_user_id(old_user_id, new_user_id)
     return {"status": "ok", "migrated": count}

@@ -143,15 +143,23 @@ def delete_chat_history(chat_id: str):
 
 
 def migrate_user_id(old_user_id: str, new_user_id: str) -> int:
-    """匿名→登录后迁移 chat_history 记录到新账号，返回迁移条数。"""
+    """在同一事务中迁移聊天记录和 evidence，返回聊天记录迁移条数。"""
     conn = get_conn()
     try:
-        cursor = conn.execute(
-            "UPDATE chat_history SET user_id=? WHERE user_id=?",
-            (new_user_id, old_user_id)
-        )
-        count = cursor.rowcount
-        conn.commit()
+        try:
+            cursor = conn.execute(
+                "UPDATE chat_history SET user_id=? WHERE user_id=?",
+                (new_user_id, old_user_id)
+            )
+            count = cursor.rowcount
+            conn.execute(
+                "UPDATE evidence_turns SET user_id=? WHERE user_id=?",
+                (new_user_id, old_user_id)
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
     finally:
         conn.close()
     return count

@@ -19,10 +19,11 @@ app/
 ├── auth/
 │   └── jwt_handler.py    # JWT 签发/校验 + 密码哈希（完整复刻自 ai-math）
 ├── db/
-│   ├── connection.py     # SQLite 连接 + 建表（users / user_profiles / chat_history / screenshot_context_cache）
+│   ├── connection.py     # SQLite 连接 + 建表（users / user_profiles / chat_history / screenshot_context_cache / evidence_turns）
 │   ├── auth_db.py        # 账号 CRUD（完整复刻自 ai-math）
 │   ├── user_profile_db.py# 用户画像读写（完整复刻自 ai-math）
 │   ├── chat_history_db.py# 问答历史 CRUD + migrate_user_id（匿名→登录迁移）
+│   ├── evidence_db.py    # evidence_turns 自评证据读写（阶段 2：批量插入 + 按用户/节点查询）
 │   ├── kg_v44.py         # Neo4j 只读定位与定向关系检索
 │   └── screenshot_context_cache_db.py  # 截图上下文缓存读写（完整复刻自 ai-math）
 ├── models/
@@ -34,11 +35,12 @@ app/
 └── services/
     ├── llm_service.py    # 统一多模态、流式工具调用客户端
     ├── image_processing.py  # 图片预处理（完整复刻自 ai-math，多模态必需）
-    ├── agents/           # ToolRuntime 与 retrieve_kg_context 工具
+    ├── agents/           # ToolRuntime 与 retrieve_kg_context / report_turn_outcome 工具
     └── qa/
-        ├── prompt_builder.py       # Prompt 驱动的软教学流程与四级脚手架
+        ├── prompt_builder.py       # Prompt 驱动的软教学流程与四级脚手架 + 每轮收尾自评
         ├── contracts.py            # QATurnInput 数据契约
-        ├── answer_service.py       # 文字/截图统一 ToolRuntime 编排
+        ├── answer_service.py       # 文字/截图统一 ToolRuntime 编排 + 自评证据采集落库
+        ├── evidence_reporting.py   # 自评 node_id 校验 + 落库（阶段 2，内部工具不进展示流）
         ├── streaming_service.py    # SSE 事件构造
         └── vision_context_service.py # 截图上下文缓存读写 + 判定
 shared/
@@ -85,8 +87,21 @@ SQLite 保存应用数据（默认 `data/learning.db`），Neo4j 保存教材知
 核心表包括：`users`（账号）、`user_profiles`（现有兼容表）、`chat_history`（问答历史，
 含 page_number/marker_y_ratio/marker_type/thumbnail/crop_bbox/screenshot_context_id，
 以及同徽标 `follow_ups`、思考和工具活动；`textbook_id` 记录教材归属，
-NULL 老数据表示全教材可见，不回填）、`screenshot_context_cache`（截图上下文缓存）。
-当前不根据对话写入正式学习画像；结构化教学状态和证据表在未来版本再设计。
+NULL 老数据表示全教材可见，不回填）、`screenshot_context_cache`（截图上下文缓存）、
+`evidence_turns`（阶段 2 自评证据账本：请求内 one-shot 证据分叉上报的节点掌握状态，
+含 user_id / chat_id / qa_turn_id / node_id / textbook_id / scaffolding_level / outcome /
+source / model_version，按 user_id+node_id 建索引；删除提问记录不级联删除证据）。
+
+### 为什么现在开始记录证据（阶段 2 变动说明）
+
+阶段 1 只做「KG 定位 → 引导教学 → 验证」闭环，没有长期状态。阶段 2 要展示
+学习地图、告诉学生「哪里还学得不太好」，就必须有跨轮次的掌握证据。因此引入
+`evidence_turns` 自评账本：主回答完成后由请求内证据分叉调用 `report_turn_outcome`
+上报本轮教学目标知识点的 `student_outcome`（independent / assisted /
+direct_taught / unresolved），后端校验 node_id 合法（必须来自本轮/本线程 resolved
+结果且前缀匹配绑定教材）后落库。之所以用「主 Agent 自评单入口」而不是「KG resolved
+自动落库」，是因为 resolved 是模型的检索解释、不代表学生的客观行为（设计与评审理由见
+`docs/PHASE2_LEARNING_MAP_PLAN.md` §1.4 决策 4）。
 
 ## 无 LLM key 时的行为
 

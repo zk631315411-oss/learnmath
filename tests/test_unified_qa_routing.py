@@ -8,7 +8,9 @@ from fastapi import UploadFile
 from starlette.datastructures import Headers
 
 from app.models.schemas import QARequest
-from app.routers.qa import _generate_with_heartbeat, solve_question_stream
+from app.auth.jwt_handler import create_access_token
+from app.routers.qa import _generate_with_heartbeat, get_user_id_and_profile, solve_question_stream
+from fastapi import HTTPException
 from app.services.agents.tool_def import ToolDef
 from app.services.agents.tool_runtime import RuntimeEvent, ToolRuntime
 from app.services.qa.answer_service import answer_turn_with_tools
@@ -44,6 +46,14 @@ async def consume_response(response):
 
 
 class UnifiedQARoutingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_qa_identity_comes_only_from_token(self):
+        token = create_access_token({"user_id": "token-user"})
+        with patch("app.routers.qa.get_user_profile", return_value=None):
+            user_id, _ = get_user_id_and_profile(QARequest(user_id="attacker-choice", token=token, question="q"))
+        self.assertEqual(user_id, "token-user")
+        with self.assertRaises(HTTPException):
+            get_user_id_and_profile(QARequest(user_id="attacker-choice", question="q"))
+
     async def test_sse_wrapper_does_not_buffer_immediate_events(self):
         produced = 0
 
@@ -164,7 +174,7 @@ class UnifiedQARoutingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(done["tool_activities"][0]["arguments"]["query"], "矩阵乘法")
         self.assertEqual(done["tool_activities"][0]["status"], "success")
 
-    async def test_turn_scope_and_five_three_budget_are_bound_to_runtime(self):
+    async def test_turn_scope_and_runtime_budget_are_bound_to_runtime(self):
         captured = {}
 
         def fake_tools(*, textbook_id, page_number):
@@ -189,7 +199,7 @@ class UnifiedQARoutingTests(unittest.IsolatedAsyncioTestCase):
             ))]
 
         self.assertEqual(captured["scope"], ("gaodai_shang", 88))
-        self.assertEqual((captured["rounds"], captured["calls"]), (5, 3))
+        self.assertEqual((captured["rounds"], captured["calls"]), (7, 3))
         self.assertEqual(events[-1]["event"], "done")
 
     async def test_multimodal_tool_call_failure_is_an_explicit_error(self):
