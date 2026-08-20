@@ -72,7 +72,7 @@ class Config:
         os.getenv("FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS", "15")
     )
     FORMULA_CONTENT_VISION_TIMEOUT_SECONDS: float = float(
-        os.getenv("FORMULA_CONTENT_VISION_TIMEOUT_SECONDS", "12")
+        os.getenv("FORMULA_CONTENT_VISION_TIMEOUT_SECONDS", "20")
     )
 
     # SQLite 数据库路径，可用环境变量覆盖以便隔离测试（空值回退默认路径）
