@@ -37,8 +37,11 @@ export function normalizeChatHistoryRecord(record: any): Marker {
     crop_bbox: parseJsonOrPassthrough(record.crop_bbox, null) as CropBBox | null,
     thinking: record.thinking || null,
     tool_activities: normalizeToolActivities(record.tool_activities),
-    follow_ups: followUps.map((fu: any) => ({
+    // 老 follow-up 没有 turn_id：归一化层补 legacy-${index} 供 UI key 使用，
+    // 只读兼容，不回写旧数据；新数据的身份在发送时由客户端生成并落库
+    follow_ups: followUps.map((fu: any, index: number) => ({
       ...fu,
+      turn_id: fu.turn_id || `legacy-${index}`,
       thinking: fu.thinking || null,
       tool_activities: normalizeToolActivities(fu.tool_activities),
     })),

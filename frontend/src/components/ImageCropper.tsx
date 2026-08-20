@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
+import ReactCrop, { convertToPixelCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import type { CropBBox } from '../types';
 
@@ -71,7 +71,16 @@ export default function ImageCropper({ src, onConfirm, onCancel }: Props) {
             minWidth={30}
             minHeight={30}
           >
-            <img ref={imgRef} src={src} alt="截图预览" style={{ maxHeight: '60vh' }} />
+            <img
+              ref={imgRef}
+              src={src}
+              alt="截图预览"
+              style={{ maxHeight: '60vh' }}
+              onLoad={(event) => {
+                const image = event.currentTarget;
+                setCompletedCrop(convertToPixelCrop(crop, image.width, image.height));
+              }}
+            />
           </ReactCrop>
         </div>
 
@@ -81,7 +90,7 @@ export default function ImageCropper({ src, onConfirm, onCancel }: Props) {
             取消
           </button>
           <button onClick={handleConfirm}
-            className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium">
+            className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium">
             确认截取
           </button>
         </div>

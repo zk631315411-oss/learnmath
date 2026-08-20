@@ -49,13 +49,9 @@ def summarize_turn_metrics(records: list[dict[str, Any]]) -> dict[str, float | i
     }
 
 
-def extract_resolved_node_ids(activities: list[dict[str, Any]]) -> set[str]:
-    """从工具活动列表（已解析的 dict）提取 resolved 结果中的全部 KG node_id。
-
-    resolved 结果里 node_id 出现在选中节点与各关系组的 node 上；这些节点
-    都是检索真实返回的 KG 稳定 id，均可作为自报的合法来源。
-    """
-    resolved: set[str] = set()
+def extract_resolved_node_ids_in_order(activities: list[dict[str, Any]]) -> list[str]:
+    """按工具活动出现顺序提取 resolved 的 selected_node.node_id。"""
+    resolved: list[str] = []
     for activity in activities:
         if not isinstance(activity, dict):
             continue
@@ -68,8 +64,15 @@ def extract_resolved_node_ids(activities: list[dict[str, Any]]) -> set[str]:
             continue
         node = result.get("selected_node")
         if isinstance(node, dict) and node.get("node_id"):
-            resolved.add(str(node["node_id"]))
+            node_id = str(node["node_id"])
+            if node_id not in resolved:
+                resolved.append(node_id)
     return resolved
+
+
+def extract_resolved_node_ids(activities: list[dict[str, Any]]) -> set[str]:
+    """提取 resolved 的 selected_node.node_id，供合法性集合校验。"""
+    return set(extract_resolved_node_ids_in_order(activities))
 
 
 def _parse_activity_json(text: Any) -> list[dict[str, Any]]:
@@ -83,14 +86,17 @@ def _parse_activity_json(text: Any) -> list[dict[str, Any]]:
     return value if isinstance(value, list) else []
 
 
-def load_thread_resolved_node_ids(chat_id: str | None, user_id: str) -> set[str]:
-    """从本线程已存的 chat_history 恢复 resolved node_id 集合。
+def load_thread_resolved_node_context(
+    chat_id: str | None,
+    user_id: str,
+) -> tuple[set[str], list[str]]:
+    """恢复线程 resolved 集合及按最近出现优先的 node_id 列表。
 
     线程 = 主徽标行 + 其 follow_ups；两者的 tool_activities 都算本线程 resolved。
-    chat_id 为空或读取失败时返回空集（只依赖本轮结果，不阻断自评）。
+    chat_id 为空或读取失败时返回空结果（只依赖本轮结果，不阻断自评）。
     """
     if not chat_id:
-        return set()
+        return set(), []
     try:
         from app.db.chat_history_db import get_chat_history
 
@@ -98,16 +104,53 @@ def load_thread_resolved_node_ids(chat_id: str | None, user_id: str) -> set[str]
     except Exception:
         # 历史读取失败不阻断本轮自评：仍可用本轮 resolved 结果校验
         logger.exception("evidence: 读取线程 %s 历史工具活动失败", chat_id)
-        return set()
-    resolved: set[str] = set()
+        return set(), []
+    chronological: list[str] = []
+
+    def record(activities: list[dict[str, Any]]) -> None:
+        for node_id in extract_resolved_node_ids_in_order(activities):
+            if node_id in chronological:
+                chronological.remove(node_id)
+            chronological.append(node_id)
+
     for row in rows:
-        resolved |= extract_resolved_node_ids(_parse_activity_json(row.get("tool_activities")))
+        record(_parse_activity_json(row.get("tool_activities")))
         for follow_up in _parse_activity_json(row.get("follow_ups")):
             if isinstance(follow_up, dict):
-                resolved |= extract_resolved_node_ids(
-                    _parse_activity_json(follow_up.get("tool_activities"))
-                )
+                record(_parse_activity_json(follow_up.get("tool_activities")))
+    return set(chronological), list(reversed(chronological))
+
+
+def load_thread_resolved_node_ids(chat_id: str | None, user_id: str) -> set[str]:
+    """兼容只需要合法性集合的调用方。"""
+    resolved, _ = load_thread_resolved_node_context(chat_id, user_id)
     return resolved
+
+
+def select_evidence_candidate_node_ids(
+    *,
+    turn_node_ids: list[str],
+    thread_node_ids_recent_first: list[str],
+    user_id: str,
+    turn_id: str,
+    limit: int = 3,
+) -> list[str]:
+    """本轮优先、历史最近优先地选择供诊断模型关注的候选节点。"""
+    ordered: list[str] = []
+    for node_id in [*turn_node_ids, *thread_node_ids_recent_first]:
+        if node_id and node_id not in ordered:
+            ordered.append(node_id)
+    selected = ordered[:limit]
+    dropped = ordered[limit:]
+    if dropped:
+        logger.warning(
+            "learnmath.evidence: 分叉可用节点截断 user=%s turn=%s total=%d dropped=%s",
+            user_id,
+            turn_id,
+            len(ordered),
+            dropped,
+        )
+    return selected
 
 
 def _node_prefix_ok(node_id: str, textbook_id: str | None) -> bool:
@@ -131,6 +174,7 @@ def validate_and_report(
     turn_resolved_node_ids: set[str],
     thread_resolved_node_ids: set[str],
     report_path: str = "evidence_fork",
+    client_turn_id: str | None = None,
 ) -> int:
     """校验并落库一次 report_turn_outcome 上报，返回实际写入的行数。
 
@@ -164,6 +208,7 @@ def validate_and_report(
             "user_id": user_id,
             "chat_id": chat_id,
             "qa_turn_id": qa_turn_id,
+            "client_turn_id": client_turn_id,
             "node_id": node_id,
             "textbook_id": textbook_id,
             "scaffolding_level": scaffolding_level,
@@ -174,8 +219,11 @@ def validate_and_report(
         for node_id in valid_ids
     ]
     try:
-        evidence_db.insert_evidence_rows(rows)
-        return len(rows)
+        result = evidence_db.insert_evidence_rows(rows)
+        # 保持与旧测试/外部调用 mock 的兼容：真实写入层返回 inserted_count；
+        # 旧实现或 MagicMock 没有可用计数时，沿用请求行数语义。
+        inserted_count = getattr(result, "inserted_count", None)
+        return inserted_count if isinstance(inserted_count, int) else len(rows)
     except Exception:
         # 证据丢失不阻断回答：仅记日志，确保 SSE 流照常结束
         logger.exception(

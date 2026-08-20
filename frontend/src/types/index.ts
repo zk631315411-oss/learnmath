@@ -82,6 +82,8 @@ export interface Message {
   knowledge_points?: string[];
   thinking?: string; // AI 思考过程
   toolActivities?: ToolActivity[];
+  failed?: boolean; // 生成中断/取消：content 为已流出的部分正文（可能为空）
+  pending?: boolean; // 历史中仍处于生成中的记录；不等同于失败
 }
 
 // 截图裁剪框
@@ -98,7 +100,17 @@ export interface CropBBox {
 export interface PendingImage {
   id: string;
   data: string; // base64 图片数据
-  cropBBox: CropBBox;
+  cropBBox: CropBBox | null;
+  source: 'pdf-capture' | 'photo';
+}
+
+export type RecognizedBlock =
+  | { type: 'text'; text: string }
+  | { type: 'formula'; latex: string; display_mode: 'inline' | 'block' };
+
+export interface RecognizedContent {
+  blocks: RecognizedBlock[];
+  warnings: string[];
 }
 
 // === 用户认证 ===

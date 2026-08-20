@@ -1,20 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import { EditorContent, useEditor } from '@tiptap/react';
+import type { SelectionBookmark } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from '@tiptap/markdown';
 import { Mathematics } from '@tiptap/extension-mathematics';
 import { MathfieldElement } from 'mathlive';
-import { Calculator, ChevronDown, Grid3X3, LoaderCircle, Plus, Redo2, Sigma, Undo2, X } from 'lucide-react';
+import { Calculator, ChevronDown, Grid3X3, Keyboard, LoaderCircle, PenLine, Plus, Redo2, Sigma, Undo2, X } from 'lucide-react';
 
 import MathLiveInput from './MathLiveInput';
 import FormulaCommon from './FormulaCommon';
 import FormulaFavorites from './FormulaFavorites';
+import FormulaGlyph from './FormulaGlyph';
 import FormulaHistory, { recordFormulaUsage } from './FormulaHistory';
 import FormulaMathField from './FormulaMathField';
 import FormulaPreview from './FormulaPreview';
 import MatrixEditor from './MatrixEditor';
-import { convertFormula } from '../../services/api';
+import HandwritingCanvas from './HandwritingCanvas';
+import FormulaStructureNav from './FormulaStructureNav';
+import { convertFormula, recognizeFormula } from '../../services/api';
+import type { RecognizedBlock } from '../../types';
+import { insertRecognizedBlocks } from './recognizedBlocks';
 
 type DisplayChoice = 'auto' | 'inline' | 'block';
 type FormulaNode = { pos: number; type: 'inline' | 'block' } | null;
@@ -27,34 +33,51 @@ interface Props {
   disabled?: boolean;
   compact?: boolean;
   onSubmit?: () => void;
+  externalFormula?: ExternalFormulaDraft | null;
+  onExternalFormulaConsumed?: (nonce: string) => void;
+  externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
+  onExternalContentConsumed?: (nonce: string) => void;
 }
 
+export interface FormulaComposerHandle { captureInsertionBookmark: () => void; }
+
+export type ExternalFormulaDraft = { latex: string; displayMode: 'inline' | 'block'; nonce: string };
+
+// glyph 是 KaTeX 渲染的图标（FormulaGlyph 会把 #0/#? 画成 □），label 只进 tooltip/aria
 const templates = [
-  { label: '分数', value: '\\frac{#0}{#?}', glyph: 'a/b' },
-  { label: '根式', value: '\\sqrt{#0}', glyph: '√' },
-  { label: '上标', value: '^{#0}', glyph: 'x²' },
-  { label: '下标', value: '_{#0}', glyph: 'x₂' },
-  { label: '极限', value: '\\lim_{#0 \\to #?}', glyph: 'lim' },
-  { label: '积分', value: '\\int_{#0}^{#?}', glyph: '∫' },
-  { label: '求和', value: '\\sum_{#0}^{#?}', glyph: 'Σ' },
-  { label: '向量', value: '\\vec{#0}', glyph: 'vec' },
+  { label: '分数', value: '\\frac{#0}{#?}', glyph: '\\frac{a}{b}' },
+  { label: '根式', value: '\\sqrt{#0}', glyph: '\\sqrt{x}' },
+  { label: '上标', value: '^{#0}', glyph: 'x^{2}' },
+  { label: '下标', value: '_{#0}', glyph: 'x_{i}' },
+  { label: '极限', value: '\\lim_{#0 \\to #?}', glyph: '\\lim_{x \\to 0}' },
+  { label: '积分', value: '\\int_{#0}^{#?}', glyph: '\\int_{a}^{b}' },
+  { label: '求和', value: '\\sum_{#0}^{#?}', glyph: '\\sum_{i=1}^{n}' },
+  { label: '向量', value: '\\vec{#0}', glyph: '\\vec{a}' },
 ];
 
 const moreTemplates = [
-  { label: 'α', value: '\\alpha' }, { label: 'β', value: '\\beta' },
-  { label: 'γ', value: '\\gamma' }, { label: 'θ', value: '\\theta' },
-  { label: 'λ', value: '\\lambda' }, { label: 'π', value: '\\pi' },
-  { label: '∞', value: '\\infty' }, { label: '属于', value: '\\in' },
-  { label: '不属于', value: '\\notin' }, { label: '交', value: '\\cap' },
-  { label: '并', value: '\\cup' }, { label: '推出', value: '\\Rightarrow' },
+  { label: 'α', value: '\\alpha', glyph: '\\alpha' }, { label: 'β', value: '\\beta', glyph: '\\beta' },
+  { label: 'γ', value: '\\gamma', glyph: '\\gamma' }, { label: 'θ', value: '\\theta', glyph: '\\theta' },
+  { label: 'λ', value: '\\lambda', glyph: '\\lambda' }, { label: 'π', value: '\\pi', glyph: '\\pi' },
+  { label: '∞', value: '\\infty', glyph: '\\infty' }, { label: '属于', value: '\\in', glyph: '\\in' },
+  { label: '不属于', value: '\\notin', glyph: '\\notin' }, { label: '交', value: '\\cap', glyph: '\\cap' },
+  { label: '并', value: '\\cup', glyph: '\\cup' }, { label: '推出', value: '\\Rightarrow', glyph: '\\Rightarrow' },
 ];
+
+const quickTemplates: Record<string, { label: string; value: string }> = {
+  '1': { label: '分数', value: '\\frac{#0}{#?}' }, '2': { label: '根号', value: '\\sqrt{#0}' },
+  '3': { label: '上标', value: '^{#0}' }, '4': { label: '下标', value: '_{#0}' },
+  '5': { label: '积分', value: '\\int_{#0}^{#?}' }, '6': { label: '求和', value: '\\sum_{#0}^{#?}' },
+  v: { label: '向量', value: '\\vec{#0}' },
+};
 
 // P2：描述转写示例，点击后自动填入并触发转换
 const CONVERT_EXAMPLE = 'x趋于0时（sin x）的平方除以x';
 
-export default function FormulaComposer({
+const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function FormulaComposer({
   value, onChange, token, placeholder = '输入文字，或插入数学公式…', disabled, compact, onSubmit,
-}: Props) {
+  externalFormula, onExternalFormulaConsumed, externalContent, onExternalContentConsumed,
+}: Props, ref) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [latex, setLatex] = useState('');
@@ -66,9 +89,14 @@ export default function FormulaComposer({
   const [showMore, setShowMore] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [showExample, setShowExample] = useState(true);
+  const [showQuickPanel, setShowQuickPanel] = useState(false);
+  const [showHandwriting, setShowHandwriting] = useState(false);
+  const [readyField, setReadyField] = useState<MathfieldElement | null>(null);
   const mathFieldRef = useRef<MathfieldElement | null>(null);
   const conversionRequestRef = useRef(0);
   const submitRef = useRef(onSubmit);
+  const consumedNonceRef = useRef<string | null>(null);
+  const insertionBookmarkRef = useRef<SelectionBookmark | null>(null);
   submitRef.current = onSubmit;
 
   const invalidateConversion = () => {
@@ -124,7 +152,14 @@ export default function FormulaComposer({
       },
     },
     onUpdate: ({ editor: current }) => onChange(current.getMarkdown()),
+    onTransaction: ({ transaction }) => {
+      if (insertionBookmarkRef.current) insertionBookmarkRef.current = insertionBookmarkRef.current.map(transaction.mapping);
+    },
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    captureInsertionBookmark: () => { if (editor) insertionBookmarkRef.current = editor.state.selection.getBookmark(); },
+  }), [editor]);
 
   useEffect(() => { editor?.setEditable(!disabled); }, [disabled, editor]);
   useEffect(() => {
@@ -143,8 +178,34 @@ export default function FormulaComposer({
     setShowMore(false);
     setShowMatrix(false);
     setShowExample(true);
+    setShowQuickPanel(false);
+    setShowHandwriting(false);
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!externalFormula || consumedNonceRef.current === externalFormula.nonce) return;
+    consumedNonceRef.current = externalFormula.nonce;
+    invalidateConversion();
+    setEditingNode(null);
+    setDescription('');
+    setLatex(externalFormula.latex);
+    setDisplayChoice(externalFormula.displayMode);
+    setResolvedDisplay(externalFormula.displayMode);
+    setError('');
+    setShowQuickPanel(false);
+    setDialogOpen(true);
+    onExternalFormulaConsumed?.(externalFormula.nonce);
+  }, [externalFormula, onExternalFormulaConsumed]);
+
+  useEffect(() => {
+    if (!editor || !externalContent || consumedNonceRef.current === externalContent.nonce) return;
+    if (insertRecognizedBlocks(editor, externalContent.blocks, insertionBookmarkRef.current)) {
+      consumedNonceRef.current = externalContent.nonce;
+      insertionBookmarkRef.current = null;
+      onExternalContentConsumed?.(externalContent.nonce);
+    }
+  }, [editor, externalContent, onExternalContentConsumed]);
 
   // overrideDescription 用于示例点击：此时 setDescription 尚未生效，直接传入目标文案
   const handleConvert = async (overrideDescription?: string) => {
@@ -167,8 +228,60 @@ export default function FormulaComposer({
   };
 
   const insertTemplate = (template: string) => {
-    mathFieldRef.current?.insert(template, { selectionMode: 'placeholder' });
-    mathFieldRef.current?.focus();
+    const field = mathFieldRef.current;
+    if (!field) return;
+    // MathLive 的 #0 会被替换成当前选区内容：选区为空时变成空串，产生零宽度空组
+    // （光标进不去、鼠标点不中——体验报告的 vec bug 根因）。空选区改用 #? 占位符填空；
+    // 有选区时保留 #0，选区内容被包进结构（先写内容后画线的包裹式输入）。
+    const effective = field.selectionIsCollapsed ? template.replace(/#0/g, '#?') : template;
+    field.insert(effective, { mode: 'math', selectionMode: 'placeholder' });
+    // Button click completes after this handler and would otherwise reclaim focus.
+    requestAnimationFrame(() => field.focus());
+  };
+
+  const handleFieldReady = useCallback((field: MathfieldElement | null) => setReadyField(field), []);
+
+  const executeQuick = useCallback((key: string) => {
+    if (key === 'm') {
+      setShowMatrix(true);
+    } else {
+      const action = quickTemplates[key];
+      if (!action) return false;
+      insertTemplate(action.value);
+    }
+    setShowQuickPanel(false);
+    requestAnimationFrame(() => mathFieldRef.current?.focus());
+    return true;
+  }, []);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'g') {
+        event.preventDefault(); setShowQuickPanel(true); return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (showQuickPanel) setShowQuickPanel(false); else closeDialog();
+        return;
+      }
+      if (showQuickPanel && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const key = event.key.toLowerCase();
+        if (executeQuick(key)) event.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [dialogOpen, executeQuick, showQuickPanel]);
+
+  const recognizeHandwriting = async (dataUrl: string) => {
+    setError('');
+    try {
+      const result = await recognizeFormula(dataUrl, token);
+      setLatex(result.latex); setResolvedDisplay(result.display_mode);
+    } catch (recognitionError) {
+      setError(recognitionError instanceof Error ? recognitionError.message : '手写识别失败，请重试');
+    }
   };
 
   const insertFormula = () => {
@@ -261,15 +374,33 @@ export default function FormulaComposer({
                 <FormulaPreview latex={latex} display={displayChoice === 'auto' ? resolvedDisplay : displayChoice} />
               </div>
 
-              <div className="formula-visual-editor"><FormulaMathField value={latex} onChange={setLatex} fieldRef={mathFieldRef} /></div>
+              <div className="formula-visual-editor"><FormulaMathField value={latex} onChange={setLatex} fieldRef={mathFieldRef} onReady={handleFieldReady} /></div>
+              <FormulaStructureNav field={readyField} />
 
               <div className="formula-toolbar" aria-label="公式工具栏">
-                {templates.map((item) => <button key={item.label} type="button" onClick={() => insertTemplate(item.value)} title={item.label}>{item.glyph}</button>)}
-                <button type="button" onClick={() => setShowMatrix((shown) => !shown)} title="矩阵"><Grid3X3 size={16} /></button>
-                <button type="button" onClick={() => setShowMore((shown) => !shown)} title="更多符号"><ChevronDown size={16} /></button>
+                {templates.map((item) => (
+                  <button key={item.label} type="button" onClick={() => insertTemplate(item.value)} title={item.label} aria-label={item.label}>
+                    <FormulaGlyph latex={item.glyph} fallback={item.label} />
+                  </button>
+                ))}
+                <button type="button" onClick={() => setShowMatrix((shown) => !shown)} title="矩阵" aria-label="矩阵"><Grid3X3 size={16} /></button>
+                <button type="button" onClick={() => setShowMore((shown) => !shown)} title="更多符号" aria-label="更多符号"><ChevronDown size={16} /></button>
+                <button type="button" onClick={() => setShowQuickPanel((shown) => !shown)} title="快捷插入（Ctrl+Shift+G）" aria-label="打开快捷插入"><Keyboard size={16} /></button>
+                <button type="button" onClick={() => setShowHandwriting((shown) => { const next = !shown; if (next) { mathFieldRef.current?.blur(); window.mathVirtualKeyboard?.hide(); } return next; })} title="手写输入" aria-label="手写输入"><PenLine size={16} /></button>
               </div>
+              {showQuickPanel && (
+                <div className="formula-quick-panel" role="dialog" aria-label="快捷插入">
+                  {Object.entries(quickTemplates).map(([key, item]) => <button key={key} type="button" onClick={() => executeQuick(key)}><kbd>{key.toUpperCase()}</kbd><span>{item.label}</span></button>)}
+                  <button type="button" onClick={() => executeQuick('m')}><kbd>M</kbd><span>矩阵</span></button>
+                </div>
+              )}
+              {showHandwriting && <HandwritingCanvas onRecognize={recognizeHandwriting} />}
               {showMore && <div className="formula-more-symbols">
-                {moreTemplates.map((item) => <button key={item.label} type="button" onClick={() => insertTemplate(item.value)}>{item.label}</button>)}
+                {moreTemplates.map((item) => (
+                  <button key={item.label} type="button" onClick={() => insertTemplate(item.value)} title={item.label} aria-label={item.label}>
+                    <FormulaGlyph latex={item.glyph} fallback={item.label} />
+                  </button>
+                ))}
               </div>}
               {showMatrix && <div className="formula-matrix-panel">
                 <MatrixEditor onInsert={(matrixLatex) => {
@@ -300,4 +431,6 @@ export default function FormulaComposer({
       )}
     </div>
   );
-}
+});
+
+export default FormulaComposer;

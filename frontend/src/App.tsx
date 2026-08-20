@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { BookOpen, Map as MapIcon } from 'lucide-react';
+import { BookOpen, LoaderCircle, Map as MapIcon, X } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
@@ -8,7 +8,7 @@ import AuthModal from './components/AuthModal';
 import AuthControls from './components/AuthControls';
 import LearningSidebar from './components/LearningSidebar';
 import type { SidebarTab } from './components/LearningSidebar';
-import PDFToolbar from './components/PDFToolbar';
+import PDFToolbar, { type CaptureMode } from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
 import BottomSheet, { type SheetStage } from './components/BottomSheet';
@@ -23,14 +23,19 @@ import { useMarkers } from './hooks/useMarkers';
 import { useQuestionList } from './hooks/useQuestionList';
 import { useMapHomeData } from './hooks/useMapHomeData';
 import { useChat } from './hooks/useChat';
+import { usePdfPosition } from './hooks/usePdfPosition';
 import { useDarkMode } from './hooks/useDarkMode';
-import { savePage } from './utils/pagePosition';
 import { loadJSON, saveJSON } from './utils/storage';
 import { loadWorkspace, saveWorkspace, type WorkspaceView } from './utils/workspace';
 import { normalizeSectionKey } from './utils/sectionKey';
 import { getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
 import type { CropBBox } from './types';
+import { recognizeFormula } from './services/api';
+import PhotoPreviewSheet from './components/PhotoPreviewSheet';
+import type { RecognizedBlock } from './types';
+import { applyProgressDelta } from './hooks/useLearningProgress';
+import type { ExternalFormulaDraft } from './components/formula/FormulaComposer';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
 const ScreenCapture = lazy(() => import('./components/ScreenCapture'));
@@ -48,6 +53,7 @@ export default function App() {
     user, authReady, showAuthModal, setShowAuthModal,
     authMode, setAuthMode, authUsername, setAuthUsername,
     authPassword, setAuthPassword, authError, handleAuthSubmit, handleLogout,
+    migrationStatus, migrationVersion, retryMigration,
   } = useAuth();
 
   // 全局暗色模式：App 顶层唯一持有主题状态，暗色 class 在首帧绘制前由 hook 挂到 documentElement
@@ -57,8 +63,13 @@ export default function App() {
 
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureDraft, setCaptureDraft] = useState<CaptureDraft | null>(null);
-  const [bubbleStreaming, setBubbleStreaming] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('qa');
+  const [formulaRecognition, setFormulaRecognition] = useState<{ status: 'idle' | 'capturing' | 'recognizing' | 'error'; image?: string; error?: string }>({ status: 'idle' });
+  const [externalFormula, setExternalFormula] = useState<ExternalFormulaDraft | null>(null);
+  const [externalContent, setExternalContent] = useState<{ blocks: RecognizedBlock[]; nonce: string } | null>(null);
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const formulaAbortRef = useRef<AbortController | null>(null);
+  const { currentPage, setCurrentPage, saveTextbookPage } = usePdfPosition(textbookId);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [overlaySurface, setOverlaySurface] = useState<'none' | 'drawer' | 'bubble' | 'sheet-half' | 'sheet-full'>('none');
   const sheetStage: SheetStage = overlaySurface === 'sheet-half' ? 'half' : overlaySurface === 'sheet-full' ? 'full' : 'collapsed';
@@ -73,27 +84,51 @@ export default function App() {
   const [threadRequestKey, setThreadRequestKey] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const startupKeyRef = useRef('');
+  // SSE 问答属于独立后台任务，流式期间允许阅读导航；公式识别仍需局部锁定。
+  const interactionLocked = formulaRecognition.status === 'recognizing';
+
+  // Keep the browser's back/forward buttons meaningful for the main SPA views.
+  const navigatePage = (nextView: WorkspaceView, chapter: string | null = null) => {
+    const params = new URLSearchParams({ view: nextView });
+    if (nextView === 'map' && chapter) params.set('chapter', chapter);
+    const url = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({ learnmath: true, view: nextView, chapter }, '', url);
+    setView(nextView);
+    setSelectedMapChapter(nextView === 'map' ? chapter : null);
+  };
+
+  useEffect(() => {
+    const syncFromHistory = () => {
+      const params = new URLSearchParams(window.location.search);
+      const nextView: WorkspaceView = params.get('view') === 'reader' ? 'reader' : 'map';
+      setView(nextView);
+      setSelectedMapChapter(nextView === 'map' ? params.get('chapter') : null);
+    };
+    if (!window.history.state?.learnmath) {
+      const params = new URLSearchParams(window.location.search);
+      const initialView: WorkspaceView = params.get('view') === 'reader' ? 'reader' : 'map';
+      window.history.replaceState({ learnmath: true, view: initialView, chapter: params.get('chapter') }, '', window.location.href);
+    }
+    window.addEventListener('popstate', syncFromHistory);
+    return () => window.removeEventListener('popstate', syncFromHistory);
+  }, []);
 
   // 桌面端右栏可见时不累计未读；移动端 BottomSheet 半屏展开才算正在查看旁批。
   const chatVisible = isDesktop ? !desktopChatCollapsed : sheetStage === 'half';
   const markers = useMarkers(user, currentPage, textbookId);
-  const chat = useChat({ user, currentPage, textbookId, chatVisible, markersState: markers });
+  const mapCacheScope = user.isAnonymous ? (user.deviceId || 'anonymous') : (user.userId || user.deviceId || 'anonymous');
+  const chat = useChat({ user, currentPage, textbookId, chatVisible, markersState: markers,
+    onProgressDelta: (delta, sourceTextbookId) => applyProgressDelta(mapCacheScope, sourceTextbookId || textbookId, delta),
+  });
   // 提问记录侧栏：以消息条数变化作为刷新信号（新提问落库后长度必然 +1）
   const questionList = useQuestionList(user, chat.historyVersion, textbookId);
-  const mapHome = useMapHomeData(user.token || undefined, textbookId);
-  const previousHistoryVersionRef = useRef(chat.historyVersion);
+  const mapHome = useMapHomeData(user.token || undefined, textbookId, mapCacheScope);
 
   useEffect(() => {
-    if (previousHistoryVersionRef.current === chat.historyVersion) return;
-    previousHistoryVersionRef.current = chat.historyVersion;
-    void mapHome.refresh();
-  }, [chat.historyVersion, mapHome.refresh]);
+    if (migrationVersion > 0) void mapHome.refresh();
+  }, [mapHome.refresh, migrationVersion]);
 
   useEffect(() => { setSelectedMapChapter(null); }, [textbookId]);
-
-  useEffect(() => {
-    setBubbleStreaming(Boolean(captureDraft && chat.isLoading));
-  }, [captureDraft, chat.isLoading]);
 
   // 首次进入地图；之后仅在该教材有证据且保存过 reader 状态时恢复阅读。
   useEffect(() => {
@@ -102,12 +137,9 @@ export default function App() {
     const key = `${user.userId || user.deviceId}:${textbookId}`;
     if (startupKeyRef.current === key) return;
     const workspace = loadWorkspace(textbookId);
-    const explored = mapHome.chapters.some(item => item.exploration_progress.explored > 0);
-    // If the map service is temporarily unavailable, a previously saved reader
-    // workspace is still the most useful recovery path; only a known zero-
-    // evidence response should force the user back to the map.
-    const mapUnavailable = Boolean(mapHome.errors.__page);
-    if (workspace?.view === 'reader' && (explored || mapUnavailable)) {
+    // A persisted reader workspace is the user's explicit continuation point.
+    // It must not depend on the timing of the static index or progress request.
+    if (workspace?.view === 'reader') {
       setCurrentPage(workspace.page);
       setView('reader');
     } else {
@@ -145,11 +177,11 @@ export default function App() {
   const handleQuestionSelect = (marker: Marker) => {
     setCaptureDraft(null);
     setOverlaySurface('none');
-    setView('reader');
+    navigatePage('reader');
     // 跨教材记录：先写目标教材的页码恢复键，再切书，让 PDFViewer 既有的恢复机制落到目标页。
     // 不能切书后再 setCurrentPage——恢复 effect 会用旧页码覆盖，产生时序竞态。
     if (marker.textbook_id && marker.textbook_id !== textbookId) {
-      savePage(marker.textbook_id, marker.page_number);
+      saveTextbookPage(marker.textbook_id, marker.page_number);
       saveWorkspace(marker.textbook_id, { view: 'reader', page: marker.page_number });
       setTextbookId(marker.textbook_id as TextbookId);
     } else {
@@ -170,23 +202,43 @@ export default function App() {
   const markReaderStarted = (page = currentPage) => {
     startupKeyRef.current = `${user.userId || user.deviceId}:${textbookId}`;
     setStartupReady(true);
-    setView('reader');
+    navigatePage('reader');
     saveWorkspace(textbookId, { view: 'reader', page });
   };
 
   const openChapter = async (chapter: string, preferredNode?: import('./services/api').LearningMapNode) => {
+    const loadedCatalog = await mapHome.openChapter(chapter);
     let page: number | null = null;
     const marker = preferredNode?.chat.id ? questionList.items.find(item => item.id === preferredNode.chat.id) : undefined;
-    if (marker) page = marker.page_number;
-    if (!page) {
+    if (user.token) {
       const response = mapHome.nodesByChapter[chapter];
-      const section = response?.sections[0]?.section;
-      const key = normalizeSectionKey(section);
-      if (key && user.token) {
-        try { page = (await getSectionPage(textbookId, key, user.token)).page; } catch { /* fallback below */ }
+      const sections = [preferredNode?.section, response?.sections[0]?.section]
+        .map(section => normalizeSectionKey(section))
+        .filter((section): section is string => Boolean(section));
+      for (const section of sections) {
+        const staticPage = loadedCatalog?.chapters
+          .flatMap(item => item.sections)
+          .find(item => normalizeSectionKey(item.name) === section)?.page
+          ?? mapHome.sectionPages[section];
+        if (staticPage != null) { page = staticPage; break; }
+        try {
+          const result = await getSectionPage(textbookId, section, user.token);
+          if (result.page != null) { page = result.page; break; }
+        } catch { /* try the next section or fallback below */ }
       }
     }
-    if (!page) {
+    // Map reading actions should land on the knowledge point's textbook
+    // section. The source-question page can be unrelated (the learner may ask
+    // about an earlier concept while reading a later chapter), so use it only
+    // when the canonical section cannot be resolved. The adjacent chat button
+    // remains the explicit way to return to the source conversation.
+    if (page == null && marker) page = marker.page_number;
+    if (page == null) {
+      const staticChapterPage = loadedCatalog?.chapters.find(item => item.name === chapter)?.first_page
+        ?? mapHome.chapterPages[chapter];
+      if (staticChapterPage != null) page = staticChapterPage;
+    }
+    if (page == null) {
       const index = Math.max(0, mapHome.chapters.findIndex(item => item.chapter === chapter));
       const totalPages = pdfControls?.numPages || 1;
       page = Math.max(1, Math.round(totalPages * (index / Math.max(1, mapHome.chapters.length))));
@@ -194,7 +246,6 @@ export default function App() {
     // Persist the chapter landing page before switching into the reader. The
     // PDF viewer performs its one-time restore on mount, so writing the page
     // here prevents that restore from reverting a freshly resolved section.
-    savePage(textbookId, page);
     setCurrentPage(page);
     markReaderStarted(page);
   };
@@ -204,25 +255,45 @@ export default function App() {
     if (marker) handleQuestionSelect(marker);
   };
 
+  const retryMap = () => {
+    if (selectedMapChapter) void mapHome.openChapter(selectedMapChapter);
+    else { mapHome.retryCatalog(); void mapHome.refresh(); }
+  };
+
+  const openMapChapter = async (chapter: string) => {
+    await mapHome.openChapter(chapter);
+    navigatePage('map', chapter);
+  };
+
   const learningSidebar = (onClose?: () => void) => <LearningSidebar
     tab={sidebarTab} onTabChange={setSidebarTab} onClose={onClose}
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
     chapters={mapHome.chapters} chapterMap={selectedMapChapter ? mapHome.nodesByChapter[selectedMapChapter] || null : null} mapLoading={mapHome.loading} mapUnavailable={Boolean(mapHome.errors.__page)}
-    textbookSelected={Boolean(textbookId)} onRefreshMap={() => { void mapHome.refresh(); }} onOpenChapter={setSelectedMapChapter} onBack={() => setSelectedMapChapter(null)} onOpenChat={handleMapChatSelect}
+    textbookSelected={Boolean(textbookId)} onRefreshMap={() => { void mapHome.refresh(); }} onOpenChapter={openMapChapter} onBack={() => navigatePage('map')} onOpenChat={handleMapChatSelect}
   />;
 
   const openDrawer = (tab: SidebarTab) => {
-    if (bubbleStreaming) return;
+    if (interactionLocked) return;
     setIsCapturing(false);
     setCaptureDraft(null);
     setSidebarTab(tab);
     setOverlaySurface(isDesktop ? 'drawer' : 'sheet-full');
   };
 
-  const startCapture = () => {
-    if (bubbleStreaming) return;
+  const cancelFormulaRecognition = () => {
+    formulaAbortRef.current?.abort();
+    formulaAbortRef.current = null;
+    setIsCapturing(false);
+    setFormulaRecognition({ status: 'idle' });
+  };
+
+  const startCapture = (mode: CaptureMode) => {
+    if (interactionLocked) return;
+    formulaAbortRef.current?.abort();
+    setCaptureMode(mode);
     setCaptureDraft(null);
     setOverlaySurface('none');
+    setFormulaRecognition(mode === 'formula' ? { status: 'capturing' } : { status: 'idle' });
     setIsCapturing(true);
   };
 
@@ -262,7 +333,19 @@ export default function App() {
     itemsLoading={questionList.loading}
     itemsError={questionList.error}
     onRetryItems={() => { void questionList.refresh(); }}
+    externalFormula={externalFormula}
+    onExternalFormulaConsumed={nonce => setExternalFormula(current => current?.nonce === nonce ? null : current)}
+    onCancelGeneration={chat.cancelVisibleGeneration}
+    onOpenPhoto={() => setPhotoSheetOpen(true)}
+    externalContent={externalContent}
+    onExternalContentConsumed={nonce => setExternalContent(current => current?.nonce === nonce ? null : current)}
   />;
+
+  const handlePhotoQuestion = (image: string) => {
+    setPhotoSheetOpen(false);
+    chat.handleCapture(image, null, 'photo');
+    if (!isDesktop) setOverlaySurface('sheet-half');
+  };
 
   const captureBubble = captureDraft && overlaySurface === 'bubble' && captureDraft.page === currentPage ? (
     <CaptureBubble
@@ -276,12 +359,41 @@ export default function App() {
       onSend={chat.handleSendMessage}
       onClose={() => { setCaptureDraft(null); setOverlaySurface('none'); }}
       onExpand={handleQuestionSelect}
+      onCancelGeneration={chat.cancelVisibleGeneration}
     />
   ) : null;
 
   // 本页视图的首张选区在页内完成提问；对话视图里的再次框选作为下一轮待发附件。
+  const recognizeCapturedFormula = async (imageData: string) => {
+    const controller = new AbortController();
+    formulaAbortRef.current?.abort();
+    formulaAbortRef.current = controller;
+    setFormulaRecognition({ status: 'recognizing', image: imageData });
+    try {
+      const result = await recognizeFormula(imageData, user.token || undefined, controller.signal);
+      if (controller.signal.aborted) return;
+      const draft = { latex: result.latex, displayMode: result.display_mode, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` } satisfies ExternalFormulaDraft;
+      setExternalFormula(draft);
+      setFormulaRecognition({ status: 'idle' });
+      if (isDesktop) {
+        setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false);
+      } else {
+        setOverlaySurface('sheet-half');
+      }
+    } catch (recognitionError) {
+      if (controller.signal.aborted) return;
+      setFormulaRecognition({ status: 'error', image: imageData, error: recognitionError instanceof Error ? recognitionError.message : '公式识别失败，请重试' });
+    } finally {
+      if (formulaAbortRef.current === controller) formulaAbortRef.current = null;
+    }
+  };
+
   const handleCapture = (imageData: string, _pageRatioX: number, _pageRatioY: number, cropBBox: CropBBox) => {
     setIsCapturing(false);
+    if (captureMode === 'formula') {
+      void recognizeCapturedFormula(imageData);
+      return;
+    }
     if (panelMode === 'thread' && markers.activeMarker) {
       chat.handleCapture(imageData, cropBBox);
       if (isDesktop) {
@@ -303,11 +415,11 @@ export default function App() {
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    if (bubbleStreaming) return;
+    if (interactionLocked) return;
     setCaptureDraft(null);
     if (overlaySurface === 'bubble') setOverlaySurface('none');
     setCurrentPage(page);
-  }, [bubbleStreaming, overlaySurface]);
+  }, [interactionLocked, overlaySurface, setCurrentPage]);
 
   const selectClass = "text-sm rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
 
@@ -320,24 +432,26 @@ export default function App() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-200 dark:bg-indigo-500 dark:shadow-none">
               学
             </div>
-            <span className="text-lg font-bold text-slate-800 dark:text-slate-100">学数有道</span>
+            <span className="hidden text-lg font-bold text-slate-800 dark:text-slate-100 sm:inline">学数有道</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <select className={`${selectClass} w-24 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto`} value={textbookId} disabled={bubbleStreaming}
-              onChange={(e) => { if (bubbleStreaming) return; const v = e.target.value; setTextbookId(v as never); }}>
-              <option value="">选择教材...</option>
-              {PRESET_PDFS.map((pdf) => (
-                <option key={pdf.path} value={pdf.textbookId}>{pdf.name}</option>
-              ))}
-            </select>
+            {view === 'reader' && <select aria-label="选择教材" className={`${selectClass} w-24 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto`} value={textbookId} disabled={interactionLocked}
+              onChange={(e) => { if (interactionLocked) return; const v = e.target.value; setTextbookId(v as never); }}>
+              <option value="">选择教材...</option>{PRESET_PDFS.map((pdf) => <option key={pdf.path} value={pdf.textbookId}>{pdf.name}</option>)}
+            </select>}
 
-            {textbookId && <button type="button" disabled={bubbleStreaming} onClick={() => { if (!bubbleStreaming) setView(view === 'map' ? 'reader' : 'map'); }} className="toolbar-button" title={view === 'map' ? '开始阅读' : '返回学习地图'}>
+            {textbookId && <button type="button" disabled={interactionLocked} onClick={() => { if (!interactionLocked) navigatePage(view === 'map' ? 'reader' : 'map'); }} className="toolbar-button" title={view === 'map' ? '开始阅读' : '返回学习地图'}>
               {view === 'map' ? <BookOpen className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
               <span className="hidden sm:inline">{view === 'map' ? '阅读' : '地图'}</span>
             </button>}
 
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+
+            {migrationStatus !== 'idle' && <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status">
+              <span>{migrationStatus === 'syncing' ? '进度同步中' : '进度同步失败'}</span>
+              {migrationStatus === 'failed' && <button type="button" onClick={retryMigration} className="font-medium text-indigo-600 hover:underline dark:text-indigo-300">重试</button>}
+            </div>}
 
             <AuthControls user={user}
               onLoginClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
@@ -356,10 +470,20 @@ export default function App() {
               loading={mapHome.loading || !startupReady}
               questionItems={questionList.items}
               onContinue={openChapter}
-              onOpenChapter={chapter => { void openChapter(chapter); }}
+              onOpenChapter={openMapChapter}
+              selectedChapter={selectedMapChapter}
+              selectedChapterMap={selectedMapChapter ? mapHome.nodesByChapter[selectedMapChapter] || null : null}
+              selectedChapterError={selectedMapChapter ? mapHome.errors[selectedMapChapter] : undefined}
+              onBackToChapters={() => navigatePage('map')}
+              onStartChapter={() => { if (selectedMapChapter) void openChapter(selectedMapChapter); }}
+              onContinueNode={node => { if (selectedMapChapter) void openChapter(selectedMapChapter, node); }}
+              onOpenChat={handleMapChatSelect}
               onOpenQuestion={handleQuestionSelect}
-              onRetry={mapHome.refresh}
+              onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
+              textbookId={textbookId}
+              textbooks={PRESET_PDFS.map(pdf => ({ textbookId: pdf.textbookId, name: pdf.name }))}
+              onTextbookChange={value => setTextbookId(value as TextbookId)}
             />
           ) : isDesktop ? (
             <>
@@ -367,7 +491,7 @@ export default function App() {
                 {selectedPdf && textbookId ? (
                   <>
                     <PDFToolbar controls={pdfControls} onOpenDrawer={openDrawer} onCapture={startCapture} captureDisabled={!selectedPdf}
-                      navigationDisabled={bubbleStreaming}
+                      navigationDisabled={interactionLocked}
                       chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} />
                     <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange}
@@ -398,14 +522,14 @@ export default function App() {
               </div>
               {selectedPdf && <BottomSheet
                 stage={sheetStage}
-                onStageChange={stage => { if (!bubbleStreaming) setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none'); }}
+                onStageChange={stage => { if (!interactionLocked) setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none'); }}
                 unread={chat.unreadCount > 0}
                 pendingCount={chat.pendingImages.length}
-                onOpenChat={() => { if (bubbleStreaming) return; chat.markRead(); setOverlaySurface('sheet-half'); }}
-                onOpenUtility={() => { if (!bubbleStreaming) setOverlaySurface('sheet-full'); }}
+                onOpenChat={() => { if (interactionLocked) return; chat.markRead(); setOverlaySurface('sheet-half'); }}
+                onOpenUtility={() => { if (!interactionLocked) setOverlaySurface('sheet-full'); }}
                 onCapture={startCapture}
                 controls={pdfControls}
-                interactionLocked={bubbleStreaming}
+                interactionLocked={interactionLocked}
               >
                 {sheetStage === 'half' ? pageNotesPanel : learningSidebar(() => setOverlaySurface('none'))}
               </BottomSheet>}
@@ -418,8 +542,12 @@ export default function App() {
         </UtilityDrawer>
 
         {isCapturing && (
-          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={handleCapture} onCancel={() => setIsCapturing(false)} /></DeferredPanel>
+          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={handleCapture} onCancel={() => { setIsCapturing(false); if (captureMode === 'formula') setFormulaRecognition({ status: 'idle' }); }} /></DeferredPanel>
         )}
+
+        {formulaRecognition.status === 'recognizing' && <div className="fixed bottom-5 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" role="status"><LoaderCircle className="h-4 w-4 animate-spin text-indigo-600" /><span>正在识别公式…</span><button type="button" onClick={cancelFormulaRecognition} className="text-xs font-medium text-slate-500 hover:text-rose-600">取消</button></div>}
+        {formulaRecognition.status === 'error' && <div className="fixed bottom-5 left-1/2 z-[100] flex w-[min(440px,calc(100%-24px))] -translate-x-1/2 items-center gap-3 rounded-lg border border-rose-200 bg-white px-4 py-3 text-sm shadow-xl dark:border-rose-900 dark:bg-slate-900" role="alert"><span className="min-w-0 flex-1 text-rose-700 dark:text-rose-300">{formulaRecognition.error}</span><button type="button" onClick={() => { if (formulaRecognition.image) void recognizeCapturedFormula(formulaRecognition.image); }} className="text-xs font-semibold text-indigo-600">重试</button><button type="button" onClick={cancelFormulaRecognition} className="text-slate-400" title="关闭" aria-label="关闭"><X className="h-4 w-4" /></button></div>}
+        {photoSheetOpen && <PhotoPreviewSheet token={user.token} onPhotoQuestion={handlePhotoQuestion} onInsert={blocks => { setExternalContent({ blocks, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` }); setPhotoSheetOpen(false); if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); } else setOverlaySurface('sheet-half'); }} onClose={() => setPhotoSheetOpen(false)} />}
 
         {showAuthModal && (
           <AuthModal mode={authMode} username={authUsername} password={authPassword} error={authError}

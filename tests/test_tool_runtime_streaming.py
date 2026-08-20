@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 from app.services.agents.tool_runtime import (
     ToolRuntime,
+    ToolRuntimeConfig,
     ToolRuntimeContext,
 )
 from app.services.agents.tool_def import ToolDef
@@ -44,6 +45,53 @@ class ToolRuntimeStreamingTests(unittest.IsolatedAsyncioTestCase):
         result = events[-1].data["result"]
         self.assertEqual(result.reasoning, "先分析再计算")
         self.assertEqual(result.content, "答案是 42")
+        self.assertFalse(any(
+            message.get("role") == "assistant" and message.get("content") == "答案是 42"
+            for message in result.messages
+        ))
+
+    async def test_budget_final_answer_is_not_appended_to_result_messages(self):
+        tool_call = SimpleNamespace(
+            index=0,
+            id="call-budget",
+            function=SimpleNamespace(
+                name="retrieve_kg_context",
+                arguments='{"query":"矩阵乘法"}',
+            ),
+        )
+        responses = iter([
+            [chunk(tool_calls=[tool_call])],
+            [chunk(content="预算结束后的最终回答")],
+        ])
+
+        async def model_call(**_kwargs):
+            return next(responses)
+
+        tool = ToolDef(
+            name="retrieve_kg_context",
+            display_name="查询知识图谱",
+            description="查询知识图谱",
+            input_schema={"type": "object", "properties": {}},
+            execute=lambda query: {"status": "resolved", "query": query},
+        )
+        runtime = ToolRuntime(
+            tools=[tool],
+            model_call=model_call,
+            config=ToolRuntimeConfig(max_total_calls=1),
+        )
+        events = [event async for event in runtime.run(
+            [{"role": "user", "content": "问题"}],
+            ToolRuntimeContext(turn_id="turn", user_id="user"),
+        )]
+
+        result = events[-1].data["result"]
+        self.assertEqual(result.content, "预算结束后的最终回答")
+        self.assertEqual(result.degradation_code, "tool_budget_exceeded")
+        self.assertFalse(any(
+            message.get("role") == "assistant"
+            and message.get("content") == "预算结束后的最终回答"
+            for message in result.messages
+        ))
 
     async def test_sync_provider_stream_does_not_block_event_loop(self):
         class SlowStream:

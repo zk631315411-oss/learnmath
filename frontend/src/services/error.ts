@@ -11,6 +11,7 @@ export class ApiError extends Error {
   type: ErrorType;
   status?: number;
   detail?: string;
+  code?: string;
   retryable: boolean;
 
   constructor(options: {
@@ -18,6 +19,7 @@ export class ApiError extends Error {
     type: ErrorType;
     status?: number;
     detail?: string;
+    code?: string;
     retryable?: boolean;
   }) {
     super(options.message);
@@ -25,6 +27,7 @@ export class ApiError extends Error {
     this.type = options.type;
     this.status = options.status;
     this.detail = options.detail;
+    this.code = options.code;
     this.retryable = options.retryable ?? (
       options.type === ErrorType.NETWORK ||
       options.type === ErrorType.TIMEOUT ||
@@ -35,21 +38,24 @@ export class ApiError extends Error {
 
 export function fromResponse(res: Response, body?: Record<string, any>): ApiError {
   const detail = body?.detail;
+  const structured = detail && typeof detail === 'object' ? detail : undefined;
+  const detailMessage = structured?.message || detail;
+  const detailCode = structured?.code;
   let type: ErrorType;
   let message: string;
 
   if (res.status === 401 || res.status === 403) {
     type = ErrorType.AUTH;
-    message = detail || '认证失败，请重新登录';
+    message = detailMessage || '认证失败，请重新登录';
   } else if (res.status === 422) {
     type = ErrorType.VALIDATION;
-    message = detail || '请求参数有误';
+    message = detailMessage || '请求参数有误';
   } else if (res.status >= 500) {
     type = ErrorType.SERVER;
-    message = detail || '服务器错误，请稍后重试';
+    message = detailMessage || '服务器错误，请稍后重试';
   } else {
     type = ErrorType.UNKNOWN;
-    message = detail || `请求失败 (${res.status})`;
+    message = detailMessage || `请求失败 (${res.status})`;
   }
 
   return new ApiError({
@@ -57,6 +63,7 @@ export function fromResponse(res: Response, body?: Record<string, any>): ApiErro
     type,
     status: res.status,
     detail: typeof detail === 'string' ? detail : JSON.stringify(detail),
+    code: detailCode,
   });
 }
 

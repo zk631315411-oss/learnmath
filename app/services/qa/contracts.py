@@ -26,3 +26,4 @@ class QATurnInput:
     crop_bbox: dict[str, Any] | None = None
     screenshot_context_id: str | None = None
     token: str | None = None
+    client_turn_id: str | None = None  # 前端稳定逻辑 turn ID（重试幂等/evidence 去重）

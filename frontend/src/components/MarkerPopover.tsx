@@ -42,8 +42,8 @@ export default function MarkerPopover({ marker, onClose, onDelete }: Props) {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 popover-content">
           <style>{popKatexCSS}</style>
           {/* 首个问题 */}
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
-            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">问题</p>
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg">
+            <p className="text-xs font-medium text-indigo-600 dark:text-indigo-300 mb-1">问题</p>
             <div               className="text-sm text-slate-700 dark:text-slate-300 marker-popover-content"><MarkdownRenderer>{marker.question}</MarkdownRenderer></div>
           </div>
 
@@ -63,7 +63,7 @@ export default function MarkerPopover({ marker, onClose, onDelete }: Props) {
           {marker.follow_ups && marker.follow_ups.length > 0 && marker.follow_ups.map((fu, i) => (
             <div key={i} className="space-y-2 pl-3 border-l-2 border-slate-300 dark:border-slate-600">
               <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded">
-                <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-0.5">追问 {i + 1}</p>
+                <p className="text-xs font-medium text-indigo-600 dark:text-indigo-300 mb-0.5">追问 {i + 1}</p>
                 <div className="text-xs text-slate-700 dark:text-slate-300 marker-popover-content"><MarkdownRenderer>{fu.question}</MarkdownRenderer></div>
               </div>
               {fu.answer ? (

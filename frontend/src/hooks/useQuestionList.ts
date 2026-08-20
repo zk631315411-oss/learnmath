@@ -16,6 +16,7 @@ import type { User } from '../types';
 export function useQuestionList(user: User, chatMessageCount: number, textbookId: string) {
   const [items, setItems] = useState<Marker[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const userId = user.userId || user.deviceId;
 
   const refresh = useCallback(async () => {
@@ -24,12 +25,13 @@ export function useQuestionList(user: User, chatMessageCount: number, textbookId
       return;
     }
     setLoading(true);
+    setError(null);
     try {
       // 透传教材 ID 过滤：侧栏只列当前教材的提问（NULL 老数据仍全教材可见，由后端统一处理）
       const data = await getAllChatHistory(userId, 500, textbookId);
       setItems(Array.isArray(data) ? data.map(normalizeChatHistoryRecord) : []);
     } catch {
-      // 拉取失败保留旧列表：侧栏不是主链路，失败不应打断阅读，下一次触发时会再试
+      setError('提问记录加载失败');
     } finally {
       setLoading(false);
     }
@@ -37,8 +39,9 @@ export function useQuestionList(user: User, chatMessageCount: number, textbookId
 
   // user 变化或聊天消息条数变化时刷新；refresh 随 userId 变化，保证新用户数据不串号
   useEffect(() => {
-    refresh();
+    setItems([]);
+    void refresh();
   }, [userId, chatMessageCount, refresh]);
 
-  return { items, loading, refresh };
+  return { items, loading, error, refresh };
 }

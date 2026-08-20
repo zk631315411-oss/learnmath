@@ -49,6 +49,31 @@ class Config:
     FORMULA_CONVERSION_TIMEOUT_SECONDS: float = float(
         os.getenv("FORMULA_CONVERSION_TIMEOUT_SECONDS", "8")
     )
+    FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS: float = float(
+        os.getenv("FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS", "15")
+    )
+
+    # 公式截图识别视觉 provider。视觉 key 与描述转写/fallback key 始终分离。
+    FORMULA_VISION_API_KEY: str = os.getenv("FORMULA_VISION_API_KEY", "")
+    FORMULA_VISION_API_BASE: str = os.getenv(
+        "FORMULA_VISION_API_BASE", "https://open.bigmodel.cn/api/paas/v4"
+    )
+    FORMULA_VISION_MODEL: str = os.getenv("FORMULA_VISION_MODEL", "glm-4v-flash")
+    FORMULA_VISION_TIMEOUT_SECONDS: float = float(
+        os.getenv("FORMULA_VISION_TIMEOUT_SECONDS", "8")
+    )
+    FORMULA_FALLBACK_API_KEY: str = os.getenv("FORMULA_FALLBACK_API_KEY", "")
+    FORMULA_FALLBACK_API_BASE: str = os.getenv("FORMULA_FALLBACK_API_BASE", "")
+    FORMULA_FALLBACK_MODEL: str = os.getenv("FORMULA_FALLBACK_MODEL", "")
+    FORMULA_FALLBACK_TIMEOUT_SECONDS: float = float(
+        os.getenv("FORMULA_FALLBACK_TIMEOUT_SECONDS", "5")
+    )
+    FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS: float = float(
+        os.getenv("FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS", "15")
+    )
+    FORMULA_CONTENT_VISION_TIMEOUT_SECONDS: float = float(
+        os.getenv("FORMULA_CONTENT_VISION_TIMEOUT_SECONDS", "12")
+    )
 
     # SQLite 数据库路径，可用环境变量覆盖以便隔离测试（空值回退默认路径）
     DB_PATH: str = os.getenv("AI_MATH_DB_PATH") or str(DATA_DIR / "learning.db")

@@ -1,13 +1,28 @@
+import logging
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.db.connection import init_db
-from app.routers import auth, chat, formula, qa
+from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook
 
 # 确保数据目录存在并初始化数据库（幂等，重复启动无副作用）
 config.ensure_dirs()
 init_db()
+
+# Evidence metrics must remain searchable in both local Uvicorn logs and
+# production process output; the application logger otherwise defaults to a
+# warning-only last-resort handler.
+evidence_logger = logging.getLogger("learnmath.evidence")
+evidence_logger.setLevel(logging.INFO)
+if not evidence_logger.handlers:
+    uvicorn_error_logger = logging.getLogger("uvicorn.error")
+    if uvicorn_error_logger.handlers:
+        evidence_logger.handlers.extend(uvicorn_error_logger.handlers)
+    else:
+        evidence_logger.addHandler(logging.StreamHandler())
+evidence_logger.propagate = False
 
 app = FastAPI(
     title="LearnMath API",
@@ -28,6 +43,9 @@ app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(formula.router)
 app.include_router(qa.router)
+app.include_router(learning_map.router)
+app.include_router(learning_progress.router)
+app.include_router(textbook.router)
 
 
 @app.get("/")

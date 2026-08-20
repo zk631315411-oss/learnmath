@@ -125,6 +125,9 @@ export async function request<T = unknown>(config: RequestOptions): Promise<T> {
 
       try {
         const controller = new AbortController();
+        const abortFromCaller = () => controller.abort();
+        if (finalConfig.signal?.aborted) controller.abort();
+        else finalConfig.signal?.addEventListener('abort', abortFromCaller, { once: true });
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
         let res: Response;
@@ -135,11 +138,13 @@ export async function request<T = unknown>(config: RequestOptions): Promise<T> {
           });
         } catch (fetchErr) {
           if (controller.signal.aborted) {
+            if (finalConfig.signal?.aborted) throw fromNetworkError(new Error('请求已取消'));
             throw timeoutError(timeout);
           }
           throw fromNetworkError(fetchErr);
         } finally {
           clearTimeout(timeoutId);
+          finalConfig.signal?.removeEventListener('abort', abortFromCaller);
         }
 
         if (rawResponse) {

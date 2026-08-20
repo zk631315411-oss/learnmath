@@ -91,6 +91,10 @@ _EXPLANATION_PREFIX = re.compile(
 )
 _CJK_OUTSIDE_TEXT = re.compile(r"[\u3400-\u9fff]")
 _CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+_RELAXED_LATEX_OBJECT = re.compile(
+    r'^\{\s*"latex"\s*:\s*"(?P<latex>(?:\\[^\r\n]|[^"\\\x00-\x1f\x7f])*)"\s*\}$'
+)
+_JSON_LIKE_OBJECT = re.compile(r'^\{.*"\s*:\s*".*\}$', re.DOTALL)
 _BLOCK_STRUCTURE = re.compile(
     r"\\begin\s*\{(?:matrix|[bBpvV]matrix|cases|aligned|align(?:ed)?|gather(?:ed)?|split)\}"
     r"|\\\\"
@@ -144,20 +148,22 @@ class OpenAIFormulaProvider:
 
 
 def build_default_providers() -> list[FormulaProvider]:
-    if not (
-        config.FORMULA_API_BASE
-        and config.FORMULA_API_KEY
-        and config.FORMULA_MODEL
-    ):
-        return []
-    return [
-        OpenAIFormulaProvider(
+    providers: list[FormulaProvider] = []
+    if config.FORMULA_API_BASE and config.FORMULA_API_KEY and config.FORMULA_MODEL:
+        providers.append(OpenAIFormulaProvider(
             "formula_model",
             config.FORMULA_API_KEY,
             config.FORMULA_API_BASE,
             config.FORMULA_MODEL,
-        )
-    ]
+        ))
+    if config.FORMULA_FALLBACK_API_BASE and config.FORMULA_FALLBACK_API_KEY and config.FORMULA_FALLBACK_MODEL:
+        providers.append(OpenAIFormulaProvider(
+            "formula_fallback",
+            config.FORMULA_FALLBACK_API_KEY,
+            config.FORMULA_FALLBACK_API_BASE,
+            config.FORMULA_FALLBACK_MODEL,
+        ))
+    return providers
 
 
 def sanitize_latex(raw: str) -> str:
@@ -178,7 +184,15 @@ def sanitize_latex(raw: str) -> str:
         elif isinstance(parsed, str):
             raise UnsafeFormulaError("模型返回了不符合公式协议的内容")
     except json.JSONDecodeError:
-        pass
+        # Some OpenAI-compatible vision providers emit a fenced JSON object but
+        # leave LaTeX backslashes unescaped (for example, {"latex":"\frac..."}).
+        # Accept only the exact one-field shape; all extracted text still passes
+        # through the same control-character and command safety checks below.
+        relaxed = _RELAXED_LATEX_OBJECT.fullmatch(value)
+        if relaxed:
+            value = relaxed.group("latex").strip(" \r\n")
+        elif _JSON_LIKE_OBJECT.fullmatch(value):
+            raise UnsafeFormulaError("模型返回了不符合公式协议的内容")
 
     delimiter_pairs = (("$$", "$$"), ("\\[", "\\]"), ("\\(", "\\)"), ("$", "$"))
     for start, end in delimiter_pairs:
@@ -215,7 +229,7 @@ class FormulaConversionService:
         timeout_seconds: float | None = None,
     ) -> None:
         self.providers = providers if providers is not None else build_default_providers()
-        self.timeout_seconds = timeout_seconds or config.FORMULA_CONVERSION_TIMEOUT_SECONDS
+        self.timeout_seconds = timeout_seconds or config.FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS
 
     async def convert(
         self,
@@ -226,16 +240,18 @@ class FormulaConversionService:
             raise FormulaConversionError("没有可用的公式转换提供方")
 
         deadline = time.monotonic() + self.timeout_seconds
-        for provider in self.providers:
+        for index, provider in enumerate(self.providers):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
+            provider_budget = config.FORMULA_CONVERSION_TIMEOUT_SECONDS if index == 0 else config.FORMULA_FALLBACK_TIMEOUT_SECONDS
+            budget = min(remaining, provider_budget)
             started = time.monotonic()
             status = "error"
             error_type = ""
             try:
                 raw = await asyncio.wait_for(
-                    provider.convert(description, remaining), timeout=remaining
+                    provider.convert(description, budget), timeout=budget
                 )
                 latex = sanitize_latex(raw)
                 status = "success"

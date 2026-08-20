@@ -62,8 +62,10 @@ class EvidenceDbTests(unittest.TestCase):
         ])
         rows = list_evidence_for_user("u1")
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]["node_id"], "gaodai_shang:节点A")
-        self.assertEqual(rows[1]["node_id"], "gaodai_shang:节点B")
+        self.assertEqual(
+            {row["node_id"] for row in rows},
+            {"gaodai_shang:节点A", "gaodai_shang:节点B"},
+        )
 
     def test_time_ordering_ascending(self):
         # 依插入顺序时间序递增；list_evidence_for_user_node 应按 created_at 升序

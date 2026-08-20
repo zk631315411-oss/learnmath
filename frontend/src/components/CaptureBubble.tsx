@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { CheckCircle2, GripHorizontal, LoaderCircle, PanelRightOpen, Send, X } from 'lucide-react';
+import { CheckCircle2, CircleStop, GripHorizontal, LoaderCircle, PanelRightOpen, Send, X } from 'lucide-react';
 
 import MarkdownRenderer from './MarkdownRenderer';
 import type { Marker } from './PageMarker';
@@ -23,9 +23,10 @@ interface Props {
   onSend: (content: string, options?: SendMessageOptions) => Promise<Marker | null>;
   onClose: () => void;
   onExpand: (marker: Marker) => void;
+  onCancelGeneration?: () => void;
 }
 
-type BubbleState = 'draft' | 'streaming' | 'complete';
+type BubbleState = 'draft' | 'streaming' | 'complete' | 'interrupted';
 type RatioPosition = { x: number; y: number };
 
 const BUBBLE_WIDTH = 344;
@@ -35,7 +36,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-export default function CaptureBubble({ capture, mobile, messages, isLoading, error, thinkingStage, thinkingStageKey, onSend, onClose, onExpand }: Props) {
+export default function CaptureBubble({ capture, mobile, messages, isLoading, error, thinkingStage, thinkingStageKey, onSend, onClose, onExpand, onCancelGeneration }: Props) {
   const [state, setState] = useState<BubbleState>('draft');
   const [input, setInput] = useState('');
   const [marker, setMarker] = useState<Marker | null>(null);
@@ -106,8 +107,12 @@ export default function CaptureBubble({ capture, mobile, messages, isLoading, er
     const result = await onSend(question, firstQuestion
       ? { newThread: true, capture: { image: capture.image, cropBBox: capture.cropBBox } }
       : undefined);
-    if (result) setMarker(result);
-    setState('complete');
+    if (result) {
+      setMarker(result);
+      setState('complete');
+    } else {
+      setState('interrupted');
+    }
   };
 
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -130,9 +135,7 @@ export default function CaptureBubble({ capture, mobile, messages, isLoading, er
     if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
   };
 
-  const close = () => {
-    if (state !== 'streaming') onClose();
-  };
+  const close = () => onClose();
 
   const card = (
     <div
@@ -157,7 +160,9 @@ export default function CaptureBubble({ capture, mobile, messages, isLoading, er
         <span className="min-w-0 flex-1 text-sm font-semibold text-slate-700 dark:text-slate-100">框选提问</span>
         {state === 'streaming' && <span className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-300"><LoaderCircle className="h-3.5 w-3.5 animate-spin" />{thinkingStageKey === 'evidence_report' ? '记录中' : '回答中'}</span>}
         {state === 'complete' && <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="h-3.5 w-3.5" />已保存</span>}
-        <button type="button" onPointerDown={event => event.stopPropagation()} onClick={close} disabled={state === 'streaming'} className="icon-button" title={state === 'streaming' ? '回答完成后可关闭' : '关闭'} aria-label="关闭框选提问"><X className="h-4 w-4" /></button>
+        {state === 'interrupted' && <span className="text-xs text-rose-600 dark:text-rose-300">已中断</span>}
+        {state === 'streaming' && <button type="button" onPointerDown={event => event.stopPropagation()} onClick={onCancelGeneration} disabled={!onCancelGeneration} className="icon-button text-rose-500 hover:text-rose-600" title="停止生成" aria-label="停止生成"><CircleStop className="h-4 w-4" /></button>}
+        <button type="button" onPointerDown={event => event.stopPropagation()} onClick={close} className="icon-button" title="关闭" aria-label="关闭框选提问"><X className="h-4 w-4" /></button>
       </div>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">

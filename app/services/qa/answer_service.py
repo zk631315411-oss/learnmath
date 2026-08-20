@@ -24,6 +24,7 @@ from app.services.agents.one_shot_tool import run_one_shot_tool
 from app.services.agents.tools.report_turn_outcome import build_report_turn_outcome_tool
 from app.services.llm_service import llm_service
 from app.services.qa import evidence_reporting
+from app.services.learning.progress import project_user_progress
 from app.services.qa.contracts import QATurnInput
 from app.services.qa.prompt_builder import (
     build_system_prompt,
@@ -155,14 +156,17 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         # 自评证据回路的本轮/线程 resolved 节点集合：
         # 本轮从 retrieve_kg_context 的 tool_result 累积；线程历史从已存 chat_history 恢复。
         turn_resolved_node_ids: set[str] = set()
+        turn_resolved_node_ids_in_order: list[str] = []
         # 线程历史只在主回答完成后、判断 evidence eligibility 时读取一次。
         thread_resolved_node_ids: set[str] | None = None
+        thread_resolved_node_ids_recent_first: list[str] = []
         runtime_messages: list[dict] | None = None
         fork_attempted = False
         fork_tool_succeeded = False
         report_path = "none"
         evidence_persisted = 0
         invalid_node_ids = 0
+        progress_delta: dict | None = None
 
         async for event in runtime.run(initial_messages, context):
             event_type = event.type
@@ -193,9 +197,13 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                     and result.get("status") == "resolved"
                 ):
                     # 累积本轮 resolved 节点；供 report_turn_outcome 的 node_id 合法性校验
-                    turn_resolved_node_ids |= evidence_reporting.extract_resolved_node_ids([
+                    resolved_in_order = evidence_reporting.extract_resolved_node_ids_in_order([
                         {"tool": tool_name, "result": result}
                     ])
+                    turn_resolved_node_ids.update(resolved_in_order)
+                    for node_id in resolved_in_order:
+                        if node_id not in turn_resolved_node_ids_in_order:
+                            turn_resolved_node_ids_in_order.append(node_id)
                     # P0-2 计数②：retrieve 出现 resolved 结果的轮次数（一次 resolved 记一行）
                     evidence_log.info(
                         "learnmath.evidence: resolved 结果出现 user=%s turn=%s",
@@ -248,7 +256,10 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
 
         main_latency_ms = int((time.perf_counter() - started_at) * 1000)
         if thread_resolved_node_ids is None:
-            thread_resolved_node_ids = evidence_reporting.load_thread_resolved_node_ids(
+            (
+                thread_resolved_node_ids,
+                thread_resolved_node_ids_recent_first,
+            ) = evidence_reporting.load_thread_resolved_node_context(
                 turn_input.chat_id, turn_input.user_id,
             )
         eligible = bool(turn_resolved_node_ids or thread_resolved_node_ids)
@@ -259,7 +270,12 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             fork_started_at = time.perf_counter()
             fork_attempted = True
             report_tool = build_report_turn_outcome_tool()
-            allowed_node_ids = sorted(turn_resolved_node_ids | thread_resolved_node_ids)[:3]
+            allowed_node_ids = evidence_reporting.select_evidence_candidate_node_ids(
+                turn_node_ids=turn_resolved_node_ids_in_order,
+                thread_node_ids_recent_first=thread_resolved_node_ids_recent_first,
+                user_id=turn_input.user_id,
+                turn_id=turn_id,
+            )
             # ToolRuntimeResult.messages intentionally stops before the final
             # visible assistant answer. This keeps the rating anchored to the
             # student's latest message and all help received before it.
@@ -301,9 +317,23 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                         turn_resolved_node_ids=turn_resolved_node_ids,
                         thread_resolved_node_ids=thread_resolved_node_ids,
                         report_path="evidence_fork",
+                        client_turn_id=turn_input.client_turn_id,
                     )
                     evidence_persisted += written
                     invalid_node_ids += max(0, len(requested_node_ids) - written)
+                    if written:
+                        persisted_node_ids = [
+                            node_id for node_id in requested_node_ids
+                            if node_id in (turn_resolved_node_ids | thread_resolved_node_ids)
+                            and node_id.startswith(f"{turn_input.textbook_id}:")
+                        ]
+                        if persisted_node_ids:
+                            progress_delta = await run_in_threadpool(
+                                project_user_progress,
+                                turn_input.user_id,
+                                turn_input.textbook_id,
+                                node_ids=persisted_node_ids,
+                            )
                 else:
                     evidence_log.warning(
                         "learnmath.evidence: evidence fork failed user=%s turn=%s code=%s detail=%s",
@@ -343,6 +373,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             tool_activities=list(tool_activities.values()),
             screenshot_context_id=cache_id or None,
             qa_turn_id=turn_id, latency_ms=latency_ms,
+            progress_delta=progress_delta,
         )
 
     except asyncio.CancelledError:

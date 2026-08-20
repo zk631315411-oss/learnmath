@@ -1,20 +1,25 @@
 """问答历史 API — 聊天记录 CRUD 与匿名→登录账号迁移。"""
-from typing import Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.auth.jwt_handler import decode_token
 
 from app.db.chat_history_db import (
+    append_follow_up,
     delete_chat_history,
     get_chat_history,
     migrate_user_id,
     save_chat_history,
-    update_chat_answer,
+    update_chat_record,
+    update_follow_up,
 )
 
 router = APIRouter(prefix="/api/chat", tags=["智能问答"])
+
+# 生成状态机取值（Batch 1 数据契约）
+GenerationStatus = Literal["pending", "completed", "interrupted", "cancelled"]
 
 
 class SaveChatRequest(BaseModel):
@@ -33,9 +38,13 @@ class SaveChatRequest(BaseModel):
     thinking: Optional[str] = None
     tool_activities: Optional[str] = None
     follow_ups: Optional[str] = None
+    client_turn_id: Optional[str] = Field(default=None, max_length=64)
+    generation_status: Optional[GenerationStatus] = None
 
 
 class UpdateChatRequest(BaseModel):
+    """显式字段语义：只有请求体里出现的字段会被更新；显式传 null 表示清空该字段。"""
+
     answer: Optional[str] = None
     screenshot_context_id: Optional[str] = None
     thumbnail: Optional[str] = None
@@ -43,6 +52,40 @@ class UpdateChatRequest(BaseModel):
     thinking: Optional[str] = None
     tool_activities: Optional[str] = None
     follow_ups: Optional[str] = None
+    generation_status: Optional[GenerationStatus] = None
+    generation_error: Optional[str] = None
+    client_turn_id: Optional[str] = Field(default=None, max_length=64)
+
+
+class FollowUpTurnIn(BaseModel):
+    """追加追问：发送时先落 pending 项，turn_id 为前端生成的稳定逻辑 ID。"""
+
+    turn_id: str = Field(..., min_length=1, max_length=64)
+    question: str = ""
+    answer: Optional[str] = None
+    thinking: Optional[str] = None
+    tool_activities: Optional[List[dict]] = None
+    image: Optional[str] = None
+    crop_bbox: Optional[dict] = None
+    screenshot_context_id: Optional[str] = None
+    qa_turn_id: Optional[str] = None
+    status: Optional[GenerationStatus] = None
+    error_message: Optional[str] = None
+
+
+class FollowUpUpdateIn(BaseModel):
+    """按 turn_id 更新追问：同样采用显式字段语义（传 null = 清空）。"""
+
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    thinking: Optional[str] = None
+    tool_activities: Optional[List[dict]] = None
+    image: Optional[str] = None
+    crop_bbox: Optional[dict] = None
+    screenshot_context_id: Optional[str] = None
+    qa_turn_id: Optional[str] = None
+    status: Optional[GenerationStatus] = None
+    error_message: Optional[str] = None
 
 
 class MigrateChatRequest(BaseModel):
@@ -59,7 +102,10 @@ def get_history(user_id: str, limit: int = 50, page: Optional[int] = None,
 
 @router.post("/history")
 def create_history(req: SaveChatRequest):
-    """截图/文字提问时前端调用，先写入标记记录（answer 可为空，SSE 完成后回填）。"""
+    """截图/文字提问时前端调用，先写入标记记录（answer 可为空，SSE 完成后回填）。
+
+    无 answer 的新记录落 generation_status=pending；收尾由 PATCH 推进终态。
+    """
     chat_id = save_chat_history(
         user_id=req.user_id, question=req.question, answer=req.answer,
         page_number=req.page_number, marker_y_ratio=req.marker_y_ratio,
@@ -70,24 +116,37 @@ def create_history(req: SaveChatRequest):
         tool_activities=req.tool_activities,
         follow_ups=req.follow_ups or "[]",
         textbook_id=req.textbook_id,
+        client_turn_id=req.client_turn_id,
+        generation_status=req.generation_status,
     )
     return {"id": chat_id}
 
 
 @router.patch("/history/{chat_id}")
 def update_history(chat_id: str, req: UpdateChatRequest):
-    """SSE 完成后更新记录：answer / screenshot_context_id 等字段可分别更新。"""
-    update_chat_answer(
-        chat_id,
-        answer=req.answer,
-        screenshot_context_id=req.screenshot_context_id,
-        thumbnail=req.thumbnail,
-        crop_bbox=req.crop_bbox,
-        thinking=req.thinking,
-        tool_activities=req.tool_activities,
-        follow_ups=req.follow_ups,
-    )
+    """SSE 完成后更新记录：只更新请求体里显式出现的字段（显式 null = 清空）。"""
+    update_chat_record(chat_id, req.model_dump(include=req.model_fields_set))
     return {"status": "ok"}
+
+
+@router.post("/history/{chat_id}/follow-ups")
+def append_follow_up_turn(chat_id: str, req: FollowUpTurnIn):
+    """追加一条追问（先落 pending）：按 turn_id 幂等，重复追加返回既有项。"""
+    turn = {k: v for k, v in req.model_dump().items() if v is not None}
+    turn.setdefault("status", "pending")
+    result = append_follow_up(chat_id, turn)
+    if result is None:
+        raise HTTPException(status_code=404, detail="提问记录不存在")
+    return {"status": "ok", "turn": result}
+
+
+@router.patch("/history/{chat_id}/follow-ups/{turn_id}")
+def update_follow_up_turn(chat_id: str, turn_id: str, req: FollowUpUpdateIn):
+    """按 chat_id + turn_id 更新单条追问（收尾 completed / interrupted / cancelled）。"""
+    result = update_follow_up(chat_id, turn_id, req.model_dump(include=req.model_fields_set))
+    if result is None:
+        raise HTTPException(status_code=404, detail="提问记录或追问不存在")
+    return {"status": "ok", "turn": result}
 
 
 @router.delete("/history/{chat_id}")

@@ -35,6 +35,17 @@ class FormulaSanitizerTests(unittest.TestCase):
     def test_extracts_json_and_delimiters(self) -> None:
         self.assertEqual(sanitize_latex('```json\n{"latex":"$x^2$"}\n```'), "x^2")
 
+    def test_extracts_provider_json_with_unescaped_latex_commands(self) -> None:
+        raw = "```json\n" + r'{"latex":"\int_{0}^{1} x^2 \, dx = \frac{1}{3}"}' + "\n```"
+        self.assertEqual(
+            sanitize_latex(raw),
+            r"\int_{0}^{1} x^2 \, dx = \frac{1}{3}",
+        )
+
+    def test_relaxed_json_still_rejects_extra_fields(self) -> None:
+        with self.assertRaises(UnsafeFormulaError):
+            sanitize_latex(r'{"latex":"\frac{1}{2}","note":"extra"}')
+
     def test_repairs_doubled_environment_end_slash(self) -> None:
         self.assertEqual(
             sanitize_latex(r"\begin{pmatrix}a&b\\c&d\\end{pmatrix}"),
@@ -83,6 +94,27 @@ class FormulaServiceTests(unittest.IsolatedAsyncioTestCase):
         service = FormulaConversionService([SlowProvider()], timeout_seconds=0.01)
         with self.assertRaises(FormulaConversionError):
             await service.convert("x")
+
+    async def test_primary_failure_uses_explicit_fallback(self) -> None:
+        primary = FakeProvider("primary", error=RuntimeError("down"))
+        fallback = FakeProvider("fallback", result='{"latex":"x+1"}')
+        service = FormulaConversionService([primary, fallback], timeout_seconds=1)
+        self.assertEqual(await service.convert("x加1"), ("x+1", "inline"))
+        self.assertEqual((primary.calls, fallback.calls), (1, 1))
+
+    async def test_primary_timeout_preserves_fallback_budget(self) -> None:
+        class SlowProvider:
+            name = "slow"
+
+            async def convert(self, description: str, timeout: float) -> str:
+                await asyncio.sleep(0.03)
+                return "x"
+
+        fallback = FakeProvider("fallback", result='{"latex":"y"}')
+        with patch("app.services.formula_conversion_service.config.FORMULA_CONVERSION_TIMEOUT_SECONDS", 0.01), patch("app.services.formula_conversion_service.config.FORMULA_FALLBACK_TIMEOUT_SECONDS", 0.05):
+            service = FormulaConversionService([SlowProvider(), fallback], timeout_seconds=0.1)
+            self.assertEqual(await service.convert("y"), ("y", "inline"))
+        self.assertEqual(fallback.calls, 1)
 
     def test_prompt_examples_are_valid_json(self) -> None:
         outputs = [

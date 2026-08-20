@@ -36,6 +36,15 @@ class PromptBuilderTests(unittest.TestCase):
         self.assertIn("什么是 X", prompt)
         self.assertIn("最多提出一个", prompt)
 
+    def test_explain_phrasing_still_requires_first_turn_probe(self):
+        prompt = build_system_prompt()
+        message = build_user_message("讲一下什么是线性无关")
+        text = "\n".join(part["text"] for part in message[0]["content"])
+        for phrase in ("讲一下 X", "讲讲 X", "解释一下 X"):
+            self.assertIn(phrase, prompt)
+            self.assertIn(phrase, text)
+        self.assertIn("仍须先探测", text)
+
     def test_compatibility_prompt_includes_real_input(self):
         prompt = build_qa_prompt("为什么？", history=[{"user": "特征值", "assistant": ""}])
         self.assertIn("特征值", prompt)

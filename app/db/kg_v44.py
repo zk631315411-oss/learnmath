@@ -18,6 +18,8 @@ MAX_FOCUS_FETCH_LIMIT = DIRECTIONAL_RESULT_LIMIT + 1
 RULE_DETAIL_LIMIT = 80
 EVIDENCE_LIMIT = 1600
 _WRITE_CYPHER = re.compile(r"\b(?:CREATE|MERGE|SET|DELETE|DETACH|DROP|REMOVE)\b", re.IGNORECASE)
+_CHAPTER_NUMBER = re.compile(r"^\s*(?:第\s*)?(\d+)\s*(?:章|[.．、])")
+_INTRO_CHAPTER_PREFIXES = ("前言", "序言", "绪论", "引言", "导论")
 
 RetrievalFocus = Literal[
     "prerequisites",
@@ -117,6 +119,88 @@ def _list_value(value: Any) -> list[str]:
 def _scope_parameters(textbook_id: str | None) -> dict[str, str]:
     clean_id = (textbook_id or "").strip()
     return {"textbook_id": clean_id, "book_prefix": f"{clean_id}:" if clean_id else ""}
+
+
+def _chapter_sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
+    """Sort introductory headings first, then numbered chapters naturally."""
+    chapter = str(row.get("chapter") or "").strip()
+    if chapter.startswith(_INTRO_CHAPTER_PREFIXES):
+        return (0, 0, chapter.casefold())
+    match = _CHAPTER_NUMBER.match(chapter)
+    if match:
+        return (1, int(match.group(1)), chapter.casefold())
+    return (2, 0, chapter.casefold())
+
+
+def list_kg_chapters(textbook_id: str) -> list[dict[str, Any]]:
+    """List real chapter buckets and their node counts for a textbook."""
+    clean = (textbook_id or "").strip()
+    if not clean:
+        return []
+    rows = _run(
+        """
+        MATCH (n:KGNode)
+        WHERE (n.textbook_id = $textbook_id OR n.node_id STARTS WITH $book_prefix)
+          AND n.chapter IS NOT NULL AND trim(toString(n.chapter)) <> ''
+        RETURN toString(n.chapter) AS chapter, count(n) AS node_count
+        ORDER BY chapter
+        """,
+        **_scope_parameters(clean),
+    )
+    result = [
+        {"chapter": str(row.get("chapter") or ""), "node_count": int(row.get("node_count") or 0)}
+        for row in rows
+    ]
+    return sorted(result, key=_chapter_sort_key)
+
+
+def list_kg_chapter_nodes(textbook_id: str) -> list[dict[str, Any]]:
+    """List chapter buckets and node ids in one remote query."""
+    clean = (textbook_id or "").strip()
+    if not clean:
+        return []
+    rows = _run(
+        """
+        MATCH (n:KGNode)
+        WHERE (n.textbook_id = $textbook_id OR n.node_id STARTS WITH $book_prefix)
+          AND n.chapter IS NOT NULL AND trim(toString(n.chapter)) <> ''
+        RETURN toString(n.chapter) AS chapter,
+               collect(n.node_id) AS node_ids,
+               count(n) AS node_count
+        ORDER BY chapter
+        """,
+        **_scope_parameters(clean),
+    )
+    result = [
+        {
+            "chapter": str(row.get("chapter") or ""),
+            "node_ids": [str(node_id) for node_id in (row.get("node_ids") or []) if node_id],
+            "node_count": int(row.get("node_count") or 0),
+        }
+        for row in rows
+    ]
+    return sorted(result, key=_chapter_sort_key)
+
+
+def list_kg_nodes(textbook_id: str, chapter: str) -> list[dict[str, Any]]:
+    """List chapter nodes with section and bounded prerequisite ids."""
+    clean = (textbook_id or "").strip()
+    rows = _run(
+        """
+        MATCH (n:KGNode)
+        WHERE (n.textbook_id = $textbook_id OR n.node_id STARTS WITH $book_prefix)
+          AND toString(n.chapter) = $chapter
+        OPTIONAL MATCH (prereq:KGNode)-[:PREREQUISITE_OF]->(n)
+        RETURN n.node_id AS node_id, n.name AS name, n.type AS type,
+               n.chapter AS chapter, n.section AS section,
+               n.section_node_id AS section_node_id,
+               collect(DISTINCT prereq.node_id)[0..8] AS prerequisite_ids
+        ORDER BY section, name, node_id
+        """,
+        chapter=chapter,
+        **_scope_parameters(clean),
+    )
+    return [dict(row) for row in rows]
 
 
 def _node_map(row: dict[str, Any], *, include_evidence: bool = True) -> dict[str, Any]:

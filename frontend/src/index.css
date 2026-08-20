@@ -5,16 +5,46 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --lm-bg: #f6f7fb;
+  --lm-surface: #ffffff;
+  --lm-border: #e2e8f0;
+  --lm-brand: #4f46e5;
+  --lm-brand-strong: #4338ca;
+}
+
+.dark {
+  --lm-bg: #0f172a;
+  --lm-surface: #1e293b;
+  --lm-border: #334155;
+  --lm-brand: #818cf8;
+  --lm-brand-strong: #6366f1;
+}
+
+@layer components {
+  .icon-button {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-35 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200;
+  }
+
+  .toolbar-button {
+    @apply inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
+  }
+
+  .toolbar-button-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400;
+  }
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif;
-  background: #f6f8fc;
+  background: var(--lm-bg);
   color: #334155;
 }
 
 /* === 柔和现代 — 品牌背景渐变 === */
 .brand-blue {
-  background: #2563eb;
+  background: var(--lm-brand);
 }
 
 /* === Markdown 内容 === */
@@ -28,7 +58,7 @@ body {
 .markdown-body code { background: #eef2ff; padding: 0.125rem 0.375rem; border-radius: 0.3rem; font-size: 0.9em; color: #5b52c9; }
 .markdown-body pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 0.6rem; overflow-x: auto; }
 .markdown-body pre code { background: transparent; padding: 0; color: #e2e8f0; }
-.markdown-body a { color: #4f8ef7; text-decoration: underline; }
+.markdown-body a { color: var(--lm-brand); text-decoration: underline; }
 .markdown-body blockquote { border-left: 3px solid #c7d2fe; padding-left: 1rem; color: #64748b; margin: 0.7rem 0; }
 .markdown-body table { width: 100%; border-collapse: collapse; margin: 0.7rem 0; }
 .markdown-body th, .markdown-body td { border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; text-align: left; }
@@ -37,6 +67,19 @@ body {
 .chat-message .katex-display,
 .chat-message .katex-display > .katex { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 .chat-message .katex { max-width: 100%; word-break: break-all; }
+.chat-message-user { background: #eef6ff; color: #1e3a5f; }
+.chat-message-user .markdown-body,
+.chat-message-user .markdown-body p,
+.chat-message-user .katex { color: #1e3a5f; }
+.chat-message-user code { background: #dbeafe; color: #1e40af; }
+.chat-message-assistant .markdown-body { color: inherit; }
+.chat-message-assistant .markdown-body p { margin-bottom: 0.85rem; }
+.chat-message-assistant .markdown-body p:last-child { margin-bottom: 0; }
+.dark .chat-message-user { background: #1e3a5f; color: #dbeafe; }
+.dark .chat-message-user .markdown-body,
+.dark .chat-message-user .markdown-body p,
+.dark .chat-message-user .katex { color: #dbeafe; }
+.dark .chat-message-user code { background: #27466d; color: #dbeafe; }
 
 /* === 混合文字与公式输入 === */
 .formula-editor-shell {
@@ -73,6 +116,7 @@ body {
 .formula-dialog-header button { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 6px; color: #64748b; }
 .formula-dialog-header button:hover { background: #f1f5f9; }
 .formula-dialog-body { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 90px); overflow-y: auto; padding: 16px 18px 18px; }
+.formula-dialog-body > * { flex-shrink: 0; }
 .formula-description-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .formula-description-row input { min-width: 0; height: 40px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 11px; color: #0f172a; outline: none; }
 .formula-description-row input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgb(37 99 235 / 14%); }
@@ -90,6 +134,35 @@ body {
 .formula-toolbar { display: grid; grid-template-columns: repeat(10, minmax(38px, 1fr)); gap: 5px; }
 .formula-toolbar button, .formula-more-symbols button { height: 36px; display: grid; place-items: center; border: 1px solid #e2e8f0; border-radius: 5px; background: #f8fafc; color: #334155; font-size: 13px; }
 .formula-toolbar button:hover, .formula-more-symbols button:hover { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+.formula-structure-nav { display: flex; align-items: center; gap: 6px; min-height: 30px; color: #64748b; font-size: 11px; }
+.formula-structure-nav button { display: inline-flex; align-items: center; gap: 4px; height: 28px; border: 1px solid #e2e8f0; border-radius: 5px; padding: 0 8px; background: #fff; color: #475569; }
+.formula-structure-nav button:hover { border-color: #93c5fd; color: #1d4ed8; }
+.formula-structure-label { margin-right: 2px; font-weight: 600; }
+.formula-quick-panel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; padding: 8px; }
+.formula-quick-panel button { display: flex; align-items: center; gap: 7px; min-width: 0; height: 34px; border-radius: 5px; padding: 0 8px; color: #334155; text-align: left; }
+.formula-quick-panel button:hover { background: #e0f2fe; color: #075985; }
+.formula-quick-panel kbd { display: grid; width: 21px; height: 21px; flex: 0 0 21px; place-items: center; border: 1px solid #cbd5e1; border-bottom-width: 2px; border-radius: 4px; background: #fff; font-size: 10px; }
+.handwriting-canvas-panel { border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: #fff; }
+.handwriting-canvas { display: block; width: 100%; height: 210px; touch-action: none; cursor: crosshair; background: #fff; }
+.handwriting-actions { display: flex; justify-content: flex-end; gap: 6px; border-top: 1px solid #e2e8f0; padding: 7px; }
+.handwriting-actions button { display: inline-flex; align-items: center; gap: 5px; height: 30px; border-radius: 5px; padding: 0 9px; background: #f1f5f9; color: #475569; font-size: 12px; }
+.handwriting-actions button:last-child { background: #2563eb; color: #fff; }
+.handwriting-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.capture-action-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 95; width: 142px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; padding: 4px; box-shadow: 0 10px 28px rgb(15 23 42 / 16%); }
+.capture-action-menu button { display: flex; width: 100%; align-items: center; gap: 8px; height: 34px; border-radius: 4px; padding: 0 9px; color: #334155; font-size: 12px; }
+.capture-action-menu button:hover { background: #eff6ff; color: #1d4ed8; }
+.capture-action-menu-mobile { top: auto; bottom: calc(100% + 8px); right: -38px; }
+.dark .formula-dialog { border-color: #334155; background: #0f172a; }
+.dark .formula-dialog-header { border-color: #334155; }
+.dark .formula-dialog-header h3 { color: #f1f5f9; }
+.dark .formula-description-row input, .dark .formula-visual-editor, .dark .formula-structure-nav button { border-color: #475569; background: #1e293b; color: #e2e8f0; }
+.dark .formula-preview, .dark .formula-toolbar button, .dark .formula-more-symbols, .dark .formula-quick-panel { border-color: #334155; background: #1e293b; color: #e2e8f0; }
+.dark .formula-quick-panel button { color: #e2e8f0; }
+.dark .formula-quick-panel kbd { background: #f8fafc; color: #334155; }
+.dark .formula-preview-render, .dark .formula-mathfield { color: #f1f5f9; }
+.dark .handwriting-canvas-panel, .dark .capture-action-menu { border-color: #475569; background: #1e293b; }
+.dark .handwriting-actions { border-color: #334155; background: #1e293b; }
+.dark .handwriting-actions button, .dark .capture-action-menu button { color: #cbd5e1; }
 .formula-more-symbols { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 8px; border-radius: 6px; background: #f1f5f9; }
 .formula-matrix-panel { overflow-x: auto; border-top: 1px solid #e2e8f0; padding-top: 12px; }
 .matrix-editor { display: flex; min-width: 360px; flex-direction: column; align-items: center; gap: 10px; }
@@ -139,6 +212,8 @@ body {
   .formula-dialog { width: 100%; max-height: min(760px, 92dvh); border-radius: 8px 8px 0 0; border-bottom: 0; }
   .formula-dialog-body { max-height: calc(92dvh - 58px); padding: 14px; }
   .formula-toolbar { grid-template-columns: repeat(5, 1fr); }
+  .formula-quick-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .handwriting-canvas { height: 180px; }
   .formula-more-symbols { grid-template-columns: repeat(4, 1fr); }
   .formula-mathfield { min-width: 340px; }
   .formula-dialog-footer { align-items: stretch; flex-direction: column; }

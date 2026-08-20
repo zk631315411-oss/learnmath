@@ -2,17 +2,17 @@
 
 > 日期：2026-08-18
 > 触发：前端重构测试轮的真实 LLM 抽测（结果见 `docs/FRONTEND_REDESIGN_TEST_REPORT.md`）
-> 状态：已实施并通过自动化与真实 LLM 验收
+> 状态：主体架构与第八节加固项均已实施并通过自动化与真实 LLM 验收
 > 范围：`app/services/qa/`、`app/services/agents/`、`app/services/qa/prompt_builder.py`、前端收尾状态和相关测试；不改现有 SSE 事件结构，不改 evidence 表结构
 
-> 实施记录（2026-08-18）：`python -m pytest -q` 为 83 passed / 3 skipped / 23 subtests passed；前端 build 通过；Playwright 为 22 passed / 20 按项目条件 skipped。真实 Kimi 同线程两轮均出现 `content → stage(evidence_report) → done`，分别落 `unresolved / level 0` 与 `direct_taught / level 4`，`report_path=evidence_fork`、`invalid_node_ids=0`。第二轮为 direct_taught，是因为第一轮老师已直接给出完整定义，学生随后正确复述，符合快照 rubric。地图节点投影为 `learning`、`closed_evidence_count=1`、`chat.available=true`。
+> 实施记录（2026-08-18，数字对应该日实施时的工作区状态，非当前 HEAD）：`python -m pytest -q` 为 83 passed / 3 skipped / 23 subtests passed；前端 build 通过；Playwright 为 22 passed / 20 按项目条件 skipped。真实 Kimi 同线程两轮均出现 `content → stage(evidence_report) → done`，分别落 `unresolved / level 0` 与 `direct_taught / level 4`，`report_path=evidence_fork`、`invalid_node_ids=0`。第二轮为 direct_taught，是因为第一轮老师已直接给出完整定义，学生随后正确复述，符合快照 rubric。地图节点投影为 `learning`、`closed_evidence_count=1`、`chat.available=true`。
 
 ## 一、发现与定性
 
 真实 LLM 抽测（2026-08-18，同一线程两轮）：
 
 - 主回答阶段自主调用 `report_turn_outcome` 的次数为 **0**；两轮均由后端 `forced_fallback` 发起第二次真实模型调用完成自评。
-- 评级语义正确：第一轮（学生仅提问）`unresolved / level 0`；第二轮（学生在引导下正确解释）`assisted / level 1`。
+- 评级语义正确：第一轮（学生仅提问）`unresolved / level 0`；第二轮（学生在引导下正确解释）`assisted / level 1`；另有相邻测试轮中，老师直接讲授后学生正确复述，落 `direct_taught / level 4`（见实施记录）。
 - 落库完整：聊天、用户、时间戳、节点关联齐全，`invalid_node_ids=0`，节点状态正确推进为 `learning`。
 - 耗时：14.7s / 28.1s（两轮总耗时，含 fallback）。
 
@@ -21,6 +21,13 @@
 **决策：把 forced_fallback 扶正为正式机制，删除 primary 路径，按「主干—分叉」模型统一表述。**
 
 ## 二、架构：主干—分叉两段式
+
+每条学生消息只触发两项业务工作：
+
+1. **回答**：生成学生可见的教学回复；
+2. **诊断**：判断学生截至这条消息对相关 KG 节点的掌握情况，并更新证据账本与学习地图。
+
+两者是同一条学生消息产生的两个分支。实现上先流式输出回答正文，再在同一 SSE 请求内执行诊断；诊断使用回答生成前的消息快照，因此不会把老师本轮刚生成的回复当成学生已经掌握的证据。没有第三条模型链路，也不新增前端请求。
 
 ```
 retrieve_kg_context（KG 命中）
@@ -73,22 +80,18 @@ retrieve_kg_context（KG 命中）
 | C8 | 可见收尾状态 | `frontend/src/hooks/useChat.ts`、`ChatPanel.tsx`、`CaptureBubble.tsx` | 保留 stage key；正文已经出现时仍在正文下方显示 `evidence_report` 状态，done 后清除 |
 | C9 | 回归测试 | `tests/`、`frontend/e2e/` | 锁定主工具列表、快照边界、one-shot 恰好一次 provider 调用、正式路径、指标/耗时和正文后的收尾状态 |
 
-**C3 陷阱警告（实施前必读）**：当前分叉的工具定义是从主回合列表**过滤**出来的（`answer_service.py:292`：`report_tool_defs = [t for t in tool_defs if t.name == REPORT_TURN_OUTCOME_TOOL_NAME]`）。若直接从 `get_qa_tool_defs` 删除 report 工具，过滤结果为空 → `if report_tool_defs:` 不成立 → **分叉永不触发，证据链静默死亡**（ADR-001 决定了证据故障不向问答链抛出，所以不会有任何报错）。正确做法：
-
-1. 主回合装配只挂 `retrieve_kg_context`（`get_qa_tool_defs` 加 `include_report_tool: bool = False` 参数，或拆成两个装配函数）；
-2. 分叉块改为直接调用 `build_report_turn_outcome_tool()` 构造，不再过滤主列表。
+**C3 实施记录**：主回合装配现已只挂 `retrieve_kg_context`；诊断分支直接调用 `build_report_turn_outcome_tool()` 构造内部工具，不再从主回合工具列表过滤。后续修改工具装配时必须保持这两个入口分离。
 
 **指标口径调整**：废止 primary `compliance`，改为 `fork_attempt_rate`、`fork_tool_success_rate`、`effective_persistence`。三者分别区分“触发了分叉”“模型给出合法工具调用”“证据通过校验并落库”。复测中 eligible 证据的 `report_path` 应为 `evidence_fork`。
 
-## 四、分工与顺序
+## 四、主体实施记录
 
-1. 负责人：本文档 + C4（PHASE2 注记）。
-2. 执行 AI：C1–C9 按同一条链路实现 → 后端定向测试 → 前端构建/E2E → `python -m pytest -q` → 真实 LLM 复测（§五）。
+C1–C9 已按同一链路完成，并经过后端定向测试、前端构建/E2E、完整 pytest 与真实 LLM 复测。当前不再重复实施 C1–C9；后续工作仅为第八节的小范围加固。
 
-## 五、验收
+## 五、主体验收基线
 
-1. `python -m pytest -q` 全绿。注意 `tests/test_evidence_pipeline.py`、`tests/test_unified_qa_routing.py` 等可能有断言主回合工具列表或提示词内容的用例，需随 C2/C3 同步更新——**特别检查是否恰好有测试在保护 line 292 的过滤行为**。
-2. 真实 LLM 复测三种收场，评级口径与改动前一致：学生独立答对 → `independent`；提示后答对 → `assisted`；放弃/未答出 → `unresolved`。**快照语义专项**：教师提示/讲授后学生未回应的轮次 → 落 `unresolved / level 0`（新语义，不再因老师回答了就直接闭合）；学生次轮回来说"懂了"或正确复述 → 该轮升级为 `assisted`（此前轮次的教师帮助在历史中可见）。
+1. 主体实施时 `python -m pytest -q` 已全绿；第八节加固完成后必须再次运行完整 pytest，并保持 `tests/test_evidence_pipeline.py`、`tests/test_unified_qa_routing.py` 等现有契约测试通过。
+2. 真实 LLM 复测四种收场：学生独立答对 → `independent`；提示或拆步后答对 → `assisted`；老师直接讲授后学生才表示理解或正确复述 → `direct_taught`；放弃/未答出 → `unresolved`。**快照语义专项**：教师提示或讲授后学生尚未回应的轮次 → 落 `unresolved / level 0`；学生次轮回应后，再根据此前帮助类型升级为 `assisted` 或 `direct_taught`。
 3. `invalid_node_ids=0`；evidence 行正常落库；节点状态推进正确。
 4. SSE 事件序列（可在复测日志或浏览器 Network 中核对）：`content* → stage(evidence_report) → done`；分叉不产生任何 `tool_call`/`tool_result` 展示事件（report 是内部工具，原有逻辑即不入展示流）。
    前端在正文已存在时仍能看到“正在记录学习进度…”，done 后状态消失。
@@ -115,3 +118,36 @@ retrieve_kg_context（KG 命中）
 | provider 未返回工具调用、参数非法或落库失败 | 记录失败指标并正常结束问答；evidence 为 best-effort，不把诊断故障升级为回答故障 |
 | 客户端在回答正文后、分叉完成前断开 | 当前请求会被取消，允许本轮 evidence 缺失；用指标发现，不为本阶段引入后台队列 |
 | 回退 | 已提交时使用 `git revert <commit>`；未提交时只逆向本次精确 patch，不覆盖工作区其他改动 |
+
+## 八、三个小加固（2026-08-19，已完成）
+
+这三项不改变“回答 + 诊断”架构，不新增模型调用，也不改 evidence 表结构。H1 调整回答分支；H2/H3 加固诊断分支。
+
+### H1 回答分支：收紧“讲一下”类首轮探测
+
+- **问题**：真实验收中，模型收到“讲一下什么是线性无关”后没有稳定遵守已有首轮探测规则，直接给出了完整定义。
+- **修改**：在 `app/services/qa/prompt_builder.py` 的 system prompt 示例和“首轮执行检查”中同时明确：普通的“讲一下 X / 讲讲 X / 解释一下 X”仍先做最小探测；只有“直接讲解 / 直接给答案 / 不要反问”等明确措辞才跳过探测。不增加新的教学流程。
+- **验收**：使用无历史的新线程，真实 Kimi 连续两次提问“讲一下什么是线性无关”；两次首轮都应只做简短定位并提出一个探测问题，不给完整定义或标准答案。若未通过，保留实际回答再决定是否继续收紧。
+
+### H2 诊断分支：把快照边界固定成底层契约
+
+- **问题**：分叉的快照语义依赖 `ToolRuntimeResult.messages`"停在最终可见回答之前"这一隐性不变量。ToolRuntime 有**两条结束路径**——模型主动正常结束、工具调用预算耗尽被强制掐停。上层 evidence pipeline 已间接断言诊断上下文不含本轮最终回答，但 `ToolRuntimeResult.messages` 自身原先缺少直接覆盖两条路径的单元测试契约。
+- **修改**：在现有 `tests/test_tool_runtime_streaming.py` 中增加单测，断言**普通结束和工具预算耗尽结束**两条路径返回的 `result.messages` 都不包含本轮最终 assistant 回答。测试确认现有生产逻辑满足契约，因此未修改 ToolRuntime 的消息边界实现。
+- **验收**：新增用例通过，现有 evidence pipeline 测试继续通过，完整 pytest 全绿。
+
+### H3 诊断分支：优先评价本轮知识点
+
+- **问题**：当前 `allowed_node_ids = sorted(本轮节点 ∪ 线程历史节点)[:3]`。长线程中，旧节点可能按字符串排序挤掉本轮刚命中的节点，导致诊断目标偏离当前讨论内容。
+- **修改**：候选节点按以下顺序选择：①本轮 resolved 的 `selected_node.node_id`；②线程历史中最近出现且本轮未包含的节点；③去重后最多取 3 个。完整节点集合仍用于落库合法性校验，前三个只用于告诉诊断模型本次优先评价什么。超过 3 个时记录被截断节点 warning。
+- **澄清（避免与 context cache 混淆）**：这里的截断只作用于**收尾指令文本里"本轮可用 node_id 仅有这几个"的候选名单**，目的是把裁判注意力聚焦到本轮最相关的 ≤3 个节点；分叉发给模型的完整对话历史不截一字，前缀缓存照常吃。3 个与 8 个 id 的 token 差对 cache 无影响，限 3 是评级质量（避免一轮让裁判给过多节点各评级导致稀释），不是省 token。warning 仅为"丢数据必留痕"，与缓存无关。
+- **实现边界**：`follow_ups` 已按发生顺序存储；调整 `load_thread_resolved_node_ids` 或新增相邻 helper，在保留完整 `set` 的同时提供“最近优先”的列表。不得用字典序冒充时间顺序。
+- **验收**：增加三类测试：本轮节点不会被旧节点挤掉；本轮未重新查 KG 时选中最近的历史节点；超过 3 个时有 warning 且完整集合仍能通过合法性校验。
+
+### 同步校准两处现有契约
+
+1. `report_turn_outcome` 的描述删除“按不同结果分组多次调用”：one-shot 执行器只接受一次工具调用，一次调用可携带 1–3 个共享同一结果的节点。
+2. `get_chat_history(user_id, chat_id=...)` 的精确查询同时校验 `id` 与 `user_id`，避免诊断分支把其他用户线程的节点当成本线程历史；增加跨用户回归测试。此项只收紧线程归属，不改变跨教材精确恢复。**前置验证**：收紧前先 `grep -rn "get_chat_history(" app/` 列出全部调用点，确认每个调用方都正确传入了当前 user_id；若存在只按 chat_id 查询、user_id 置空的内部路径，收紧会让合法读取变 404，必须先补传参再收紧。
+
+**实施顺序**：H1 → H2 → H3 与两处契约校准 → 后端定向 pytest → 完整 pytest → H1 两次真实 Kimi 验收。实施时保留工作区中 `answer_service.py` 的 `progress_delta` 和 `tool_runtime.py` 的可配置 `tool_choice` 改动。
+
+**完成记录（2026-08-19）**：H1–H3 与两处契约校准均已实现；定向测试 31 passed，完整 `python -m pytest -q` 为 107 passed / 3 skipped / 23 subtests passed，`git diff --check` 通过。重启 8001 后使用两个无历史新线程真实提问“讲一下什么是线性无关”，两次均只做知识点定位并提出一个探测问题，没有给出完整定义或标准答案；总耗时分别为 37.3s 和 14.9s。两次 SSE 均为主回答正文后出现 `stage(evidence_report)` 再 `done`，并各落一行 `report_path=evidence_fork`、`unresolved / level 0` 的真实证据。

@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { ArrowDown, BrainCircuit, ChevronDown, Send, X } from 'lucide-react';
+import { ArrowDown, BrainCircuit, Camera, ChevronDown, CircleStop, Send, X } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
-import FormulaComposer from './formula/FormulaComposer';
+import FormulaComposer, { type FormulaComposerHandle } from './formula/FormulaComposer';
+import type { ExternalFormulaDraft } from './formula/FormulaComposer';
 import EmptyGuideCard from './EmptyGuideCard';
 import AgentActivity from './AgentActivity';
-import type { Message, PendingImage } from '../types';
+import type { Message, PendingImage, RecognizedBlock } from '../types';
 import { MAX_PENDING_IMAGES } from '../hooks/useChat';
 
 interface Props {
@@ -23,6 +24,12 @@ interface Props {
   isThinking?: boolean;
   compact?: boolean;
   emptyState?: React.ReactNode;
+  externalFormula?: ExternalFormulaDraft | null;
+  onExternalFormulaConsumed?: (nonce: string) => void;
+  onCancelGeneration?: () => void;
+  onOpenPhoto?: () => void;
+  externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
+  onExternalContentConsumed?: (nonce: string) => void;
 }
 
 function ThinkingBlock({ content, active }: { content: string; active: boolean }) {
@@ -30,6 +37,7 @@ function ThinkingBlock({ content, active }: { content: string; active: boolean }
 
   useEffect(() => {
     if (active) setExpanded(true);
+    else if (content) setExpanded(false);
   }, [active]);
 
   return (
@@ -41,7 +49,7 @@ function ThinkingBlock({ content, active }: { content: string; active: boolean }
         aria-expanded={expanded}
       >
         <BrainCircuit className={`h-4 w-4 ${active ? 'animate-pulse text-indigo-500' : 'text-slate-400'}`} />
-        <span className="flex-1">{active ? '正在分析' : '模型分析'}</span>
+        <span className="flex-1">{active ? '正在分析' : '已思考'}</span>
         <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
       {expanded && (
@@ -70,6 +78,10 @@ function ChatPanelInner({
   messages, onSendMessage, onClearMessages, isLoading,
   token, pendingImages, onRemovePendingImage, onClearPendingImages,
   error, thinkingStage, thinkingStageKey, isThinking = false, compact, emptyState,
+  externalFormula, onExternalFormulaConsumed,
+  onCancelGeneration,
+  onOpenPhoto,
+  externalContent, onExternalContentConsumed,
 }: Props) {
   const [input, setInput] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -77,6 +89,7 @@ function ChatPanelInner({
   const previousMessageCountRef = useRef(messages.length);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const formulaComposerRef = useRef<FormulaComposerHandle>(null);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     const container = messagesContainerRef.current;
@@ -140,7 +153,7 @@ function ChatPanelInner({
       <div
         ref={messagesContainerRef}
         onScroll={handleMessagesScroll}
-        className="relative flex-1 overflow-y-auto p-4 space-y-4"
+        className="relative flex-1 overflow-y-auto p-3 space-y-3"
       >
         {messages.length === 0 && (emptyState || <EmptyGuideCard />)}
 
@@ -148,11 +161,11 @@ function ChatPanelInner({
           const isActiveAssistant = isLoading && msg.role === 'assistant' && index === messages.length - 1;
           return (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className="flex min-w-0 max-w-[88%] flex-col items-start">
+            <div className={`flex min-w-0 flex-col items-start ${msg.role === 'user' ? 'max-w-[88%]' : 'w-full max-w-full'}`}>
               <div className={`chat-message min-w-0 max-w-full rounded-2xl px-4 py-3 ${
                 msg.role === 'user'
-                  ? 'bg-indigo-600 text-white rounded-br-md'
-                  : 'bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-md dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
+                  ? 'chat-message-user rounded-2xl rounded-br-md px-4 py-2.5'
+                  : 'chat-message-assistant w-full px-1 py-1 text-slate-700 dark:text-slate-200'
               }`}>
                 {msg.image && (
                   <img src={msg.image} alt="用户截图" className="mb-2 max-w-full rounded-lg"
@@ -168,6 +181,13 @@ function ChatPanelInner({
                   <MarkdownRenderer className="text-sm leading-relaxed markdown-body">{msg.content}</MarkdownRenderer>
                 ) : isActiveAssistant ? (
                   <LoadingStatus text={thinkingStage} />
+                ) : msg.pending ? (
+                  <LoadingStatus text="回答生成中…" />
+                ) : msg.failed ? (
+                  <div className="text-sm italic text-slate-400 dark:text-slate-500">（回答中断，可重试）</div>
+                ) : null}
+                {msg.failed && msg.content ? (
+                  <div className="mt-2 text-xs text-slate-400 dark:text-slate-500">（回答中断，以上为已生成的部分回答）</div>
                 ) : null}
                 {isActiveAssistant && msg.content && thinkingStageKey === 'evidence_report' && (
                   <div data-testid="evidence-report-status" className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
@@ -237,15 +257,26 @@ function ChatPanelInner({
       <form onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}
         className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex gap-2 items-end">
+          <button type="button" onClick={() => { formulaComposerRef.current?.captureInsertionBookmark(); onOpenPhoto?.(); }} disabled={isLoading} className="icon-button shrink-0" title="拍照或选择图片" aria-label="拍照或选择图片"><Camera className="h-4 w-4" /></button>
           <div className="min-w-0 flex-1">
-            <FormulaComposer value={input} onChange={setInput} token={token ?? undefined}
-              placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit} />
+            <FormulaComposer ref={formulaComposerRef} value={input} onChange={setInput} token={token ?? undefined}
+              placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit}
+              externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed}
+              externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} />
           </div>
-          <button type="submit" disabled={(!input.trim() && !(pendingImages && pendingImages.length > 0)) || isLoading}
-            aria-label="发送" title="发送"
-            className="px-4 sm:px-5 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 whitespace-nowrap">
-            <Send className="w-4 h-4" />
-          </button>
+          {isLoading ? (
+            <button type="button" onClick={onCancelGeneration} disabled={!onCancelGeneration}
+              aria-label="停止生成" title="停止生成"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50">
+              <CircleStop className="w-4 h-4" />
+            </button>
+          ) : (
+            <button type="submit" disabled={!input.trim() && !(pendingImages && pendingImages.length > 0)}
+              aria-label="发送" title="发送"
+              className="px-4 sm:px-5 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 whitespace-nowrap">
+              <Send className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </form>
     </div>

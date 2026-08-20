@@ -72,23 +72,16 @@ async def _generate_with_heartbeat(generate):
 
 
 def get_user_id_and_profile(request: QARequest) -> tuple:
-    """从请求中解析 user_id：token 优先，其次显式 user_id，最后设备兜底。"""
-    user_id = request.user_id
-    profile = None
-
-    # 优先从 token 解析出真实账号
-    if request.token:
-        try:
-            token_data = decode_token(request.token)
-            user_id = token_data.get("user_id")
-        except Exception:
-            # token 无效时回退到显式 user_id，不阻断问答
-            pass
-
-    if user_id:
-        profile = get_user_profile(user_id)
-
-    return user_id or f"anon_{request.device_id or 'unknown'}", profile
+    """只信任认证 token；前端 user_id/device_id 不参与身份判定。"""
+    if not request.token:
+        raise HTTPException(status_code=401, detail="未登录或token无效")
+    try:
+        user_id = decode_token(request.token).get("user_id")
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="未登录或token无效") from exc
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录或token无效")
+    return str(user_id), get_user_profile(str(user_id))
 
 
 def _event_payload(event: dict) -> dict:
@@ -113,6 +106,9 @@ async def solve_question_stream(
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
 
+    # 身份在建立 SSE 响应前完成认证，避免无效 token 退化为前端自报 user_id。
+    user_id, _ = get_user_id_and_profile(request)
+
     # 图片统一先做校验 + 压缩，转成 data URL 交给 VL 模型
     image_data_url = None
     if image is not None:
@@ -133,7 +129,6 @@ async def solve_question_stream(
     async def generate():
         try:
             question = request.question or "请分析这道题"
-            user_id, _ = get_user_id_and_profile(request)
             marker_id = request.marker_id or request.page_id or request.chat_id
 
             turn_input = QATurnInput(
@@ -150,6 +145,7 @@ async def solve_question_stream(
                 crop_bbox=request.crop_bbox,
                 screenshot_context_id=request.screenshot_context_id,
                 token=request.token,
+                client_turn_id=request.client_turn_id,
             )
 
             # 文字与截图统一进入多模态 Agent，由 LLM 自主决定是否查询 KG。

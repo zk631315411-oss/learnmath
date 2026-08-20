@@ -15,7 +15,7 @@ export default function AuthControls({ user, onLoginClick, onRegisterClick, onLo
     return (
       <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
         <span className="text-xs text-slate-500 hidden sm:inline dark:text-slate-400">游客</span>
-        <button onClick={onLoginClick} className="text-xs text-blue-600 hover:underline">登录</button>
+        <button onClick={onLoginClick} className="text-xs text-indigo-600 hover:underline dark:text-indigo-300">登录</button>
         <span className="text-slate-300 hidden sm:inline dark:text-slate-600">|</span>
         <button onClick={onRegisterClick} className="text-xs text-slate-500 hover:underline hidden sm:inline">注册</button>
       </div>
@@ -31,7 +31,7 @@ export default function AuthControls({ user, onLoginClick, onRegisterClick, onLo
   }
   return (
     <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-slate-700">
-      <button onClick={onLoginClick} className="text-sm text-blue-600 hover:underline">登录</button>
+      <button onClick={onLoginClick} className="text-sm text-indigo-600 hover:underline dark:text-indigo-300">登录</button>
       <span className="text-slate-300 hidden sm:inline dark:text-slate-600">|</span>
       <button onClick={onRegisterClick} className="text-sm text-slate-400 hover:underline hidden sm:inline dark:text-slate-400">注册</button>
     </div>

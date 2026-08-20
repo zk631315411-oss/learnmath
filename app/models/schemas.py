@@ -55,6 +55,22 @@ class FormulaConvertResponse(BaseModel):
     display_mode: Literal["inline", "block"]
 
 
+class RecognizedTextBlock(BaseModel):
+    type: Literal["text"]
+    text: str = Field(..., min_length=1, max_length=500)
+
+
+class RecognizedFormulaBlock(BaseModel):
+    type: Literal["formula"]
+    latex: str = Field(..., min_length=1, max_length=2048)
+    display_mode: Literal["inline", "block"]
+
+
+class FormulaRecognizeContentResponse(BaseModel):
+    blocks: List[RecognizedTextBlock | RecognizedFormulaBlock] = Field(..., max_length=50)
+    warnings: List[str] = Field(default_factory=list, max_length=10)
+
+
 # === 题目答疑相关模型 ===
 
 class QARequest(BaseModel):
@@ -73,3 +89,5 @@ class QARequest(BaseModel):
     history: Optional[List[dict]] = None  # 对话历史 [{"user": "...", "assistant": "..."}]
     crop_bbox: Optional[dict] = None  # 截图区域在 PDF 页面中的相对坐标
     screenshot_context_id: Optional[str] = None  # 已缓存的截图上下文 ID
+    # 前端生成的稳定逻辑 turn ID：贯穿 pending 落库、重试幂等与 evidence 去重
+    client_turn_id: Optional[str] = Field(default=None, max_length=64, pattern=r'^[A-Za-z0-9_-]+$')

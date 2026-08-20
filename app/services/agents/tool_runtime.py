@@ -37,6 +37,7 @@ class ToolRuntimeConfig:
     max_model_rounds: int = 5
     max_total_calls: int = 8
     max_consecutive_failure_rounds: int = 2
+    tool_choice: str | dict[str, Any] = "auto"
 
 
 @dataclass(frozen=True)
@@ -100,7 +101,7 @@ class ToolRuntime:
             response = await self.model_call(
                 messages=working,
                 tools=[tool.to_openai_tool() for tool in self.tools],
-                tool_choice="auto",
+                tool_choice=self.config.tool_choice,
             )
             if hasattr(response, "choices"):
                 message = response.choices[0].message

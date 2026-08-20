@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:visual": "set VISUAL_ARCHIVE=1&& playwright test frontend-redesign.spec.ts -g \"visual regression archive|visual capture bubble archive\" --project=chromium-desktop"
   },
   "dependencies": {
     "@tiptap/core": "^3.29.2",

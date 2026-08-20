@@ -50,6 +50,9 @@ def init_db():
     """)
 
     # Phase 2 遗留迁移：给旧 chat_history 表补字段（幂等，已存在则跳过）
+    # generation_* / client_turn_id（Batch 1 生成状态契约）：
+    # generation_status 带常量默认值，历史行自动迁为 completed；
+    # generation_updated_at 不能用非常量 DEFAULT，历史行在下方回灌为 created_at。
     for col, col_type in [
         ("page_number", "INTEGER"),
         ("marker_y_ratio", "REAL"),
@@ -61,12 +64,21 @@ def init_db():
         ("tool_activities", "TEXT"),
         ("follow_ups", "TEXT DEFAULT '[]'"),
         ("textbook_id", "TEXT"),
+        ("generation_status", "TEXT NOT NULL DEFAULT 'completed'"),
+        ("generation_error", "TEXT"),
+        ("generation_updated_at", "TEXT"),
+        ("client_turn_id", "TEXT"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE chat_history ADD COLUMN {col} {col_type}")
         except Exception:
             # 列已存在时 ALTER 必然失败，这是预期的幂等分支而非异常
             pass
+    # 历史行回灌生成时间戳（幂等：只动 NULL 行）
+    cursor.execute(
+        "UPDATE chat_history SET generation_updated_at=created_at "
+        "WHERE generation_updated_at IS NULL"
+    )
 
     # 用户账号表
     cursor.execute("""
@@ -155,9 +167,33 @@ def init_db():
         cursor.execute(
             "UPDATE evidence_turns SET report_path='unknown' WHERE report_path IS NULL"
         )
+    # Batch 1：client_turn_id 是前端生成的稳定逻辑 turn 身份，用于重试幂等。
+    # 历史行该列为 NULL；SQLite 唯一索引中 NULL 互不相等，不会误伤老数据。
+    if "client_turn_id" not in evidence_columns:
+        cursor.execute("ALTER TABLE evidence_turns ADD COLUMN client_turn_id TEXT")
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_evidence_user_node ON evidence_turns(user_id, node_id)
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_evidence_user_textbook_created
+        ON evidence_turns(user_id, textbook_id, created_at, id)
+    """)
+    # 同一逻辑 turn（client_turn_id）重试不得重复写同一节点证据（部分唯一索引，
+    # 仅约束有 client_turn_id 的新数据，NULL 历史行不参与）。
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_client_turn_node
+        ON evidence_turns(user_id, client_turn_id, node_id)
+        WHERE client_turn_id IS NOT NULL
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS learning_progress_revisions (
+          user_id TEXT NOT NULL,
+          textbook_id TEXT NOT NULL,
+          revision INTEGER NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          PRIMARY KEY (user_id, textbook_id)
+        )
     """)
 
     conn.commit()

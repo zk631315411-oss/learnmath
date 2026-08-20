@@ -17,10 +17,10 @@ export default function EmptyGuideCard() {
         {GUIDE_STEPS.map((step, index) => (
           <li key={step.title} className="flex items-center gap-3">
             {/* 圆形序号：与图标、文案并列，强化步骤顺序感 */}
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
               {index + 1}
             </span>
-            <step.icon className="h-5 w-5 shrink-0 text-slate-400" strokeWidth={1.5} />
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300"><step.icon className="h-4 w-4" strokeWidth={1.5} /></span>
             <div className="text-left">
               <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{step.title}</p>
               <p className="text-xs text-slate-400">{step.desc}</p>

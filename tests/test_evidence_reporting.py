@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,6 +9,7 @@ from pydantic import ValidationError
 from app.config import config
 from app.db import evidence_db
 from app.db.connection import init_db
+from app.db.chat_history_db import save_chat_history, update_chat_answer
 from app.services.agents.tools.report_turn_outcome import (
     REPORT_TURN_OUTCOME_TOOL_NAME,
     ReportTurnOutcomeInput,
@@ -59,6 +61,8 @@ class ReportTurnOutcomeToolTests(unittest.TestCase):
     def test_tool_arg_validation_raises_tool_argument_error(self):
         tool = build_report_turn_outcome_tool()
         self.assertEqual(tool.name, REPORT_TURN_OUTCOME_TOOL_NAME)
+        self.assertIn("本次只能调用一次", tool.description)
+        self.assertNotIn("分组多次调用", tool.description)
         with self.assertRaises(ToolArgumentError):
             tool.validate_arguments(
                 {"node_ids": ["a", "b", "c", "d"], "scaffolding_level": 0, "student_outcome": "assisted"}
@@ -88,6 +92,73 @@ class EvidenceReportingTests(unittest.TestCase):
         }]
         ids = evidence_reporting.extract_resolved_node_ids(activities)
         self.assertEqual(ids, {"gaodai_shang:主节点"})
+
+    def test_thread_context_keeps_full_set_and_recent_first_order(self):
+        def activity(node_id):
+            return [{
+                "tool": "retrieve_kg_context",
+                "result": {
+                    "status": "resolved",
+                    "selected_node": {"node_id": node_id},
+                },
+            }]
+
+        chat_id = save_chat_history(
+            user_id="u1",
+            question="q",
+            answer="a",
+            tool_activities=json.dumps(activity("book:root")),
+        )
+        follow_ups = [
+            {"tool_activities": activity("book:middle")},
+            {"tool_activities": activity("book:latest")},
+            {"tool_activities": activity("book:middle")},
+        ]
+        update_chat_answer(chat_id, follow_ups=json.dumps(follow_ups))
+
+        full_set, recent_first = evidence_reporting.load_thread_resolved_node_context(
+            chat_id, "u1",
+        )
+        self.assertEqual(full_set, {"book:root", "book:middle", "book:latest"})
+        self.assertEqual(recent_first, ["book:middle", "book:latest", "book:root"])
+
+    def test_candidate_selection_prioritizes_turn_then_recent_history_and_warns(self):
+        with self.assertLogs("learnmath.evidence", level="WARNING") as captured:
+            selected = evidence_reporting.select_evidence_candidate_node_ids(
+                turn_node_ids=["book:current"],
+                thread_node_ids_recent_first=[
+                    "book:latest", "book:older", "book:oldest",
+                ],
+                user_id="u1",
+                turn_id="t1",
+            )
+        self.assertEqual(selected, ["book:current", "book:latest", "book:older"])
+        self.assertIn("book:oldest", "\n".join(captured.output))
+
+        with patch.object(evidence_db, "insert_evidence_rows") as insert:
+            written = evidence_reporting.validate_and_report(
+                user_id="u1",
+                chat_id="c1",
+                qa_turn_id="t1",
+                textbook_id="book",
+                node_ids=["book:oldest"],
+                scaffolding_level=0,
+                outcome="unresolved",
+                turn_resolved_node_ids={"book:current"},
+                thread_resolved_node_ids={
+                    "book:latest", "book:older", "book:oldest",
+                },
+            )
+        self.assertEqual(written, 1)
+        insert.assert_called_once()
+
+        history_only = evidence_reporting.select_evidence_candidate_node_ids(
+            turn_node_ids=[],
+            thread_node_ids_recent_first=["book:latest", "book:older"],
+            user_id="u1",
+            turn_id="t2",
+        )
+        self.assertEqual(history_only, ["book:latest", "book:older"])
 
     def test_invalid_node_id_dropped_and_not_persisted(self):
         # 上报一个不在 resolved 集合中的编造 id：整体丢弃、不落库

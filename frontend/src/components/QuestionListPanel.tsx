@@ -75,7 +75,7 @@ export default function QuestionListPanel({ items, loading, onSelect, onClose }:
                   title={item.question}
                   className="flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50"
                 >
-                  <span className={`mt-0.5 shrink-0 ${item.marker_type === 'screenshot' ? 'text-red-500' : 'text-blue-500'}`}>
+                  <span className={`mt-0.5 shrink-0 ${item.marker_type === 'screenshot' ? 'text-red-500' : 'text-indigo-500'}`}>
                     {item.marker_type === 'screenshot' ? <Camera className="h-4 w-4" /> : <Type className="h-4 w-4" />}
                   </span>
                   <span className="min-w-0 flex-1">

@@ -13,6 +13,9 @@ export interface Marker {
   screenshot_context_id?: string | null;
   // 所属教材 ID：新记录落库时写入；老数据为 null/undefined（跨教材全可见）
   textbook_id?: string | null;
+  // 生成状态契约（Batch 1）：老数据为 null/undefined，等价 completed
+  generation_status?: 'pending' | 'completed' | 'interrupted' | 'cancelled' | null;
+  client_turn_id?: string | null;
   question: string;
   answer: string | null;  // null = AI 思考中
   thinking: string | null;  // AI 思维链
@@ -25,6 +28,12 @@ export interface Marker {
     image?: string | null;
     crop_bbox?: CropBBox | string | null;
     screenshot_context_id?: string | null;
+    // 稳定 turn 身份（Batch 1）：新数据为客户端生成的 turn_id；
+    // 老数据由归一化层补 legacy-${index}（只读兼容，不回写）
+    turn_id?: string;
+    qa_turn_id?: string | null;
+    status?: 'pending' | 'completed' | 'interrupted' | 'cancelled' | null;
+    error_message?: string | null;
   }>;
 }
 
@@ -125,7 +134,7 @@ export default function PageMarker({ markers, currentPage, containerHeight: heig
           pointerEvents: 'auto',
           ...posStyle,
           // 统一半透明白底，确保在 PDF 内容上可辨认
-          background: colorClass === 'bg-red-500' ? 'rgba(239,68,68,0.85)' : 'rgba(59,130,246,0.85)',
+          background: colorClass === 'bg-red-500' ? 'rgba(239,68,68,0.88)' : 'rgba(79,70,229,0.88)',
         }}
         onClick={(e) => { e.stopPropagation(); onMarkerClick(m); }}
         title={`第${m.page_number}页 · ${m.question.slice(0, 30)}`}
@@ -145,7 +154,7 @@ export default function PageMarker({ markers, currentPage, containerHeight: heig
       zIndex: 40,
     }}>
       {placed.left.map((p, i) =>
-        renderBadge(p.marker, p.y_px, 'left', 'bg-blue-500', i)
+        renderBadge(p.marker, p.y_px, 'left', 'bg-indigo-600', i)
       )}
       {placed.right.map((p, i) =>
         renderBadge(p.marker, p.y_px, 'right', 'bg-red-500', i)

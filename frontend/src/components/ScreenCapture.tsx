@@ -231,7 +231,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
           <div className="bg-white px-6 py-4 rounded-lg shadow-xl text-center">
             <div className="text-red-500 mb-2">截图失败</div>
-            <button onClick={handleCropCancel} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">返回</button>
+            <button onClick={handleCropCancel} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">返回</button>
           </div>
         </div>
       );
@@ -277,7 +277,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
               className={`absolute border-2 bg-transparent ${
                 (width < 20 || height < 20)
                   ? 'border-red-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]'
-                  : 'border-blue-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]'
+                  : 'border-indigo-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]'
               }`}
               style={selectionStyle}
               data-capture-ignore
@@ -298,7 +298,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
         {confirmed && selectionRect && !isCapturing && (
           <>
             <div
-              className="absolute border-2 border-blue-400 bg-transparent shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]"
+              className="absolute border-2 border-indigo-400 bg-transparent shadow-[0_0_0_9999px_rgba(0,0,0,0.3)]"
               style={{
                 left: selectionRect.left,
                 top: selectionRect.top,
@@ -312,7 +312,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
               {RESIZE_HANDLES.map(({ handle, left: hl, top: ht, cursor }) => (
                 <div
                   key={handle}
-                  className="absolute w-2.5 h-2.5 bg-white border border-blue-500"
+                  className="absolute w-2.5 h-2.5 bg-white border border-indigo-500"
                   style={{ left: hl, top: ht, transform: 'translate(-50%, -50%)', cursor }}
                   data-capture-ignore
                   onMouseDown={(e) => startResize(e, handle)}
@@ -345,7 +345,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                  className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 shadow-lg text-sm"
+                  className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 shadow-lg text-sm"
                   title="确认截图"
                 >
                   ✓

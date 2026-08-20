@@ -14,6 +14,25 @@ def candidate(node_id: str, name: str, match_type: str) -> dict:
 
 
 class KGRetrievalTests(unittest.TestCase):
+    def test_chapter_lists_use_natural_numeric_order(self):
+        rows = [
+            {"chapter": "第10章 具有度量的线性空间", "node_count": 1, "node_ids": ["n10"]},
+            {"chapter": "7. 多项式环", "node_count": 1, "node_ids": ["n7"]},
+            {"chapter": "附录A", "node_count": 1, "node_ids": ["na"]},
+            {"chapter": "绪论", "node_count": 1, "node_ids": ["intro"]},
+            {"chapter": "第 11 章 线性变换", "node_count": 1, "node_ids": ["n11"]},
+            {"chapter": "第9章 线性映射", "node_count": 1, "node_ids": ["n9"]},
+        ]
+        expected = ["绪论", "7. 多项式环", "第9章 线性映射", "第10章 具有度量的线性空间", "第 11 章 线性变换", "附录A"]
+
+        with patch.object(kg_v44, "_run", return_value=rows):
+            chapters = kg_v44.list_kg_chapters("gaodai_xia")
+            chapter_nodes = kg_v44.list_kg_chapter_nodes("gaodai_xia")
+
+        self.assertEqual([item["chapter"] for item in chapters], expected)
+        self.assertEqual([item["chapter"] for item in chapter_nodes], expected)
+        self.assertEqual(chapter_nodes[3]["node_ids"], ["n10"])
+
     def test_query_runner_rejects_write_cypher_before_opening_a_session(self):
         with patch.object(kg_v44, "_session") as session:
             with self.assertRaisesRegex(ValueError, "read-only"):

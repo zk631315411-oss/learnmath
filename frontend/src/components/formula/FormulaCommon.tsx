@@ -2,6 +2,9 @@
 // 与工具栏模板不同：工具栏是「符号拼装」型（glyph + 短模板），
 // 这里是一键插入完整的高频公式骨架，点击后进入 MathField 的占位符选择模式，
 // 用户逐个跳转占位符补全，不用手动拼 LaTeX。
+// 按钮内容 = KaTeX 渲染的公式缩略（FormulaGlyph）+ 中文名，认长相也认名字。
+import FormulaGlyph from './FormulaGlyph';
+
 interface Props {
   onInsert: (latex: string) => void;
 }
@@ -25,8 +28,9 @@ export default function FormulaCommon({ onInsert }: Props) {
       <span className="formula-section-label">常用公式</span>
       <div className="formula-common-list">
         {commonFormulas.map((item) => (
-          <button key={item.label} type="button" onClick={() => onInsert(item.latex)} title={item.latex}>
-            {item.label}
+          <button key={item.label} type="button" onClick={() => onInsert(item.latex)} title={item.latex} aria-label={item.label}>
+            <FormulaGlyph latex={item.latex} fallback={item.label} />
+            <span className="formula-common-name">{item.label}</span>
           </button>
         ))}
       </div>

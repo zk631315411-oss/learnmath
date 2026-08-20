@@ -3,7 +3,6 @@ import { Document, Page, pdfjs, type DocumentProps } from 'react-pdf';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-react';
 
 import { loadJSON, saveJSON } from '../utils/storage';
-import { getSavedPage, savePage, getCurrentTextbook } from '../utils/pagePosition';
 import PageMarker, { type Marker } from './PageMarker';
 import type { TextbookId } from '../textbooks';
 
@@ -18,7 +17,10 @@ interface Props {
   markers?: Marker[];
   pdfContainerRef?: React.RefObject<HTMLDivElement | null>;
   onMarkerClick?: (marker: Marker) => void;
-  viewerPage?: number;
+  viewerPage: number;
+  hideToolbar?: boolean;
+  onControlsChange?: (controls: PDFViewerControls | null) => void;
+  pageOverlay?: React.ReactNode;
 }
 
 const ZOOM_PREFS_KEY = 'pdf_view_preferences_v1';
@@ -37,9 +39,20 @@ type PdfLoadProgress = {
   total?: number;
 };
 
-type ZoomMode = 'fit-page' | 'fit-width' | 'manual';
+export type ZoomMode = 'fit-page' | 'fit-width' | 'manual';
 type LayoutClass = 'desktop' | 'mobile-portrait' | 'mobile-landscape';
 type ZoomPreference = { mode: ZoomMode; scale?: number };
+
+export type PDFViewerControls = {
+  currentPage: number;
+  numPages: number;
+  zoomMode: ZoomMode;
+  scale: number;
+  goToPage: (page: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  setZoomMode: (mode: ZoomMode | number) => void;
+};
 
 type PageImageConfig = { basePath: string; pageCount: number; width: number; height: number; };
 const PAGE_IMAGE_CONFIGS: Record<string, PageImageConfig> = {};
@@ -77,9 +90,9 @@ function saveZoomPreference(textbookId: string, layout: LayoutClass, preference:
   saveJSON(ZOOM_PREFS_KEY, data);
 }
 
-function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdfContainerRef, onMarkerClick, viewerPage }: Props) {
+function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdfContainerRef, onMarkerClick, viewerPage, hideToolbar = false, onControlsChange, pageOverlay }: Props) {
   const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const currentPage = viewerPage;
   const [pdfError, setPdfError] = useState<string>('');
   const [pageImageError, setPageImageError] = useState<string>('');
   const [loadProgress, setLoadProgress] = useState<PdfLoadProgress | null>(null);
@@ -104,11 +117,6 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     saveZoomPreference(textbookId, layoutClass, { mode: next });
   }, [layoutClass, textbookId, updateManualScale]);
   const [pageInput, setPageInput] = useState<string>('');
-  // prevTextbookId 记录"已做过页码恢复"的 textbookId，供恢复 effect 幂等去重
-  // 初始值必须为 null（而非 textbookId）：App 只在 selectedPdf && textbookId 成立时才挂载
-  // PDFViewer，首挂载时 textbookId 恒为真值；若初始化为 textbookId，恢复 effect 会因
-  // prev === textbookId 直接 return，首次页码恢复被整个跳过，每次刷新都落到第 1 页
-  const prevTextbookId = useRef<string | null>(null);
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const toolbarTimer = useRef<ReturnType<typeof setTimeout>>();
   const pageInputRef = useRef<HTMLInputElement>(null);
@@ -140,7 +148,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
       setViewerContentWidth(Math.max(0, el.clientWidth - VIEWER_HORIZONTAL_PADDING));
       setViewerContentHeight(Math.max(
         0,
-        el.clientHeight - VIEWER_VERTICAL_PADDING - (mobile ? MOBILE_TOOLBAR_HEIGHT : 0),
+        el.clientHeight - VIEWER_VERTICAL_PADDING - (mobile && !hideToolbar ? MOBILE_TOOLBAR_HEIGHT : 0),
       ));
       const nextLayout = getLayoutClass(Boolean(mobile));
       setLayoutClass(prev => prev === nextLayout ? prev : nextLayout);
@@ -149,7 +157,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     const ro = new ResizeObserver(updateWidth);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [mobile]);
+  }, [hideToolbar, mobile]);
 
   useEffect(() => {
     const preference = getSavedZoomPreference(textbookId, layoutClass, getDefaultZoomMode(layoutClass));
@@ -223,42 +231,54 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     setMobilePageInput('');
   };
 
-  // textbookId 变化（含首挂载）时读取 localStorage 恢复该教材的页码，且每个 textbookId 恰好恢复一次：
-  // prevTextbookId 记录已处理过的 textbookId，重复执行（如 React StrictMode 开发态双调用）幂等跳过。
-  // 初始时 textbookId=''，用 getCurrentTextbook() 兜底读取（此时 App restore 可能已完成）。
-  // 历史上这里曾有两个功能重叠的恢复 effect，每次切书各跑一次、双重恢复靠同值 bailout 暂时无害，
-  // 但属维护债：未来只改一处会导致两次恢复产出不同值、bailout 失效出现跳页闪烁，故合并为这一个。
-  useEffect(() => {
-    if (prevTextbookId.current === textbookId) return;
-    prevTextbookId.current = textbookId;
-    const tid = textbookId || getCurrentTextbook();
-    if (tid) {
-      const savedPage = getSavedPage(tid);
-      setCurrentPage(savedPage);
-      onPageChange?.(savedPage);
-    }
-  }, [textbookId]);
-
-  // 外部要求跳页（提问记录侧栏点击）时同步内部当前页：
-  // 正常翻页时 viewerPage 与内部 currentPage 始终相等（翻页经 onPageChange 同步到 App 再回传），
-  // 仅当 App 主动 setCurrentPage 时二者才会不一致，此时按新值跳页；相等时 setState 返回原引用不触发多余渲染
-  useEffect(() => {
-    if (viewerPage == null) return;
-    setCurrentPage(prev => (prev === viewerPage ? prev : viewerPage));
-  }, [viewerPage]);
-
-  // 用户翻页时直接存 localStorage
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    savePage(textbookId, page);
+  // Page changes are requested from App/usePdfPosition.
+  const handlePageChange = useCallback((page: number) => {
     onPageChange?.(page);
-  };
+  }, [onPageChange]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+        event.preventDefault();
+        handlePageChange(Math.max(1, currentPage - 1));
+      } else if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+        event.preventDefault();
+        handlePageChange(Math.min(numPages || currentPage, currentPage + 1));
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentPage, numPages, handlePageChange]);
+
+  const zoomIn = useCallback(() => {
+    updateManualScale(s => Math.min(3, s + (mobile ? 0.1 : 0.25)));
+  }, [mobile, updateManualScale]);
+
+  const zoomOut = useCallback(() => {
+    updateManualScale(s => Math.max(0.25, s - (mobile ? 0.1 : 0.25)));
+  }, [mobile, updateManualScale]);
+
+  useEffect(() => {
+    onControlsChange?.({
+      currentPage,
+      numPages,
+      zoomMode,
+      scale,
+      goToPage: handlePageChange,
+      zoomIn,
+      zoomOut,
+      setZoomMode: selectZoomMode,
+    });
+    return () => onControlsChange?.(null);
+  }, [currentPage, numPages, zoomMode, scale, handlePageChange, onControlsChange, selectZoomMode, zoomIn, zoomOut]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setLoadProgress(null);
     // 如果 saved page > 总页数， clamp 一下
-    setCurrentPage(prev => Math.min(prev, numPages));
+    if (currentPage > numPages) onPageChange?.(numPages);
   };
 
   const loadingMessage = loadProgress?.total
@@ -277,8 +297,8 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     setLoadProgress(null);
     setPageImageError('');
     setPageDimensions({ width: pageImageConfig.width, height: pageImageConfig.height });
-    setCurrentPage(prev => Math.min(Math.max(1, prev), pageImageConfig.pageCount));
-  }, [pageImageConfig]);
+    if (currentPage > pageImageConfig.pageCount) onPageChange?.(pageImageConfig.pageCount);
+  }, [currentPage, onPageChange, pageImageConfig]);
 
   const handlePageInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -293,7 +313,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
   return (
     <div className="flex h-full">
       {/* 页面导航 — 移动端隐藏 */}
-      {!mobile && (
+      {!mobile && !hideToolbar && (
       <div className="w-16 bg-slate-100 border-r border-slate-200 flex flex-col items-center py-2 shrink-0">
         {/* 页码显示和跳转 */}
         <div className="text-xs text-slate-500 mb-1">{currentPage}/{numPages}</div>
@@ -303,7 +323,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
           onChange={(e) => setPageInput(e.target.value)}
           onKeyDown={handlePageInput}
           placeholder="跳转"
-          className="w-12 h-6 text-xs text-center border rounded mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-12 h-6 text-xs text-center border rounded mb-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
 
         <button
@@ -362,7 +382,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
       <div className="relative min-w-0 flex-1 overflow-hidden">
         <div ref={scrollContainerRef} data-testid="pdf-scroll-container"
           data-zoom-mode={zoomMode}
-          className={`h-full overflow-auto bg-slate-200 p-4 ${mobile ? 'pb-16' : ''}`}
+          className={`h-full overflow-auto bg-slate-200 p-4 ${mobile && !hideToolbar ? 'pb-16' : ''}`}
           onClick={mobile ? resetToolbarTimer : undefined}>
           <div className={`flex ${alignPageToStart ? 'justify-start' : 'justify-center'}`}>
             <div className="relative inline-block" ref={setContainerRef}>
@@ -430,12 +450,13 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
                   onMarkerClick={onMarkerClick}
                 />
               )}
+              {pageOverlay}
             </div>
           </div>
         </div>
 
         {/* 移动端底部工具栏 */}
-        {mobile && numPages > 0 && (
+        {mobile && !hideToolbar && numPages > 0 && (
           <>
             <div data-testid="pdf-mobile-toolbar"
               className={`absolute bottom-0 left-0 right-0 z-20 transition-all duration-500 ${toolbarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -460,7 +481,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
                       onKeyDown={(e) => { if (e.key === 'Enter') commitPageJump(); }}
                       onBlur={commitPageJump}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-16 h-8 text-sm text-center rounded bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-16 h-8 text-sm text-center rounded bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
                   ) : (
                     <button

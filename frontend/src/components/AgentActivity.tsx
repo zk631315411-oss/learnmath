@@ -14,6 +14,10 @@ interface Props {
   active: boolean;
 }
 
+// 后端内部工具名单：这些工具不面向学生，前端作为第二道保险过滤掉，
+// 防止后端展示过滤松动时泄漏到工具活动面板。
+const INTERNAL_TOOLS = new Set(['report_turn_outcome']);
+
 const focusLabels: Record<KGRetrievalFocus, string> = {
   prerequisites: '明确前置',
   successors: '明确后置',
@@ -39,7 +43,7 @@ function focusText(values: KGRetrievalFocus[]): string {
 
 function activityState(activity: ToolActivity) {
   if (activity.status === 'running') {
-    return { label: '查询中', icon: LoaderCircle, color: 'text-blue-500', spin: true };
+    return { label: '查询中', icon: LoaderCircle, color: 'text-indigo-500', spin: true };
   }
   if (activity.status === 'error') {
     return { label: '查询失败', icon: XCircle, color: 'text-red-500', spin: false };
@@ -79,39 +83,38 @@ export default function AgentActivity({ activities, active }: Props) {
   const [expanded, setExpanded] = useState(active);
   const wasActive = useRef(active);
 
+  // 过滤内部工具：report_turn_outcome 等自评/系统动作不出现在学生可见面板
+  const visible = activities.filter(activity => !INTERNAL_TOOLS.has(activity.tool));
+
   useEffect(() => {
     if (active) setExpanded(true);
     else if (wasActive.current) setExpanded(false);
     wasActive.current = active;
   }, [active]);
 
-  if (!activities.length) return null;
+  if (!visible.length) return null;
 
-  const running = activities.some(activity => activity.status === 'running');
-  const hitCount = activities.filter(activity => (
+  const running = visible.some(activity => activity.status === 'running');
+  const hitCount = visible.filter(activity => (
     activity.status === 'success'
     && (activity.result?.status === 'resolved' || activity.result?.found === true)
   )).length;
-  const summary = running
-    ? '正在使用知识图谱'
-    : `知识图谱 · ${hitCount}/${activities.length} 次命中`;
-
   return (
-    <div className="mb-3 border-b border-slate-200 pb-3">
+    <div className="mb-3 border-b border-slate-100 pb-2.5 dark:border-slate-700/70">
       <button
         type="button"
         onClick={() => setExpanded(value => !value)}
-        className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-600 hover:text-slate-800"
+        className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
         aria-expanded={expanded}
       >
-        <Network className={`h-4 w-4 shrink-0 ${running ? 'animate-pulse text-blue-500' : 'text-emerald-600'}`} />
-        <span className="min-w-0 flex-1">{summary}</span>
+        <Network className={`h-4 w-4 shrink-0 ${running ? 'animate-pulse text-indigo-500' : 'text-slate-400'}`} />
+        <span className="min-w-0 flex-1">{running ? '正在检索知识图谱' : `已检索知识图谱 · 命中 ${hitCount}/${visible.length}`}</span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
 
       {expanded && (
         <div className="mt-2 border-l-2 border-emerald-200 pl-3">
-          {activities.map((activity, index) => {
+          {visible.map((activity, index) => {
             const state = activityState(activity);
             const StatusIcon = state.icon;
             const result = activity.result;
