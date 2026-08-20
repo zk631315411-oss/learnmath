@@ -21,7 +21,7 @@
 8. **公式降级内容定为占位符** `[此处公式未能结构化识别]`——不回显未过清洗的原始 LaTeX（可能含非法命令/HTML/链接/控制字符）；
 9. **总量限制 + 服务端规整**：总文本/总公式/单条 warning 上限，相邻 text 块合并、空白块丢弃，**不做内容去重**（真实题目可合法重复公式）；
 10. **display_mode 完全服务端推断**——忽略模型返回值，一律 `choose_display_mode(latex, 'auto')`，与单公式接口行为一致；
-11. **识别接口独立超时配置**——混合内容比单公式慢，独立配置 + 前端 24s + 可取消。
+11. **识别接口独立超时配置**——混合内容比单公式慢，服务端预算最高 30s、前端 35s，并支持取消。
 
 ## 既有资产（已核实，直接复用）
 
@@ -89,7 +89,7 @@ class FormulaRecognizeContentResponse(BaseModel):
 - **单块公式清洗失败的降级内容**：替换为占位文字块 `[此处公式未能结构化识别]` + warnings 追加——**不回显未过清洗的原始 LaTeX**（可能含非法命令/HTML/链接/控制字符）；
 - 空 blocks → `FormulaVisionError`（稳定错误码 `invalid_model_output` / `no_content`）；有文字无公式 → 正常返回 + 警告「未检测到可确认公式」；
 - 日志沿用 `formula_conversion` 格式（provider/latency_ms/status/error_type），不记录 key、原图、完整模型响应；
-- **独立超时配置**：新增 `FORMULA_CONTENT_VISION_TIMEOUT_SECONDS`（默认 12s，混合内容输出更多、比单公式慢）；前端请求超时 24s（略大于服务端预算）并保留 AbortSignal 取消。
+- **统一视觉模型**：公式与混合内容识别均使用 `glm-4.1v-thinking-flash`；服务端单公式预算 25s、总预算和混合内容预算 30s，前端请求超时 35s，并保留 AbortSignal 取消。
 
 ### C. 路由（`app/routers/formula.py` 内新增）
 

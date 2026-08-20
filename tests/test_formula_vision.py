@@ -8,8 +8,9 @@ from PIL import Image
 
 from app.auth.jwt_handler import create_access_token
 from app.main import app
-from app.services.formula_vision_service import FormulaVisionError, FormulaVisionService
-from app.services.image_processing import ImageProcessingError, NormalizedImage
+from app.services.formula_vision_service import FormulaVisionError, FormulaVisionService, _merge_segment_boundaries, _sanitize_vision_formula
+from app.services.image_processing import ImageProcessingError, NormalizedImage, normalize_image_bytes
+from app.services.formula_layout_service import detect_regions
 
 
 class FakeVisionProvider:
@@ -45,6 +46,68 @@ def png_bytes(width: int = 40, height: int = 20) -> bytes:
 
 
 class FormulaVisionServiceTests(unittest.IsolatedAsyncioTestCase):
+    def test_extracts_answer_and_drops_thinking(self) -> None:
+        raw = '<think>猜测过程</think><answer>{"latex":"x^2"}</answer>'
+        self.assertEqual(_sanitize_vision_formula(raw), 'x^2')
+
+    def test_openai_provider_sends_disabled_thinking(self) -> None:
+        from app.services.formula_vision_service import OpenAIVisionProvider
+        self.assertEqual(OpenAIVisionProvider('x', 'k', 'u', 'm')._thinking_extra_body(), {'thinking': {'type': 'disabled'}})
+        self.assertEqual(OpenAIVisionProvider('x', 'k', 'u', 'm', 'enabled')._thinking_extra_body(), {'thinking': {'type': 'enabled'}})
+        self.assertTrue(OpenAIVisionProvider('x', 'k', 'u', 'glm-4.1v-thinking-flash').emits_thinking)
+        self.assertFalse(OpenAIVisionProvider('x', 'k', 'u', 'glm-4v-flash').emits_thinking)
+
+    def test_merges_variable_split_from_leading_subscript_formula(self) -> None:
+        bbox = [0, 100, 300, 160]
+        blocks = _merge_segment_boundaries([
+            {'type': 'text', 'text': 'J', 'bbox': bbox},
+            {'type': 'formula', 'latex': r'_i=\sum_j x_j', 'display_mode': 'inline', 'bbox': bbox},
+        ])
+        self.assertEqual(blocks, [{'type': 'formula', 'latex': r'J_i=\sum_j x_j', 'display_mode': 'inline', 'bbox': bbox}])
+
+    def test_layout_detector_returns_ordered_regions_for_multiple_lines(self) -> None:
+        output = BytesIO()
+        image = Image.new('RGB', (320, 180), 'white')
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((30, 25, 290, 35), fill='black')
+        draw.rectangle((70, 120, 260, 130), fill='black')
+        image.save(output, format='PNG')
+        regions = detect_regions(output.getvalue())
+        self.assertGreaterEqual(len(regions), 2)
+        self.assertLess(regions[0].bbox[1], regions[1].bbox[1])
+
+    async def test_content_recognition_segments_multiple_lines_and_attaches_bbox(self) -> None:
+        output = BytesIO()
+        image = Image.new('RGB', (320, 180), 'white')
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((30, 25, 290, 35), fill='black')
+        draw.rectangle((70, 120, 260, 130), fill='black')
+        image.save(output, format='PNG')
+        provider = FakeVisionProvider('vision', '{"blocks":[{"type":"formula","latex":"x^2"}],"warnings":[]}')
+        service = FormulaVisionService([provider], total_timeout=2)
+        blocks, warnings = await service.recognize_content(normalize_image_bytes(output.getvalue(), 'image/png'))
+        self.assertGreaterEqual(provider.calls, 2)
+        self.assertGreaterEqual(len(blocks), 2)
+        self.assertTrue(all(block.get('bbox') for block in blocks))
+        self.assertEqual(warnings, [])
+
+    async def test_segment_budget_is_rebalanced_after_each_region(self) -> None:
+        output = BytesIO()
+        image = Image.new('RGB', (320, 180), 'white')
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((30, 25, 290, 35), fill='black')
+        draw.rectangle((70, 120, 260, 130), fill='black')
+        image.save(output, format='PNG')
+        provider = FakeVisionProvider('vision', '{"blocks":[{"type":"formula","latex":"x"}],"warnings":[]}')
+        service = FormulaVisionService([provider], total_timeout=2)
+        with patch('app.services.formula_vision_service.config.FORMULA_CONTENT_VISION_TIMEOUT_SECONDS', 2):
+            await service.recognize_content(normalize_image_bytes(output.getvalue(), 'image/png'))
+        self.assertEqual(len(provider.timeouts), 2)
+        self.assertGreater(provider.timeouts[1], provider.timeouts[0])
+
     async def test_success_sanitizes_json(self) -> None:
         service = FormulaVisionService([FakeVisionProvider('vision', '{"latex":"$x^2$"}')], total_timeout=1)
         self.assertEqual(await service.recognize(normalized_image()), ('x^2', 'inline'))
@@ -99,6 +162,13 @@ class FormulaVisionServiceTests(unittest.IsolatedAsyncioTestCase):
             blocks,
             [{'type': 'formula', 'latex': r'\lim_{n\to\infty}(1+\frac{1}{n})^n=e', 'display_mode': 'inline'}],
         )
+        self.assertEqual(warnings, [])
+
+    async def test_content_promotes_latex_mislabeled_as_text(self) -> None:
+        raw = r'{"blocks":[{"type":"text","text":"\left| \Psi \right> = \sum_{n=0}^{\infty} a_n \left| \Psi_n \right>"}],"warnings":[]}'
+        blocks, warnings = await FormulaVisionService([FakeVisionProvider('vision', raw)], total_timeout=1).recognize_content(normalized_image())
+        self.assertEqual(blocks[0]['type'], 'formula')
+        self.assertIn(r'\sum', blocks[0]['latex'])
         self.assertEqual(warnings, [])
 
     async def test_single_formula_repairs_underescaped_json_commands(self) -> None:

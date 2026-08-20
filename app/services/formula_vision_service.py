@@ -19,6 +19,7 @@ from app.services.formula_conversion_service import (
     sanitize_latex,
 )
 from app.services.image_processing import NormalizedImage
+from app.services.formula_layout_service import detect_regions
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,14 @@ class OpenAIVisionProvider:
     api_key: str
     base_url: str
     model: str
+    thinking: str = "disabled"
+
+    def _thinking_extra_body(self) -> dict:
+        return {"thinking": {"type": self.thinking}} if self.thinking in {"enabled", "disabled"} else {}
+
+    @property
+    def emits_thinking(self) -> bool:
+        return "thinking" in self.model.lower()
 
     async def recognize(self, image: NormalizedImage, timeout: float) -> str:
         client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=timeout, max_retries=0)
@@ -99,7 +108,8 @@ class OpenAIVisionProvider:
                     ]},
                 ],
                 "temperature": 0,
-                "max_tokens": 512,
+                "max_tokens": 2048 if self.emits_thinking else 512,
+                "extra_body": self._thinking_extra_body(),
             }
             try:
                 response = await client.chat.completions.create(**request, response_format=VISION_JSON_SCHEMA)
@@ -119,7 +129,8 @@ class OpenAIVisionProvider:
             ],
             "temperature": 0,
             # 智谱 GLM 视觉接口的 max_tokens 上限为 1024；超出会返回 1210。
-            "max_tokens": 1024,
+            "max_tokens": 2048 if self.emits_thinking else 1024,
+            "extra_body": self._thinking_extra_body(),
         }
         try:
             try:
@@ -134,7 +145,7 @@ class OpenAIVisionProvider:
 def build_default_vision_providers() -> list[VisionProvider]:
     providers: list[VisionProvider] = []
     if config.FORMULA_VISION_API_KEY and config.FORMULA_VISION_API_BASE and config.FORMULA_VISION_MODEL:
-        providers.append(OpenAIVisionProvider("glm_vision", config.FORMULA_VISION_API_KEY, config.FORMULA_VISION_API_BASE, config.FORMULA_VISION_MODEL))
+        providers.append(OpenAIVisionProvider("glm_vision", config.FORMULA_VISION_API_KEY, config.FORMULA_VISION_API_BASE, config.FORMULA_VISION_MODEL, config.FORMULA_VISION_THINKING))
     return providers
 
 
@@ -203,8 +214,39 @@ class FormulaVisionService:
                 method = getattr(provider, "recognize_content", None)
                 if method is None:
                     raise FormulaVisionError("视觉 provider 不支持混合内容识别", "upstream_unavailable", 503)
-                raw = await asyncio.wait_for(method(image, remaining), timeout=remaining)
-                blocks, warnings = _normalize_content_response(raw)
+                regions = detect_regions(image.data)
+                if getattr(provider, "emits_thinking", False):
+                    regions = regions[:1]
+                if len(regions) <= 1:
+                    raw = await asyncio.wait_for(method(image, remaining), timeout=remaining)
+                    blocks, warnings = _normalize_content_response(raw)
+                else:
+                    # Keep the whole-page path as a fallback, but give the model
+                    # one logical line at a time for multi-formula photographs.
+                    blocks, warnings = [], []
+                    started_at = time.monotonic()
+                    from PIL import Image
+                    from io import BytesIO
+                    with Image.open(BytesIO(image.data)) as source:
+                        selected_regions = regions[:12]
+                        for index, region in enumerate(selected_regions):
+                            if time.monotonic() - started_at >= remaining:
+                                raise FormulaVisionError("内容识别超时，请重试", "timeout", 504)
+                            crop = source.crop(region.bbox)
+                            output = BytesIO()
+                            crop.save(output, format="PNG", optimize=True)
+                            crop_image = NormalizedImage(output.getvalue(), "image/png", crop.width, crop.height, image.sha256)
+                            regions_left = len(selected_regions) - index
+                            budget = max(0.8, (remaining - (time.monotonic() - started_at)) / regions_left)
+                            raw = await asyncio.wait_for(method(crop_image, budget), timeout=budget)
+                            crop_blocks, crop_warnings = _normalize_content_response(raw)
+                            for block in crop_blocks:
+                                block["bbox"] = list(region.bbox)
+                            blocks.extend(crop_blocks)
+                            warnings.extend(crop_warnings)
+                    blocks = _merge_segment_boundaries(blocks)
+                    if any(block["type"] == "formula" for block in blocks):
+                        warnings = [warning for warning in warnings if warning != "未检测到可确认公式"]
                 status = "success"
                 return blocks, warnings
             except FormulaVisionError as exc:
@@ -222,7 +264,22 @@ class FormulaVisionService:
 _CONTENT_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _CONTENT_TAG = re.compile(r"<[^>]*>")
 _CONTENT_LINK = re.compile(r"(?:https?://|www\.)\S+", re.IGNORECASE)
-_INVALID_JSON_ESCAPE = re.compile(r"\\(?![\"\\/bfnrtu])")
+_INVALID_JSON_ESCAPE = re.compile(r"(?<!\\)\\(?![\"\\/bfnrtu])")
+_LATEX_JSON_COMMAND = re.compile(
+    r"(?<!\\)\\(?=(?:left|right|frac|partial|sum|prod|int|lim|to|infty|Psi|psi|"
+    r"alpha|beta|gamma|delta|theta|lambda|mu|pi|sigma|phi|omega|"
+    r"mathbf|mathrm|operatorname|begin|end)\b)"
+)
+
+
+def _extract_answer_payload(raw: str) -> str:
+    """Keep only the final answer when a thinking model ignores the switch."""
+    value = (raw or "").strip()
+    answer = re.search(r"<answer>\s*(.*?)\s*</answer>", value, flags=re.IGNORECASE | re.DOTALL)
+    if answer:
+        return answer.group(1).strip()
+    value = re.sub(r"<think>.*?</think>", "", value, flags=re.IGNORECASE | re.DOTALL)
+    return value.strip()
 
 
 def _repair_latex_transport_controls(value: str) -> str:
@@ -239,7 +296,7 @@ def _repair_latex_transport_controls(value: str) -> str:
 
 def _sanitize_vision_formula(raw: str) -> str:
     """Normalize a vision response before applying the shared safety checks."""
-    value = raw.strip()
+    value = _extract_answer_payload(raw)
     if len(value) >= 2 and value[0] == "'" and value[-1] == "'":
         value = value[1:-1].strip()
     value = _decode_transport_escapes(value)
@@ -288,7 +345,7 @@ def _decode_transport_escapes(value: str) -> str:
 
 
 def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[str]]:
-    value = raw.strip()
+    value = _extract_answer_payload(raw)
     # Some GLM responses return a quoted fenced payload containing literal
     # ``\\n`` separators. Strip only the outer quote, then decode separators
     # outside JSON strings so LaTeX backslashes remain untouched.
@@ -311,7 +368,10 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
     except json.JSONDecodeError as exc:
         # A few GLM responses emit LaTeX backslashes as single backslashes
         # inside JSON strings. Repair only escapes that JSON does not define.
-        repaired = _INVALID_JSON_ESCAPE.sub(r"\\\\", value)
+        # Escape known LaTeX commands first. Some begin with JSON-valid escape
+        # letters (\f, \r), so repairing only invalid JSON escapes is insufficient.
+        repaired = _LATEX_JSON_COMMAND.sub(r"\\\\", value)
+        repaired = _INVALID_JSON_ESCAPE.sub(r"\\\\", repaired)
         try:
             parsed = json.loads(repaired)
         except json.JSONDecodeError:
@@ -338,6 +398,15 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
             text = _CONTENT_LINK.sub("", _CONTENT_TAG.sub("", _CONTENT_CONTROL.sub("", raw_text))).strip()[:500]
             if not text:
                 continue
+            if "\\" in text and re.search(r"\\(?:frac|partial|sum|int|left|right|Psi|begin)\b", text):
+                try:
+                    latex = sanitize_latex(_repair_latex_transport_controls(text))
+                except FormulaConversionError:
+                    pass
+                else:
+                    formula_total += len(latex)
+                    blocks.append({"type": "formula", "latex": latex, "display_mode": choose_display_mode(latex, "auto")})
+                    continue
             remaining = 8000 - text_total
             if remaining <= 0:
                 continue
@@ -379,6 +448,24 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
     if not any(block["type"] == "formula" for block in blocks) and "未检测到可确认公式" not in warnings:
         warnings.append("未检测到可确认公式")
     return blocks[:50], warnings[:10]
+
+
+def _merge_segment_boundaries(blocks: list[dict]) -> list[dict]:
+    """Repair a common model split: ``J`` followed by formula ``_i = ...``."""
+    merged: list[dict] = []
+    for block in blocks:
+        if (
+            block.get("type") == "formula"
+            and str(block.get("latex", "")).startswith(("_", "^"))
+            and merged
+            and merged[-1].get("type") == "text"
+            and re.fullmatch(r"[A-Za-zΑ-Ωα-ω]", str(merged[-1].get("text", "")).strip())
+            and merged[-1].get("bbox") == block.get("bbox")
+        ):
+            prefix = merged.pop()["text"].strip()
+            block = {**block, "latex": prefix + block["latex"]}
+        merged.append(block)
+    return merged
 
 
 formula_vision_service = FormulaVisionService()

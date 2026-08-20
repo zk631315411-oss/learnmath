@@ -24,7 +24,7 @@
 
 ## 识图后端
 
-- 视觉 provider 默认使用智谱 OpenAI 兼容接口和 `glm-4v-flash`，key、base URL、模型和超时全部由环境变量配置。
+- 视觉 provider 统一使用智谱 OpenAI 兼容接口和 `glm-4.1v-thinking-flash`，key、base URL、模型和超时全部由环境变量配置。
 - 文本 fallback 仅使用显式 `FORMULA_FALLBACK_*` 配置，代码不自动复用视觉 key。
 - 文本转写预算为主 provider 8 秒、fallback 5 秒、总预算 15 秒；前端请求超时 18 秒。
 - `POST /api/formula/recognize` 使用 Bearer 鉴权和 multipart `image`，响应为 `{latex, display_mode}`。
