@@ -54,7 +54,7 @@ async def recognize_formula(
     return FormulaConvertResponse(latex=latex, display_mode=display_mode)
 
 
-@router.post("/recognize-content", response_model=FormulaRecognizeContentResponse)
+@router.post("/recognize-content", response_model=FormulaRecognizeContentResponse, response_model_exclude_none=True)
 async def recognize_formula_content(
     image: UploadFile,
     authorization: Optional[str] = Header(None),
