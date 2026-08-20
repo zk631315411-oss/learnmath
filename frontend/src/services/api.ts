@@ -404,7 +404,8 @@ export async function recognizeFormula(imageDataUrl: string, token?: string, sig
 export async function recognizeFormulaContent(imageDataUrl: string, token?: string, signal?: AbortSignal): Promise<RecognizedContent> {
   const blob = await prepareImageUpload(imageDataUrl);
   const form = new FormData();
-  form.append('image', blob, 'photo.jpg');
+  const extension = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1] || 'png';
+  form.append('image', blob, `photo.${extension}`);
   const response = await apiRequest<RecognizedContent>({ url: '/formula/recognize-content',
     method: 'POST', body: form, token, signal, timeout: 35_000, maxRetries: 0,
   });

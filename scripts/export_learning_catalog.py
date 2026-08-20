@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.db.kg_v44 import list_kg_chapter_nodes, list_kg_nodes  # noqa: E402
+from app.db.kg_v44 import list_kg_chapter_nodes, list_kg_edges, list_kg_nodes  # noqa: E402
 
 
 REGISTRY_PATH = ROOT / "shared" / "textbooks.json"
@@ -88,6 +88,7 @@ def _export_textbook(item: dict[str, Any]) -> dict[str, Any]:
     section_pages, chapter_pages, total_pages = _toc_pages(pdf_path)
 
     raw_chapters = _retry_kg(list_kg_chapter_nodes, textbook_id)
+    book_edges = _retry_kg(list_kg_edges, textbook_id)
     chapters: list[dict[str, Any]] = []
     node_index: list[dict[str, Any]] = []
     seen_nodes: set[str] = set()
@@ -173,6 +174,7 @@ def _export_textbook(item: dict[str, Any]) -> dict[str, Any]:
         "catalog_version": "pending",
         "chapters": chapters,
         "node_index": node_index,
+        "edges": book_edges,
     }
 
 
@@ -183,7 +185,7 @@ def _with_version(catalog: dict[str, Any]) -> dict[str, Any]:
     return {**catalog, "catalog_version": f"{catalog['textbook_id']}-{digest}"}
 
 
-def export(textbook_ids: list[str] | None = None) -> dict[str, Any]:
+def export(textbook_ids: list[str] | None = None, preview_dir: Path | None = None) -> dict[str, Any]:
     registry = _load_registry()
     selected = set(textbook_ids or [str(item["id"]) for item in registry])
     unknown = selected - {str(item["id"]) for item in registry}
@@ -221,11 +223,18 @@ def export(textbook_ids: list[str] | None = None) -> dict[str, Any]:
 
     SHARED_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     FRONTEND_OUTPUT.mkdir(parents=True, exist_ok=True)
+    if preview_dir is not None:
+        preview_dir.mkdir(parents=True, exist_ok=True)
+    manifest_targets = [SHARED_OUTPUT, FRONTEND_OUTPUT / "manifest.json"]
+    book_target_dir = FRONTEND_OUTPUT
+    if preview_dir is not None:
+        manifest_targets = [preview_dir / "manifest.json"]
+        book_target_dir = preview_dir
     encoded_manifest = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
-    SHARED_OUTPUT.write_text(encoded_manifest, encoding="utf-8")
-    (FRONTEND_OUTPUT / "manifest.json").write_text(encoded_manifest, encoding="utf-8")
+    for target in manifest_targets:
+        target.write_text(encoded_manifest, encoding="utf-8")
     for catalog in catalogs:
-        (FRONTEND_OUTPUT / f"{catalog['textbook_id']}.index.json").write_text(
+        (book_target_dir / f"{catalog['textbook_id']}.index.json").write_text(
             json.dumps(
                 {
                     "textbook_id": catalog["textbook_id"],
@@ -238,7 +247,7 @@ def export(textbook_ids: list[str] | None = None) -> dict[str, Any]:
             + "\n",
             encoding="utf-8",
         )
-        (FRONTEND_OUTPUT / f"{catalog['textbook_id']}.json").write_text(
+        (book_target_dir / f"{catalog['textbook_id']}.json").write_text(
             json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
     return manifest
@@ -247,8 +256,10 @@ def export(textbook_ids: list[str] | None = None) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("textbook_ids", nargs="*", help="optional textbook ids; default exports all")
+    parser.add_argument("--preview-dir", type=Path, default=None,
+                        help="write all outputs into this directory instead of shared/ and frontend/public/")
     args = parser.parse_args()
-    manifest = export(args.textbook_ids or None)
+    manifest = export(args.textbook_ids or None, preview_dir=args.preview_dir)
     print(f"exported {len(manifest['catalogs'])} textbook catalogs")
     for catalog in manifest["catalogs"]:
         node_count = sum(int(chapter["node_count"]) for chapter in catalog["chapters"])

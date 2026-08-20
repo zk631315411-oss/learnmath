@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { ArrowDown, BrainCircuit, Camera, ChevronDown, CircleStop, Send, X } from 'lucide-react';
+import { ArrowDown, BrainCircuit, ChevronDown, CircleStop, Send, X } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import FormulaComposer, { type FormulaComposerHandle } from './formula/FormulaComposer';
 import type { ExternalFormulaDraft } from './formula/FormulaComposer';
@@ -7,6 +7,7 @@ import EmptyGuideCard from './EmptyGuideCard';
 import AgentActivity from './AgentActivity';
 import type { Message, PendingImage, RecognizedBlock } from '../types';
 import { MAX_PENDING_IMAGES } from '../hooks/useChat';
+import ChatPlusMenu from './ChatPlusMenu';
 
 interface Props {
   messages: Message[];
@@ -27,7 +28,7 @@ interface Props {
   externalFormula?: ExternalFormulaDraft | null;
   onExternalFormulaConsumed?: (nonce: string) => void;
   onCancelGeneration?: () => void;
-  onOpenPhoto?: () => void;
+  onOpenPhoto?: (file: File) => void;
   externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
   onExternalContentConsumed?: (nonce: string) => void;
 }
@@ -220,7 +221,7 @@ function ChatPanelInner({
       {pendingImages && pendingImages.length > 0 && (
         <div className="px-4 py-3 border-t border-slate-200 bg-indigo-50/60 dark:border-slate-700 dark:bg-indigo-950/40">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-indigo-600 font-medium dark:text-indigo-300">截图已捕获（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
+            <p className="text-xs text-indigo-600 font-medium dark:text-indigo-300">{pendingImages.some(item => item.source === 'photo') ? '图片已添加' : '截图已捕获'}（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
             <button type="button" onClick={onClearPendingImages}
               className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
               <X className="w-3 h-3" />
@@ -234,7 +235,7 @@ function ChatPanelInner({
           <div className="flex gap-2 overflow-x-auto">
             {pendingImages.map((item) => (
               <div key={item.id} className="relative shrink-0">
-                <img src={item.data} alt="待发送截图"
+                <img src={item.data} alt={item.source === 'photo' ? '待发送图片' : '待发送截图'}
                   className="w-16 h-16 object-cover rounded-lg shadow-sm border border-indigo-200" />
                 <button type="button"
                   onClick={() => onRemovePendingImage?.(item.id)}
@@ -257,7 +258,7 @@ function ChatPanelInner({
       <form onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}
         className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex gap-2 items-end">
-          <button type="button" onClick={() => { formulaComposerRef.current?.captureInsertionBookmark(); onOpenPhoto?.(); }} disabled={isLoading} className="icon-button shrink-0" title="拍照或选择图片" aria-label="拍照或选择图片"><Camera className="h-4 w-4" /></button>
+          <ChatPlusMenu disabled={isLoading} onBeforeSelect={() => formulaComposerRef.current?.captureInsertionBookmark()} onSelectFile={file => onOpenPhoto?.(file)} />
           <div className="min-w-0 flex-1">
             <FormulaComposer ref={formulaComposerRef} value={input} onChange={setInput} token={token ?? undefined}
               placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit}

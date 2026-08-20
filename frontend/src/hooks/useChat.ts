@@ -22,7 +22,7 @@ export const MAX_PENDING_IMAGES = 3;
 export interface SendMessageOptions {
   /** Page view starts a fresh thread even when another thread is still active in the panel. */
   newThread?: boolean;
-  /** CaptureBubble sends its single image directly instead of entering the pending-image queue. */
+  /** Capture preview sends its single image directly instead of entering the pending-image queue. */
   capture?: { image: string; cropBBox: CropBBox | null; source?: PendingImage['source'] };
 }
 
@@ -366,7 +366,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         onUpdate: snapshot => {
           partialAnswer = snapshot.answer;
           task.answer = snapshot.answer;
-          if (!isMountedRef.current || !isTaskVisible(task)) return;
+          // 消息列表归属当前对话：翻页/切视图不算切换对话，流式增量必须落进 messages
+          if (!isMountedRef.current) return;
           setMessages(prev => prev.map(message => message.id === assistantMsgId ? {
             ...message,
             content: snapshot.answer,
@@ -382,7 +383,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       const fullThinking = result.thinking;
       const fullToolActivities = result.toolActivities;
       onProgressDelta?.(result.progress_delta, task.textbookId);
-      if (isTaskVisible(task)) {
+      if (isMountedRef.current) {
         setMessages(prev => prev.map(m => m.id === assistantMsgId
           ? { ...m, content: fullAnswer, thinking: fullThinking, toolActivities: fullToolActivities }
           : m));

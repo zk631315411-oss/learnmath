@@ -1,5 +1,6 @@
 import asyncio
 from io import BytesIO
+import json
 import unittest
 from unittest.mock import AsyncMock, patch
 
@@ -176,6 +177,63 @@ class FormulaVisionServiceTests(unittest.IsolatedAsyncioTestCase):
         service = FormulaVisionService([FakeVisionProvider('vision', raw)], total_timeout=1)
         self.assertEqual(await service.recognize(normalized_image()), (r'\lim_{n\to\infty}(1+\frac{1}{n})^n=e', 'inline'))
 
+    async def test_content_normalizes_mixed_blocks_and_infers_display_mode(self) -> None:
+        raw = r'{"blocks":[{"type":"text","text":"  设 x > 0  "},{"type":"text","text":"求下式"},{"type":"formula","latex":"\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}","display_mode":"inline"}],"warnings":[]}'
+        blocks, warnings = await FormulaVisionService([FakeVisionProvider('vision', raw)]).recognize_content(normalized_image())
+        self.assertEqual(blocks[0], {'type': 'text', 'text': '设 x > 0求下式'})
+        self.assertEqual(blocks[1]['display_mode'], 'block')
+        self.assertEqual(warnings, [])
+
+    async def test_content_drops_blank_keeps_duplicates_and_warns_without_formula(self) -> None:
+        raw = '{"blocks":[{"type":"text","text":"   "},{"type":"text","text":"重复"},{"type":"formula","latex":"x"},{"type":"formula","latex":"x"}],"warnings":[]}'
+        blocks, _ = await FormulaVisionService([FakeVisionProvider('vision', raw)]).recognize_content(normalized_image())
+        self.assertEqual([block.get('latex') for block in blocks if block['type'] == 'formula'], ['x', 'x'])
+
+        text_only = '{"blocks":[{"type":"text","text":"只有文字"}],"warnings":[]}'
+        _, warnings = await FormulaVisionService([FakeVisionProvider('vision', text_only)]).recognize_content(normalized_image())
+        self.assertIn('未检测到可确认公式', warnings)
+
+    async def test_content_invalid_formula_uses_safe_placeholder(self) -> None:
+        raw = r'{"blocks":[{"type":"formula","latex":"\\href{https://bad.example}{x}"}],"warnings":[]}'
+        blocks, warnings = await FormulaVisionService([FakeVisionProvider('vision', raw)]).recognize_content(normalized_image())
+        self.assertEqual(blocks, [{'type': 'text', 'text': '[此处公式未能结构化识别]'}])
+        self.assertNotIn('href', str(blocks))
+        self.assertTrue(any('安全结构化' in warning for warning in warnings))
+
+    async def test_content_limits_text_formula_warnings_and_block_lengths(self) -> None:
+        formula = 'x' * 2000
+        payload = {
+            'blocks': [
+                {'type': 'text', 'text': '甲' * 5000},
+                {'type': 'text', 'text': '乙' * 5000},
+                *[{'type': 'formula', 'latex': formula} for _ in range(7)],
+            ],
+            'warnings': ['警' * 300 for _ in range(12)],
+        }
+        blocks, warnings = await FormulaVisionService([FakeVisionProvider('vision', json.dumps(payload, ensure_ascii=False))]).recognize_content(normalized_image())
+        self.assertLessEqual(sum(len(block['text']) for block in blocks if block['type'] == 'text'), 8000)
+        self.assertTrue(all(len(block['text']) <= 500 for block in blocks if block['type'] == 'text'))
+        self.assertLessEqual(sum(len(block['latex']) for block in blocks if block['type'] == 'formula'), 12000)
+        self.assertLessEqual(len(warnings), 10)
+        self.assertTrue(all(len(warning) <= 200 for warning in warnings))
+
+    async def test_content_rejects_empty_and_invalid_payloads(self) -> None:
+        for raw, code in [
+            ('not json', 'invalid_model_output'),
+            ('{"blocks":[],"warnings":[]}', 'no_content'),
+            ('{"blocks":[],"warnings":[],"extra":true}', 'invalid_model_output'),
+        ]:
+            with self.subTest(raw=raw), self.assertRaises(FormulaVisionError) as caught:
+                await FormulaVisionService([FakeVisionProvider('vision', raw)]).recognize_content(normalized_image())
+            self.assertEqual(caught.exception.code, code)
+
+    async def test_content_timeout_has_stable_status(self) -> None:
+        with patch('app.services.formula_vision_service.config.FORMULA_CONTENT_VISION_TIMEOUT_SECONDS', 0.01):
+            with self.assertRaises(FormulaVisionError) as caught:
+                await FormulaVisionService([FakeVisionProvider('vision', delay=0.05)]).recognize_content(normalized_image())
+        self.assertEqual(caught.exception.code, 'timeout')
+        self.assertEqual(caught.exception.status_code, 504)
+
 
 class FormulaVisionRouteTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -216,6 +274,28 @@ class FormulaVisionRouteTests(unittest.TestCase):
             response = self.client.post('/api/formula/recognize', headers=self.headers, files={'image': ('formula.png', png_bytes(), 'image/png')})
         self.assertEqual(response.status_code, 504)
         self.assertEqual(response.json()['detail'], {'code': 'timeout', 'message': '识别超时'})
+
+    def test_content_route_requires_authentication(self) -> None:
+        response = self.client.post('/api/formula/recognize-content', files={'image': ('photo.png', png_bytes(), 'image/png')})
+        self.assertEqual(response.status_code, 401)
+
+    def test_content_route_returns_mixed_blocks(self) -> None:
+        result = ([{'type': 'text', 'text': '求解'}, {'type': 'formula', 'latex': 'x^2=1', 'display_mode': 'inline'}], [])
+        with patch('app.routers.formula.formula_vision_service.recognize_content', new=AsyncMock(return_value=result)):
+            response = self.client.post('/api/formula/recognize-content', headers=self.headers, files={'image': ('photo.png', png_bytes(), 'image/png')})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['blocks'], result[0])
+
+    def test_content_route_preserves_processing_and_provider_errors(self) -> None:
+        unsupported = self.client.post('/api/formula/recognize-content', headers=self.headers, files={'image': ('photo.gif', b'GIF89a', 'image/gif')})
+        self.assertEqual(unsupported.status_code, 415)
+        self.assertEqual(unsupported.json()['detail']['code'], 'unsupported_format')
+
+        failure = FormulaVisionError('内容识别超时', 'timeout', 504)
+        with patch('app.routers.formula.formula_vision_service.recognize_content', new=AsyncMock(side_effect=failure)):
+            timed_out = self.client.post('/api/formula/recognize-content', headers=self.headers, files={'image': ('photo.png', png_bytes(), 'image/png')})
+        self.assertEqual(timed_out.status_code, 504)
+        self.assertEqual(timed_out.json()['detail']['code'], 'timeout')
 
 
 if __name__ == '__main__':

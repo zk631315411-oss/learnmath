@@ -246,7 +246,7 @@ async function enterReader(page: Page) {
   await page.goto('/');
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习)$/ }).first().click();
-  await expect(page.getByRole('button', { name: '框选提问' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: '下一页' }).first()).toBeEnabled();
 }
 
@@ -272,7 +272,7 @@ test('first visit opens map and later restores the reader workspace', async ({ p
   await enterReader(page);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('learnmath.workspace.gaodai_shang'))).not.toBeNull();
   await page.reload();
-  await expect(page.getByRole('button', { name: '框选提问' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
   await expect(page.getByText('学习地图', { exact: true }).first()).not.toBeVisible();
 });
 
@@ -302,32 +302,18 @@ test('mobile handle moves through collapsed, half and full stages', async ({ pag
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
 });
 
-test('capture bubble enforces draft, streaming and completed states', async ({ page }, testInfo) => {
+test('capture flows into the chat input and streams a complete answer', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page);
   await enterReader(page);
-  await page.getByRole('button', { name: '框选提问' }).first().click();
-  await page.getByRole('menuitem', { name: '框选提问' }).evaluate((element) => (element as HTMLButtonElement).click());
-  await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
-  const viewer = page.getByTestId('pdf-scroll-container');
-  const box = await viewer.boundingBox();
-  expect(box).not.toBeNull();
-  await page.mouse.move(box!.x + 120, box!.y + 120);
-  await page.mouse.down();
-  await page.mouse.move(box!.x + 360, box!.y + 260, { steps: 8 });
-  await page.waitForTimeout(50);
-  await page.mouse.up();
-  await page.getByTitle('确认截图').click();
-  const bubble = page.getByTestId('capture-bubble');
-  await expect(bubble).toHaveAttribute('data-state', 'draft');
-  await bubble.getByPlaceholder('想问什么？').fill('这一步为什么成立？');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'streaming');
-  await expect(bubble.getByRole('button', { name: '关闭框选提问' })).toBeEnabled();
-  await expect(bubble).toHaveAttribute('data-state', 'complete');
-  await expect(bubble.getByText('先观察系数矩阵的秩。')).toBeVisible();
-  await bubble.getByRole('button', { name: '关闭框选提问' }).click();
-  await expect(bubble).toBeHidden();
+  await captureToChatInput(page);
+  await expect(page.getByText('截图已捕获（1/3）', { exact: true })).toBeVisible();
+  const input = page.getByRole('textbox', { name: '输入问题…' });
+  await input.fill('这一步为什么成立？');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByAltText('用户截图')).toBeVisible();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+  await page.getByRole('button', { name: '返回本页' }).click();
   await expect(page.getByText('第 1 页 · 1 条记录')).toBeVisible();
 });
 
@@ -472,13 +458,13 @@ test('visual capture bubble archive', async ({ page }, testInfo) => {
   await mockApp(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await enterReader(page);
-  const bubble = await createCaptureBubble(page, true);
-  await bubble.getByPlaceholder('想问什么？').fill('这一步为什么成立？');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'complete');
+  await captureToChatInput(page, true);
+  await page.getByRole('textbox', { name: '输入问题…' }).fill('这一步为什么成立？');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
   const artifactDir = resolve(process.cwd(), '..', 'artifacts', 'visual-20260818');
   await mkdir(artifactDir, { recursive: true });
-  await page.screenshot({ path: resolve(artifactDir, 'capture-bubble-1440-light.png'), fullPage: true });
+  await page.screenshot({ path: resolve(artifactDir, 'capture-chat-1440-light.png'), fullPage: true });
 });
 
 test('E1 conversation view survives page changes and jumps back to its source page', async ({ page }, testInfo) => {
@@ -548,17 +534,16 @@ test('E4 opening the drawer and starting capture keeps overlay surfaces mutually
   await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
   // The drawer backdrop owns pointer events while open; invoke the toolbar
   // action directly to verify the top-level overlay state transition.
-  await page.getByRole('button', { name: '框选提问' }).first().evaluate((element) => (element as HTMLButtonElement).click());
-  await page.getByRole('menuitem', { name: '框选提问' }).evaluate((element) => (element as HTMLButtonElement).click());
+  await page.getByRole('button', { name: '框选', exact: true }).first().evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole('dialog', { name: '学习工具' })).toBeHidden();
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeHidden();
 });
 
-async function createCaptureBubble(page: Page, nearRightEdge = false) {
-  await page.getByRole('button', { name: '框选提问' }).first().click();
-  await page.getByRole('menuitem', { name: '框选提问' }).click();
+// 框选 → 确认截图 → 预览弹层点「提问」：截图作为待发送图片进入聊天输入区
+async function captureToChatInput(page: Page, nearRightEdge = false) {
+  await page.getByRole('button', { name: '框选', exact: true }).first().click();
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
   const viewer = page.getByTestId('pdf-scroll-container');
   const box = await viewer.boundingBox();
@@ -571,42 +556,40 @@ async function createCaptureBubble(page: Page, nearRightEdge = false) {
   await page.waitForTimeout(50);
   await page.mouse.up();
   await page.getByTitle('确认截图').click();
-  return page.getByTestId('capture-bubble');
+  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提问' }).click();
+  await expect(page.getByAltText('待发送截图')).toBeVisible();
 }
 
-test('mobile capture bubble is a bottom card and completes a mocked answer', async ({ page }, testInfo) => {
+test('mobile capture flows into the bottom sheet chat input and completes a mocked answer', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await enterReader(page);
-  await page.getByRole('button', { name: '框选提问' }).click();
-  await page.getByRole('menuitem', { name: '框选提问' }).click();
+  await page.getByRole('button', { name: '框选', exact: true }).click();
   await expect(page.getByText('裁剪截图', { exact: true })).toBeVisible({ timeout: 5000 });
   await page.getByRole('button', { name: '确认截取' }).click();
-  const bubble = page.getByTestId('capture-bubble');
-  await expect(bubble).toHaveAttribute('data-state', 'draft');
-  const bubbleBox = await bubble.boundingBox();
-  expect(bubbleBox).not.toBeNull();
-  expect(Math.abs(bubbleBox!.y + bubbleBox!.height - 844)).toBeLessThan(3);
-  await bubble.getByPlaceholder('想问什么？').fill('移动端这一步为什么成立？');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'complete');
+  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提问' }).click();
+  await expect(page.getByAltText('待发送截图')).toBeVisible();
+  const input = page.getByRole('textbox', { name: '输入问题…' });
+  await input.fill('移动端这一步为什么成立？');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
 });
 
-test('E5 capture bubble supports a follow-up and expansion into the right panel', async ({ page }, testInfo) => {
+test('E5 captured screenshot supports a follow-up in the right chat panel', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page);
   await enterReader(page);
-  const bubble = await createCaptureBubble(page);
-  await bubble.getByPlaceholder('想问什么？').fill('这一步为什么成立？');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'complete');
-  await bubble.getByPlaceholder('继续追问…').fill('能再给一个例子吗？');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'complete');
-  await bubble.getByRole('button', { name: '在右栏展开' }).click();
+  await captureToChatInput(page);
+  const input = page.getByRole('textbox', { name: '输入问题…' });
+  await input.fill('这一步为什么成立？');
+  await page.getByRole('button', { name: '发送' }).click();
   await expect(page.getByText('对话视图', { exact: true })).toBeVisible();
   await expect(page.getByAltText('用户截图')).toBeVisible();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+  await input.fill('能再给一个例子吗？');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByText('先观察系数矩阵的秩。').nth(1)).toBeVisible();
 });
 
 test('E6 switching between map and reader preserves the active conversation', async ({ page }, testInfo) => {
@@ -634,7 +617,7 @@ test('E7 chapter card opens the chapter map and its primary action enters the re
   const sectionRequests: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/textbook/section-page')) sectionRequests.push(request.url()); });
   await page.getByRole('button', { name: '开始本章' }).click();
-  await expect(page.getByRole('button', { name: '框选提问' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '框选', exact: true })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('26');
   expect(sectionRequests).toHaveLength(0);
 });
@@ -646,7 +629,7 @@ test('E7 chapter map falls back without a blank reader on a scan miss', async ({
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
   await page.getByRole('button', { name: '开始本章' }).click();
-  await expect(page.getByRole('button', { name: '框选提问' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '框选', exact: true })).toBeVisible();
 });
 
 test('M1 map textbook selector switches the map data', async ({ page }, testInfo) => {
@@ -787,7 +770,7 @@ test('M4 chapter cards expose learning status summaries', async ({ page }, testI
   await page.goto('/');
   await expect(page.getByText('1 个需巩固', { exact: true })).toBeVisible();
   await expect(page.getByText('2 / 2 已探索', { exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /矩阵秩/ })).toBeVisible();
+  await expect(page.getByText(/矩阵秩/)).toBeVisible();
 });
 
 test('M6 knowledge section takes priority over an unrelated source question page', async ({ page }, testInfo) => {
@@ -869,11 +852,10 @@ test('D1 SSE progress delta updates the map without a full progress refetch', as
   await page.goto('/');
   await expect(page.getByText('1 个学习中', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '继续学习' }).click();
-  const bubble = await createCaptureBubble(page);
-  await bubble.getByPlaceholder('想问什么？').fill('增量状态测试');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'complete');
-  await bubble.getByRole('button', { name: '关闭框选提问' }).click();
+  await captureToChatInput(page);
+  await page.getByRole('textbox', { name: '输入问题…' }).fill('增量状态测试');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
   await page.locator('header').getByRole('button', { name: '地图' }).click();
   await expect(page.getByText('全部掌握', { exact: true })).toBeVisible();
   expect(progressRequests).toBe(1);
@@ -900,13 +882,13 @@ test('E8 mobile sheet entries and pending screenshot count are visible', async (
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
   await openQuestionFromHistory(page, '什么是秩？');
   await expect(page.getByText('对话视图', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '框选提问' }).click();
-  await page.getByRole('menuitem', { name: '框选提问' }).click();
+  await page.getByRole('button', { name: '框选', exact: true }).click();
   await expect(page.getByText('裁剪截图', { exact: true })).toBeVisible({ timeout: 5000 });
   await page.getByRole('button', { name: '确认截取' }).click();
+  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提问' }).click();
   const chatButton = page.getByRole('button', { name: /AI 旁批/ });
   await expect(chatButton).toContainText('1');
-  await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
+  await expect(page.getByAltText('待发送截图')).toBeVisible();
   await handle.dispatchEvent('pointerdown', { pointerId: 12, clientY: 780 });
   await handle.dispatchEvent('pointerup', { pointerId: 12, clientY: 710 });
   await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
@@ -928,10 +910,11 @@ test('E10 streaming allows navigation while preserving the background task conte
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page, { streamDelayMs: 2000 });
   await enterReader(page);
-  const bubble = await createCaptureBubble(page);
-  await bubble.getByPlaceholder('想问什么？').fill('流式锁定测试');
-  await bubble.getByRole('button', { name: '发送' }).click();
-  await expect(bubble).toHaveAttribute('data-state', 'streaming');
+  await captureToChatInput(page);
+  const input = page.getByRole('textbox', { name: '输入问题…' });
+  await input.fill('流式锁定测试');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByRole('button', { name: '停止生成' })).toBeVisible();
   await expect(page.getByRole('button', { name: '下一页' })).toBeEnabled();
   await page.getByRole('button', { name: '下一页' }).click();
   await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('2');
@@ -944,4 +927,8 @@ test('E10 streaming allows navigation while preserving the background task conte
   await page.waitForTimeout(2500);
   await expect(page.getByRole('button', { name: '下一页' })).toBeEnabled();
   await expect(page.locator('header select')).toBeEnabled();
+  await expect(page.getByRole('button', { name: '发送' })).toBeVisible();
+  // 导航回来应直接停在对话视图，流式答案完整保留
+  await expect(page.getByText('对话视图', { exact: true })).toBeVisible();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
 });

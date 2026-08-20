@@ -34,11 +34,11 @@
 
 ## PDF 公式识别
 
-- 桌面 `PDFToolbar` 和移动 `BottomSheet` 的剪刀入口共用“框选提问 / 识别公式”菜单。
-- App 使用同一截图 overlay，通过 `captureMode: 'qa' | 'formula'` 分流。
+- 桌面 `PDFToolbar` 和移动 `BottomSheet` 的剪刀入口统一为“框选”。
+- 选区确认后进入内容预览，再由用户选择“提问”或“提取并编辑”；提取统一调用混合内容识别接口，不要求用户预判选区是单个公式。
 - 识别期间锁定翻页、切书和重复提交，提供取消；失败保留截图并提供重试和关闭。
-- 成功后展开桌面右栏或移动半屏旁批，并通过 `ExternalFormulaDraft {latex, displayMode, nonce}` 预填 FormulaComposer。
-- nonce 消费后立即清除，组件重挂载或切换视图不得重复打开。
+- “提取并编辑”成功后展示 `RecognizedContentCard`；用户确认“插入聊天”后，通过 `ExternalContentDraft {blocks, nonce}` 预填 FormulaComposer。
+- nonce 消费后立即清除，组件重挂载或切换视图不得重复插入；识别结果只预填，不自动发送。
 
 ## 手写画板
 

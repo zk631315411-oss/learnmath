@@ -164,11 +164,13 @@ def list_kg_chapter_nodes(textbook_id: str) -> list[dict[str, Any]]:
         MATCH (n:KGNode)
         WHERE (n.textbook_id = $textbook_id OR n.node_id STARTS WITH $book_prefix)
           AND n.chapter IS NOT NULL AND trim(toString(n.chapter)) <> ''
+          AND n.type IN $types
         RETURN toString(n.chapter) AS chapter,
                collect(n.node_id) AS node_ids,
                count(n) AS node_count
         ORDER BY chapter
         """,
+        types=CORE_TYPES,
         **_scope_parameters(clean),
     )
     result = [
@@ -183,24 +185,71 @@ def list_kg_chapter_nodes(textbook_id: str) -> list[dict[str, Any]]:
 
 
 def list_kg_nodes(textbook_id: str, chapter: str) -> list[dict[str, Any]]:
-    """List chapter nodes with section and bounded prerequisite ids."""
+    """List chapter nodes (core teaching types) in textbook appearance order."""
     clean = (textbook_id or "").strip()
     rows = _run(
         """
         MATCH (n:KGNode)
         WHERE (n.textbook_id = $textbook_id OR n.node_id STARTS WITH $book_prefix)
           AND toString(n.chapter) = $chapter
+          AND n.type IN $types
         OPTIONAL MATCH (prereq:KGNode)-[:PREREQUISITE_OF]->(n)
+        WHERE prereq.type IN $types
+        WITH n, collect(DISTINCT prereq.node_id)[0..8] AS prerequisite_ids
         RETURN n.node_id AS node_id, n.name AS name, n.type AS type,
                n.chapter AS chapter, n.section AS section,
                n.section_node_id AS section_node_id,
-               collect(DISTINCT prereq.node_id)[0..8] AS prerequisite_ids
-        ORDER BY section, name, node_id
+               n.line_start AS line_start,
+               prerequisite_ids
+        ORDER BY CASE
+                   WHEN n.order_hint IS NOT NULL AND toString(n.order_hint) <> ''
+                     THEN toFloat(n.order_hint)
+                   WHEN n.line_start IS NULL OR toString(n.line_start) = ''
+                     THEN 999999.0
+                   ELSE toFloat(n.line_start)
+                 END,
+                 n.name, n.node_id
         """,
         chapter=chapter,
+        types=CORE_TYPES,
         **_scope_parameters(clean),
     )
     return [dict(row) for row in rows]
+
+
+def list_kg_edges(textbook_id: str) -> list[dict[str, Any]]:
+    """List typed edges among core teaching nodes for one textbook."""
+    clean = (textbook_id or "").strip()
+    if not clean:
+        return []
+    rows = _run(
+        """
+        MATCH (s:KGNode)-[r]->(t:KGNode)
+        WHERE (s.textbook_id = $textbook_id OR s.node_id STARTS WITH $book_prefix)
+          AND (t.textbook_id = $textbook_id OR t.node_id STARTS WITH $book_prefix)
+          AND s.type IN $types AND t.type IN $types
+          AND type(r) IN $relation_types
+          AND s.node_id <> t.node_id
+        RETURN DISTINCT r.edge_id AS edge_id, type(r) AS type,
+               s.node_id AS source, t.node_id AS target
+        ORDER BY source, target, type
+        """,
+        types=CORE_TYPES,
+        relation_types=[
+            "PREREQUISITE_OF", "USES", "SUPERIOR", "EQUATIVE",
+            "PART_OF", "DERIVES", "GETS", "HAS_PROPERTY",
+        ],
+        **_scope_parameters(clean),
+    )
+    seen: set[tuple[str, str, str]] = set()
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        key = (str(row.get("source") or ""), str(row.get("target") or ""), str(row.get("type") or ""))
+        if not all(key) or key in seen:
+            continue
+        seen.add(key)
+        result.append({"source": key[0], "target": key[1], "type": key[2]})
+    return result
 
 
 def _node_map(row: dict[str, Any], *, include_evidence: bool = True) -> dict[str, Any]:

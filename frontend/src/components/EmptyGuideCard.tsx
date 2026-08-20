@@ -4,7 +4,7 @@ import { BookOpen, Crop, History, type LucideIcon } from 'lucide-react';
 // 桌面 PDF 区、移动 PDF 区、聊天面板三处空态共用同一份文案，保证视觉与语义一致
 const GUIDE_STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
   { icon: BookOpen, title: '选择教材', desc: '从顶部下拉菜单选择要学习的教材' },
-  { icon: Crop, title: '框选题目提问', desc: '点击「框选提问」，框住不会的题目' },
+  { icon: Crop, title: '框选页面内容', desc: '点击「框选」，选择提问或提取内容' },
   { icon: History, title: '查看提问记录', desc: '历史提问按页保存，随时回看' },
 ];
 

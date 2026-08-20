@@ -280,6 +280,12 @@ def _extract_answer_payload(raw: str) -> str:
         return answer.group(1).strip()
     value = re.sub(r"<think>.*?</think>", "", value, flags=re.IGNORECASE | re.DOTALL)
     return value.strip()
+_CONTENT_TEXT_TOTAL_LIMIT = 8000
+_CONTENT_TEXT_BLOCK_LIMIT = 500
+_CONTENT_FORMULA_TOTAL_LIMIT = 12000
+_CONTENT_BLOCK_LIMIT = 50
+_CONTENT_WARNING_LIMIT = 10
+_FORMULA_FALLBACK_TEXT = "[此处公式未能结构化识别]"
 
 
 def _repair_latex_transport_controls(value: str) -> str:
@@ -344,6 +350,24 @@ def _decode_transport_escapes(value: str) -> str:
     return "".join(chars)
 
 
+def _append_content_text(
+    blocks: list[dict[str, str]], text: str, text_total: int
+) -> int:
+    """Append sanitized text without violating response block/total limits."""
+    remaining_total = _CONTENT_TEXT_TOTAL_LIMIT - text_total
+    pending = text[:remaining_total]
+    while pending and len(blocks) < _CONTENT_BLOCK_LIMIT:
+        if blocks and blocks[-1]["type"] == "text" and len(blocks[-1]["text"]) < _CONTENT_TEXT_BLOCK_LIMIT:
+            capacity = _CONTENT_TEXT_BLOCK_LIMIT - len(blocks[-1]["text"])
+            chunk, pending = pending[:capacity], pending[capacity:]
+            blocks[-1]["text"] += chunk
+        else:
+            chunk, pending = pending[:_CONTENT_TEXT_BLOCK_LIMIT], pending[_CONTENT_TEXT_BLOCK_LIMIT:]
+            blocks.append({"type": "text", "text": chunk})
+        text_total += len(chunk)
+    return text_total
+
+
 def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[str]]:
     value = _extract_answer_payload(raw)
     # Some GLM responses return a quoted fenced payload containing literal
@@ -395,7 +419,7 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
             raw_text = item.get("text")
             if not isinstance(raw_text, str):
                 continue
-            text = _CONTENT_LINK.sub("", _CONTENT_TAG.sub("", _CONTENT_CONTROL.sub("", raw_text))).strip()[:500]
+            text = _CONTENT_LINK.sub("", _CONTENT_TAG.sub("", _CONTENT_CONTROL.sub("", raw_text))).strip()
             if not text:
                 continue
             if "\\" in text and re.search(r"\\(?:frac|partial|sum|int|left|right|Psi|begin)\b", text):
@@ -407,15 +431,7 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
                     formula_total += len(latex)
                     blocks.append({"type": "formula", "latex": latex, "display_mode": choose_display_mode(latex, "auto")})
                     continue
-            remaining = 8000 - text_total
-            if remaining <= 0:
-                continue
-            text = text[:remaining]
-            text_total += len(text)
-            if blocks and blocks[-1]["type"] == "text":
-                blocks[-1]["text"] += text
-            else:
-                blocks.append({"type": "text", "text": text})
+            text_total = _append_content_text(blocks, text, text_total)
             continue
 
         raw_latex = item.get("latex")
@@ -426,13 +442,11 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
             latex = sanitize_latex(raw_latex)
         except FormulaConversionError:
             warnings.append("有一个公式未能安全结构化识别")
-            blocks.append({"type": "text", "text": "[此处公式未能结构化识别]"})
+            text_total = _append_content_text(blocks, _FORMULA_FALLBACK_TEXT, text_total)
             continue
-        remaining = 12000 - formula_total
-        if remaining <= 0:
+        if formula_total + len(latex) > _CONTENT_FORMULA_TOTAL_LIMIT:
             continue
-        latex = latex[:remaining]
-        if not latex:
+        if len(blocks) >= _CONTENT_BLOCK_LIMIT:
             continue
         formula_total += len(latex)
         blocks.append({"type": "formula", "latex": latex, "display_mode": choose_display_mode(latex, "auto")})
@@ -441,13 +455,16 @@ def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[st
         if not isinstance(warning, str):
             continue
         clean = _CONTENT_CONTROL.sub("", warning).strip()[:200]
-        if clean and len(warnings) < 10:
+        if clean and len(warnings) < _CONTENT_WARNING_LIMIT:
             warnings.append(clean)
     if not blocks:
         raise FormulaVisionError("图片中没有可识别的文字或公式", "no_content", 422)
     if not any(block["type"] == "formula" for block in blocks) and "未检测到可确认公式" not in warnings:
-        warnings.append("未检测到可确认公式")
-    return blocks[:50], warnings[:10]
+        if len(warnings) >= _CONTENT_WARNING_LIMIT:
+            warnings[-1] = "未检测到可确认公式"
+        else:
+            warnings.append("未检测到可确认公式")
+    return blocks, warnings[:_CONTENT_WARNING_LIMIT]
 
 
 def _merge_segment_boundaries(blocks: list[dict]) -> list[dict]:

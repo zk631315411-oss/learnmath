@@ -1,8 +1,9 @@
-import { ArrowLeft, ChevronDown, MessageSquarePlus } from 'lucide-react';
+import { ArrowLeft, MessageSquarePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import ChatPanel from './ChatPanel';
 import type { Marker } from './PageMarker';
+import { answerDigest } from '../utils/answerDigest';
 import type { Message, PendingImage, RecognizedBlock } from '../types';
 import type { ExternalFormulaDraft } from './formula/FormulaComposer';
 
@@ -32,7 +33,7 @@ interface Props {
   externalFormula?: ExternalFormulaDraft | null;
   onExternalFormulaConsumed?: (nonce: string) => void;
   onCancelGeneration?: () => void;
-  onOpenPhoto?: () => void;
+  onOpenPhoto?: (file: File) => void;
   externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
   onExternalContentConsumed?: (nonce: string) => void;
 }
@@ -64,8 +65,23 @@ export default function PageNotesPanel({ currentPage, items, activeMarker, messa
   }
 
   return <div className="flex h-full flex-col bg-white dark:bg-slate-800">
-    <div className="flex min-h-14 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-slate-700"><div><p className="text-sm font-semibold text-slate-700 dark:text-slate-100">本页提问</p><p className="mt-0.5 text-xs text-slate-400">第 {currentPage} 页 · {pageItems.length} 条记录</p></div><span className="text-xs text-slate-400">选择记录查看完整对话</span></div>
-    <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/60 p-3 dark:bg-slate-950/30">{itemsLoading ? <div data-testid="page-notes-loading" className="space-y-2"><div className="h-20 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /><div className="h-20 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /></div> : itemsError ? <div className="flex h-full min-h-64 flex-col items-center justify-center px-6 text-center"><p className="text-sm font-medium text-rose-600 dark:text-rose-300">{itemsError}</p><button type="button" onClick={onRetryItems} className="mt-3 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700">重试</button></div> : pageItems.length === 0 ? <div className="h-full min-h-64"><Starters page={currentPage} onSelect={sendNew} /></div> : <div className="space-y-2">{pageItems.map(item => <details key={item.id} className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"><summary className="flex cursor-pointer list-none items-start gap-2 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200"><ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-open:rotate-180" /><span className="min-w-0 flex-1 leading-5"><span className="mr-1.5 text-[11px] font-medium text-slate-400">提问</span>{item.question}</span><button type="button" data-open-thread onClick={(event) => { event.preventDefault(); onOpenThread(item); setMode('thread'); }} className="shrink-0 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-300">查看对话</button></summary><div className="line-clamp-2 border-t border-slate-100 px-3 py-2.5 text-xs leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">{item.answer || '回答生成中…'}</div></details>)}</div>}</div>
+    <div className="flex min-h-14 shrink-0 items-center border-b border-slate-200 px-4 dark:border-slate-700"><div><p className="text-sm font-semibold text-slate-700 dark:text-slate-100">本页概要</p><p className="mt-0.5 text-xs text-slate-400">第 {currentPage} 页 · {pageItems.length} 条记录</p></div></div>
+    <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/60 p-3 dark:bg-slate-950/30">{itemsLoading ? <div data-testid="page-notes-loading" className="space-y-2"><div className="h-20 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /><div className="h-20 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /></div> : itemsError ? <div className="flex h-full min-h-64 flex-col items-center justify-center px-6 text-center"><p className="text-sm font-medium text-rose-600 dark:text-rose-300">{itemsError}</p><button type="button" onClick={onRetryItems} className="mt-3 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700">重试</button></div> : pageItems.length === 0 ? <div className="h-full min-h-64"><Starters page={currentPage} onSelect={sendNew} /></div> : <div className="space-y-2">{pageItems.map(item => {
+          const status = item.generation_status ?? (item.answer ? 'completed' : 'pending');
+          const digest = item.answer ? answerDigest(item.answer) : '';
+          const fallback = status === 'pending' ? '回答生成中…' : status === 'interrupted' ? '回答中断，未完成' : status === 'cancelled' ? '已取消' : '暂无回答';
+          const followUpCount = item.follow_ups?.length ?? 0;
+          return <button key={item.id} type="button" data-open-thread aria-label={digest ? `查看对话：${digest}` : '查看对话'} onClick={() => { onOpenThread(item); setMode('thread'); }} className="group block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-700">
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 text-sm font-medium leading-5 text-slate-800 line-clamp-2 dark:text-slate-100">{item.question}</p>
+              {status === 'pending' && <span className="mt-1 flex shrink-0 items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />生成中</span>}
+              {status === 'interrupted' && <span className="mt-1 shrink-0 text-[11px] font-medium text-rose-500 dark:text-rose-400">已中断</span>}
+              {status === 'cancelled' && <span className="mt-1 shrink-0 text-[11px] text-slate-400">已取消</span>}
+            </div>
+            <p className={`mt-1 text-xs leading-5 line-clamp-2 ${digest ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>{digest || fallback}</p>
+            {followUpCount > 0 && <p className="mt-1.5 text-[11px] text-slate-400">{followUpCount} 条追问</p>}
+          </button>;
+        })}</div>}</div>
     <div className="shrink-0"><ChatPanel messages={[]} onSendMessage={sendNew} onClearMessages={onClearMessages} isLoading={isLoading} token={token} pendingImages={pendingImages} onRemovePendingImage={onRemovePendingImage} onClearPendingImages={onClearPendingImages} error={error} thinkingStage={thinkingStage} thinkingStageKey={thinkingStageKey} isThinking={isThinking} compact emptyState={<div className="hidden" />} externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed} externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} onCancelGeneration={onCancelGeneration} onOpenPhoto={onOpenPhoto} /></div>
   </div>;
 }

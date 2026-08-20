@@ -1,6 +1,6 @@
 const IMAGE_MAX_WIDTH = 2000;
 const IMAGE_MAX_HEIGHT = 2000;
-const IMAGE_TARGET_BYTES = (15 * 1024 * 1024) / 4;
+export const IMAGE_TARGET_BYTES = (15 * 1024 * 1024) / 4;
 
 function dataUrlToBlob(dataUrl: string): Blob {
   const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=\r\n]+)$/i.exec(dataUrl.trim());
@@ -65,5 +65,9 @@ export async function prepareImageUpload(dataUrl: string): Promise<Blob> {
   jpegContext.fillStyle = '#ffffff';
   jpegContext.fillRect(0, 0, jpegCanvas.width, jpegCanvas.height);
   jpegContext.drawImage(canvas, 0, 0);
-  return canvasToBlob(jpegCanvas, 'image/jpeg', 0.92);
+  const jpeg = await canvasToBlob(jpegCanvas, 'image/jpeg', 0.88);
+  if (jpeg.size > IMAGE_TARGET_BYTES) {
+    throw new Error('图片压缩后仍然过大，请重新拍摄或选择较小的图片');
+  }
+  return jpeg;
 }

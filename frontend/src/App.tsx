@@ -8,12 +8,12 @@ import AuthModal from './components/AuthModal';
 import AuthControls from './components/AuthControls';
 import LearningSidebar from './components/LearningSidebar';
 import type { SidebarTab } from './components/LearningSidebar';
-import PDFToolbar, { type CaptureMode } from './components/PDFToolbar';
+import PDFToolbar from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
 import BottomSheet, { type SheetStage } from './components/BottomSheet';
 import PageNotesPanel from './components/PageNotesPanel';
-import CaptureBubble, { type CaptureDraft } from './components/CaptureBubble';
+import type { CaptureDraft } from './components/CapturePreviewSheet';
 import type { PDFViewerControls } from './components/PDFViewer';
 import ThemeToggle from './components/ThemeToggle';
 import type { Marker } from './components/PageMarker';
@@ -31,8 +31,8 @@ import { normalizeSectionKey } from './utils/sectionKey';
 import { getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
 import type { CropBBox } from './types';
-import { recognizeFormula } from './services/api';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
+import CapturePreviewSheet from './components/CapturePreviewSheet';
 import type { RecognizedBlock } from './types';
 import { applyProgressDelta } from './hooks/useLearningProgress';
 import type { ExternalFormulaDraft } from './components/formula/FormulaComposer';
@@ -63,15 +63,13 @@ export default function App() {
 
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureDraft, setCaptureDraft] = useState<CaptureDraft | null>(null);
-  const [captureMode, setCaptureMode] = useState<CaptureMode>('qa');
-  const [formulaRecognition, setFormulaRecognition] = useState<{ status: 'idle' | 'capturing' | 'recognizing' | 'error'; image?: string; error?: string }>({ status: 'idle' });
+  const [captureBusy, setCaptureBusy] = useState(false);
   const [externalFormula, setExternalFormula] = useState<ExternalFormulaDraft | null>(null);
   const [externalContent, setExternalContent] = useState<{ blocks: RecognizedBlock[]; nonce: string } | null>(null);
-  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
-  const formulaAbortRef = useRef<AbortController | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const { currentPage, setCurrentPage, saveTextbookPage } = usePdfPosition(textbookId);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
-  const [overlaySurface, setOverlaySurface] = useState<'none' | 'drawer' | 'bubble' | 'sheet-half' | 'sheet-full'>('none');
+  const [overlaySurface, setOverlaySurface] = useState<'none' | 'drawer' | 'capture-preview' | 'sheet-half' | 'sheet-full' | 'photo'>('none');
   const sheetStage: SheetStage = overlaySurface === 'sheet-half' ? 'half' : overlaySurface === 'sheet-full' ? 'full' : 'collapsed';
   const drawerOpen = overlaySurface === 'drawer';
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('questions');
@@ -84,8 +82,8 @@ export default function App() {
   const [threadRequestKey, setThreadRequestKey] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const startupKeyRef = useRef('');
-  // SSE 问答属于独立后台任务，流式期间允许阅读导航；公式识别仍需局部锁定。
-  const interactionLocked = formulaRecognition.status === 'recognizing';
+  // SSE 问答属于独立后台任务，流式期间允许阅读导航；选区内容提取期间锁定局部导航。
+  const interactionLocked = captureBusy;
 
   // Keep the browser's back/forward buttons meaningful for the main SPA views.
   const navigatePage = (nextView: WorkspaceView, chapter: string | null = null) => {
@@ -280,20 +278,10 @@ export default function App() {
     setOverlaySurface(isDesktop ? 'drawer' : 'sheet-full');
   };
 
-  const cancelFormulaRecognition = () => {
-    formulaAbortRef.current?.abort();
-    formulaAbortRef.current = null;
-    setIsCapturing(false);
-    setFormulaRecognition({ status: 'idle' });
-  };
-
-  const startCapture = (mode: CaptureMode) => {
+  const startCapture = () => {
     if (interactionLocked) return;
-    formulaAbortRef.current?.abort();
-    setCaptureMode(mode);
     setCaptureDraft(null);
     setOverlaySurface('none');
-    setFormulaRecognition(mode === 'formula' ? { status: 'capturing' } : { status: 'idle' });
     setIsCapturing(true);
   };
 
@@ -306,6 +294,7 @@ export default function App() {
   };
 
   const sendNewPageQuestion = (content: string) => {
+    setThreadRequestKey(value => value + 1);
     void chat.handleSendMessage(content, { newThread: true });
   };
 
@@ -336,76 +325,39 @@ export default function App() {
     externalFormula={externalFormula}
     onExternalFormulaConsumed={nonce => setExternalFormula(current => current?.nonce === nonce ? null : current)}
     onCancelGeneration={chat.cancelVisibleGeneration}
-    onOpenPhoto={() => setPhotoSheetOpen(true)}
+    onOpenPhoto={file => { setPhotoFile(file); setOverlaySurface('photo'); }}
     externalContent={externalContent}
     onExternalContentConsumed={nonce => setExternalContent(current => current?.nonce === nonce ? null : current)}
   />;
 
   const handlePhotoQuestion = (image: string) => {
-    setPhotoSheetOpen(false);
+    setPhotoFile(null);
     chat.handleCapture(image, null, 'photo');
-    if (!isDesktop) setOverlaySurface('sheet-half');
-  };
-
-  const captureBubble = captureDraft && overlaySurface === 'bubble' && captureDraft.page === currentPage ? (
-    <CaptureBubble
-      capture={captureDraft}
-      mobile={!isDesktop}
-      messages={chat.messages}
-      isLoading={chat.isLoading}
-      error={chat.error}
-      thinkingStage={chat.thinkingStage}
-      thinkingStageKey={chat.thinkingStageKey}
-      onSend={chat.handleSendMessage}
-      onClose={() => { setCaptureDraft(null); setOverlaySurface('none'); }}
-      onExpand={handleQuestionSelect}
-      onCancelGeneration={chat.cancelVisibleGeneration}
-    />
-  ) : null;
-
-  // 本页视图的首张选区在页内完成提问；对话视图里的再次框选作为下一轮待发附件。
-  const recognizeCapturedFormula = async (imageData: string) => {
-    const controller = new AbortController();
-    formulaAbortRef.current?.abort();
-    formulaAbortRef.current = controller;
-    setFormulaRecognition({ status: 'recognizing', image: imageData });
-    try {
-      const result = await recognizeFormula(imageData, user.token || undefined, controller.signal);
-      if (controller.signal.aborted) return;
-      const draft = { latex: result.latex, displayMode: result.display_mode, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` } satisfies ExternalFormulaDraft;
-      setExternalFormula(draft);
-      setFormulaRecognition({ status: 'idle' });
-      if (isDesktop) {
-        setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false);
-      } else {
-        setOverlaySurface('sheet-half');
-      }
-    } catch (recognitionError) {
-      if (controller.signal.aborted) return;
-      setFormulaRecognition({ status: 'error', image: imageData, error: recognitionError instanceof Error ? recognitionError.message : '公式识别失败，请重试' });
-    } finally {
-      if (formulaAbortRef.current === controller) formulaAbortRef.current = null;
-    }
+    setOverlaySurface(isDesktop ? 'none' : 'sheet-half');
   };
 
   const handleCapture = (imageData: string, _pageRatioX: number, _pageRatioY: number, cropBBox: CropBBox) => {
     setIsCapturing(false);
-    if (captureMode === 'formula') {
-      void recognizeCapturedFormula(imageData);
-      return;
-    }
-    if (panelMode === 'thread' && markers.activeMarker) {
-      chat.handleCapture(imageData, cropBBox);
-      if (isDesktop) {
-        setDesktopChatCollapsed(false);
-        saveJSON('learnmath.ui.desktopChatCollapsed', false);
-      } else {
-        setOverlaySurface('sheet-half');
-      }
-      return;
-    }
     setCaptureDraft({ image: imageData, cropBBox, page: currentPage });
-    setOverlaySurface('bubble');
+    setOverlaySurface('capture-preview');
+  };
+
+  const askCapturedQuestion = () => {
+    const draft = captureDraft;
+    if (!draft) return;
+    // 提问只把截图放入正常聊天输入区，用户补充问题后自行发送。
+    chat.handleCapture(draft.image, draft.cropBBox);
+    setOverlaySurface('none');
+    setCaptureDraft(null);
+    if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); }
+    else setOverlaySurface('sheet-half');
+  };
+
+  const insertCapturedContent = (blocks: RecognizedBlock[]) => {
+    setExternalContent({ blocks, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` });
+    setCaptureDraft(null);
+    if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); setOverlaySurface('none'); }
+    else setOverlaySurface('sheet-half');
   };
 
   useEffect(() => {
@@ -417,7 +369,6 @@ export default function App() {
   const handlePageChange = useCallback((page: number) => {
     if (interactionLocked) return;
     setCaptureDraft(null);
-    if (overlaySurface === 'bubble') setOverlaySurface('none');
     setCurrentPage(page);
   }, [interactionLocked, overlaySurface, setCurrentPage]);
 
@@ -496,7 +447,7 @@ export default function App() {
                     <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange}
                         markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage}
-                        hideToolbar onControlsChange={setPdfControls} pageOverlay={captureBubble} /></DeferredPanel>
+                        hideToolbar onControlsChange={setPdfControls} pageOverlay={null} /></DeferredPanel>
                     </div>
                   </>
                 ) : (
@@ -514,7 +465,7 @@ export default function App() {
                   <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange} mobile
                         markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage}
-                        hideToolbar onControlsChange={setPdfControls} pageOverlay={captureBubble} /></DeferredPanel>
+                        hideToolbar onControlsChange={setPdfControls} pageOverlay={null} /></DeferredPanel>
                   </div>
                 ) : (
                   <EmptyGuideCard />
@@ -542,12 +493,19 @@ export default function App() {
         </UtilityDrawer>
 
         {isCapturing && (
-          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={handleCapture} onCancel={() => { setIsCapturing(false); if (captureMode === 'formula') setFormulaRecognition({ status: 'idle' }); }} /></DeferredPanel>
+          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={handleCapture} onCancel={() => setIsCapturing(false)} /></DeferredPanel>
         )}
 
-        {formulaRecognition.status === 'recognizing' && <div className="fixed bottom-5 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" role="status"><LoaderCircle className="h-4 w-4 animate-spin text-indigo-600" /><span>正在识别公式…</span><button type="button" onClick={cancelFormulaRecognition} className="text-xs font-medium text-slate-500 hover:text-rose-600">取消</button></div>}
-        {formulaRecognition.status === 'error' && <div className="fixed bottom-5 left-1/2 z-[100] flex w-[min(440px,calc(100%-24px))] -translate-x-1/2 items-center gap-3 rounded-lg border border-rose-200 bg-white px-4 py-3 text-sm shadow-xl dark:border-rose-900 dark:bg-slate-900" role="alert"><span className="min-w-0 flex-1 text-rose-700 dark:text-rose-300">{formulaRecognition.error}</span><button type="button" onClick={() => { if (formulaRecognition.image) void recognizeCapturedFormula(formulaRecognition.image); }} className="text-xs font-semibold text-indigo-600">重试</button><button type="button" onClick={cancelFormulaRecognition} className="text-slate-400" title="关闭" aria-label="关闭"><X className="h-4 w-4" /></button></div>}
-        {photoSheetOpen && <PhotoPreviewSheet token={user.token} onPhotoQuestion={handlePhotoQuestion} onInsert={blocks => { setExternalContent({ blocks, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` }); setPhotoSheetOpen(false); if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); } else setOverlaySurface('sheet-half'); }} onClose={() => setPhotoSheetOpen(false)} />}
+        {overlaySurface === 'capture-preview' && captureDraft && <CapturePreviewSheet
+          capture={captureDraft}
+          token={user.token}
+          onQuestion={askCapturedQuestion}
+          onInsert={insertCapturedContent}
+          onReselect={() => { setOverlaySurface('none'); setCaptureDraft(null); startCapture(); }}
+          onClose={() => { setCaptureDraft(null); setOverlaySurface('none'); }}
+          onBusyChange={setCaptureBusy}
+        />}
+        {overlaySurface === 'photo' && photoFile && <PhotoPreviewSheet initialFile={photoFile} token={user.token} onPhotoQuestion={handlePhotoQuestion} onInsert={blocks => { setExternalContent({ blocks, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` }); setPhotoFile(null); if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); setOverlaySurface('none'); } else setOverlaySurface('sheet-half'); }} onClose={() => { setPhotoFile(null); setOverlaySurface(isDesktop ? 'none' : 'sheet-half'); }} />}
 
         {showAuthModal && (
           <AuthModal mode={authMode} username={authUsername} password={authPassword} error={authError}

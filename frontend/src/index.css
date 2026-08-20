@@ -33,6 +33,10 @@
   .toolbar-button-primary {
     @apply bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400;
   }
+
+  .serif-zh {
+    font-family: 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'SimSun', serif;
+  }
 }
 
 body {
@@ -148,10 +152,6 @@ body {
 .handwriting-actions button { display: inline-flex; align-items: center; gap: 5px; height: 30px; border-radius: 5px; padding: 0 9px; background: #f1f5f9; color: #475569; font-size: 12px; }
 .handwriting-actions button:last-child { background: #2563eb; color: #fff; }
 .handwriting-actions button:disabled { opacity: .4; cursor: not-allowed; }
-.capture-action-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 95; width: 142px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; padding: 4px; box-shadow: 0 10px 28px rgb(15 23 42 / 16%); }
-.capture-action-menu button { display: flex; width: 100%; align-items: center; gap: 8px; height: 34px; border-radius: 4px; padding: 0 9px; color: #334155; font-size: 12px; }
-.capture-action-menu button:hover { background: #eff6ff; color: #1d4ed8; }
-.capture-action-menu-mobile { top: auto; bottom: calc(100% + 8px); right: -38px; }
 .dark .formula-dialog { border-color: #334155; background: #0f172a; }
 .dark .formula-dialog-header { border-color: #334155; }
 .dark .formula-dialog-header h3 { color: #f1f5f9; }
@@ -160,9 +160,9 @@ body {
 .dark .formula-quick-panel button { color: #e2e8f0; }
 .dark .formula-quick-panel kbd { background: #f8fafc; color: #334155; }
 .dark .formula-preview-render, .dark .formula-mathfield { color: #f1f5f9; }
-.dark .handwriting-canvas-panel, .dark .capture-action-menu { border-color: #475569; background: #1e293b; }
+.dark .handwriting-canvas-panel { border-color: #475569; background: #1e293b; }
 .dark .handwriting-actions { border-color: #334155; background: #1e293b; }
-.dark .handwriting-actions button, .dark .capture-action-menu button { color: #cbd5e1; }
+.dark .handwriting-actions button { color: #cbd5e1; }
 .formula-more-symbols { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 8px; border-radius: 6px; background: #f1f5f9; }
 .formula-matrix-panel { overflow-x: auto; border-top: 1px solid #e2e8f0; padding-top: 12px; }
 .matrix-editor { display: flex; min-width: 360px; flex-direction: column; align-items: center; gap: 10px; }

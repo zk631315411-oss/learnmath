@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Map, PanelLeft, PanelRightClose, PanelRightOpen, ScanLine, Scissors, ZoomIn, ZoomOut } from 'lucide-react';
-
-export type CaptureMode = 'qa' | 'formula';
+import { ChevronLeft, ChevronRight, Map, PanelLeft, PanelRightClose, PanelRightOpen, Scissors, ZoomIn, ZoomOut } from 'lucide-react';
 
 import type { PDFViewerControls, ZoomMode } from './PDFViewer';
 
 interface Props {
   controls: PDFViewerControls | null;
   onOpenDrawer: (tab: 'questions' | 'map') => void;
-  onCapture: (mode: CaptureMode) => void;
+  onCapture: () => void;
   captureDisabled?: boolean;
   chatCollapsed?: boolean;
   onToggleChat?: () => void;
@@ -22,7 +20,6 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
   const zoomMode = controls?.zoomMode ?? 'fit-page';
   const scale = controls?.scale ?? 1;
   const [pageDraft, setPageDraft] = useState('');
-  const [captureMenuOpen, setCaptureMenuOpen] = useState(false);
 
   useEffect(() => {
     setPageDraft(numPages ? String(currentPage) : '');
@@ -112,15 +109,9 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
           <Map className="h-4 w-4" />
           <span className="hidden md:inline">地图</span>
         </button>
-        <div className="relative">
-          <button type="button" onClick={() => setCaptureMenuOpen(open => !open)} disabled={captureDisabled || navigationDisabled} className="toolbar-button toolbar-button-primary" title="框选操作" aria-label="框选提问" aria-expanded={captureMenuOpen}>
-            <Scissors className="h-4 w-4" /><span className="hidden sm:inline">框选</span>
-          </button>
-          {captureMenuOpen && <div className="capture-action-menu" role="menu">
-            <button type="button" role="menuitem" onClick={() => { setCaptureMenuOpen(false); onCapture('qa'); }}><Scissors size={15} />框选提问</button>
-            <button type="button" role="menuitem" onClick={() => { setCaptureMenuOpen(false); onCapture('formula'); }}><ScanLine size={15} />识别公式</button>
-          </div>}
-        </div>
+        <button type="button" onClick={onCapture} disabled={captureDisabled || navigationDisabled} className="toolbar-button toolbar-button-primary" title="框选页面内容" aria-label="框选">
+          <Scissors className="h-4 w-4" /><span className="hidden sm:inline">框选</span>
+        </button>
         {onToggleChat && (
           <button type="button" onClick={onToggleChat} className="icon-button hidden lg:inline-flex" title={chatCollapsed ? '展开问答区' : '收起问答区'} aria-label={chatCollapsed ? '展开问答区' : '收起问答区'}>
             {chatCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
