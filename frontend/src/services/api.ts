@@ -397,7 +397,7 @@ export async function recognizeFormula(imageDataUrl: string, token?: string, sig
   form.append('image', new Blob([bytes], { type: mime }), `formula.${mime.split('/')[1] || 'png'}`);
   return apiRequest<FormulaConversion>({
     url: '/formula/recognize', method: 'POST', body: form, token,
-    timeout: 18_000, maxRetries: 0, signal,
+    timeout: 35_000, maxRetries: 0, signal,
   });
 }
 
@@ -406,7 +406,7 @@ export async function recognizeFormulaContent(imageDataUrl: string, token?: stri
   const form = new FormData();
   form.append('image', blob, 'photo.jpg');
   const response = await apiRequest<RecognizedContent>({ url: '/formula/recognize-content',
-    method: 'POST', body: form, token, signal, timeout: 24_000, maxRetries: 0,
+    method: 'POST', body: form, token, signal, timeout: 35_000, maxRetries: 0,
   });
   return response;
 }
