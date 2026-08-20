@@ -54,6 +54,8 @@ class FormulaVisionServiceTests(unittest.IsolatedAsyncioTestCase):
         from app.services.formula_vision_service import OpenAIVisionProvider
         self.assertEqual(OpenAIVisionProvider('x', 'k', 'u', 'm')._thinking_extra_body(), {'thinking': {'type': 'disabled'}})
         self.assertEqual(OpenAIVisionProvider('x', 'k', 'u', 'm', 'enabled')._thinking_extra_body(), {'thinking': {'type': 'enabled'}})
+        self.assertTrue(OpenAIVisionProvider('x', 'k', 'u', 'glm-4.1v-thinking-flash').emits_thinking)
+        self.assertFalse(OpenAIVisionProvider('x', 'k', 'u', 'glm-4v-flash').emits_thinking)
 
     def test_merges_variable_split_from_leading_subscript_formula(self) -> None:
         bbox = [0, 100, 300, 160]

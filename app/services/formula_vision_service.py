@@ -91,6 +91,10 @@ class OpenAIVisionProvider:
     def _thinking_extra_body(self) -> dict:
         return {"thinking": {"type": self.thinking}} if self.thinking in {"enabled", "disabled"} else {}
 
+    @property
+    def emits_thinking(self) -> bool:
+        return "thinking" in self.model.lower()
+
     async def recognize(self, image: NormalizedImage, timeout: float) -> str:
         client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=timeout, max_retries=0)
         try:
@@ -104,7 +108,7 @@ class OpenAIVisionProvider:
                     ]},
                 ],
                 "temperature": 0,
-                "max_tokens": 512,
+                "max_tokens": 2048 if self.emits_thinking else 512,
                 "extra_body": self._thinking_extra_body(),
             }
             try:
@@ -125,7 +129,7 @@ class OpenAIVisionProvider:
             ],
             "temperature": 0,
             # 智谱 GLM 视觉接口的 max_tokens 上限为 1024；超出会返回 1210。
-            "max_tokens": 1024,
+            "max_tokens": 2048 if self.emits_thinking else 1024,
             "extra_body": self._thinking_extra_body(),
         }
         try:
@@ -211,6 +215,8 @@ class FormulaVisionService:
                 if method is None:
                     raise FormulaVisionError("视觉 provider 不支持混合内容识别", "upstream_unavailable", 503)
                 regions = detect_regions(image.data)
+                if getattr(provider, "emits_thinking", False):
+                    regions = regions[:1]
                 if len(regions) <= 1:
                     raw = await asyncio.wait_for(method(image, remaining), timeout=remaining)
                     blocks, warnings = _normalize_content_response(raw)
