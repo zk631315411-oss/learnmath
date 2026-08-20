@@ -105,8 +105,8 @@ export interface PendingImage {
 }
 
 export type RecognizedBlock =
-  | { type: 'text'; text: string }
-  | { type: 'formula'; latex: string; display_mode: 'inline' | 'block' };
+  | { type: 'text'; text: string; bbox?: [number, number, number, number] | null }
+  | { type: 'formula'; latex: string; display_mode: 'inline' | 'block'; bbox?: [number, number, number, number] | null };
 
 export interface RecognizedContent {
   blocks: RecognizedBlock[];
