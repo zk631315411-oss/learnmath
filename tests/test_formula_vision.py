@@ -8,7 +8,7 @@ from PIL import Image
 
 from app.auth.jwt_handler import create_access_token
 from app.main import app
-from app.services.formula_vision_service import FormulaVisionError, FormulaVisionService, _merge_segment_boundaries
+from app.services.formula_vision_service import FormulaVisionError, FormulaVisionService, _merge_segment_boundaries, _sanitize_vision_formula
 from app.services.image_processing import ImageProcessingError, NormalizedImage, normalize_image_bytes
 from app.services.formula_layout_service import detect_regions
 
@@ -46,6 +46,15 @@ def png_bytes(width: int = 40, height: int = 20) -> bytes:
 
 
 class FormulaVisionServiceTests(unittest.IsolatedAsyncioTestCase):
+    def test_extracts_answer_and_drops_thinking(self) -> None:
+        raw = '<think>猜测过程</think><answer>{"latex":"x^2"}</answer>'
+        self.assertEqual(_sanitize_vision_formula(raw), 'x^2')
+
+    def test_openai_provider_sends_disabled_thinking(self) -> None:
+        from app.services.formula_vision_service import OpenAIVisionProvider
+        self.assertEqual(OpenAIVisionProvider('x', 'k', 'u', 'm')._thinking_extra_body(), {'thinking': {'type': 'disabled'}})
+        self.assertEqual(OpenAIVisionProvider('x', 'k', 'u', 'm', 'enabled')._thinking_extra_body(), {'thinking': {'type': 'enabled'}})
+
     def test_merges_variable_split_from_leading_subscript_formula(self) -> None:
         bbox = [0, 100, 300, 160]
         blocks = _merge_segment_boundaries([

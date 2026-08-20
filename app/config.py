@@ -59,6 +59,7 @@ class Config:
         "FORMULA_VISION_API_BASE", "https://open.bigmodel.cn/api/paas/v4"
     )
     FORMULA_VISION_MODEL: str = os.getenv("FORMULA_VISION_MODEL", "glm-4v-flash")
+    FORMULA_VISION_THINKING: str = os.getenv("FORMULA_VISION_THINKING", "disabled")
     FORMULA_VISION_TIMEOUT_SECONDS: float = float(
         os.getenv("FORMULA_VISION_TIMEOUT_SECONDS", "8")
     )

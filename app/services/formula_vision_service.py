@@ -86,6 +86,10 @@ class OpenAIVisionProvider:
     api_key: str
     base_url: str
     model: str
+    thinking: str = "disabled"
+
+    def _thinking_extra_body(self) -> dict:
+        return {"thinking": {"type": self.thinking}} if self.thinking in {"enabled", "disabled"} else {}
 
     async def recognize(self, image: NormalizedImage, timeout: float) -> str:
         client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url, timeout=timeout, max_retries=0)
@@ -101,6 +105,7 @@ class OpenAIVisionProvider:
                 ],
                 "temperature": 0,
                 "max_tokens": 512,
+                "extra_body": self._thinking_extra_body(),
             }
             try:
                 response = await client.chat.completions.create(**request, response_format=VISION_JSON_SCHEMA)
@@ -121,6 +126,7 @@ class OpenAIVisionProvider:
             "temperature": 0,
             # 智谱 GLM 视觉接口的 max_tokens 上限为 1024；超出会返回 1210。
             "max_tokens": 1024,
+            "extra_body": self._thinking_extra_body(),
         }
         try:
             try:
@@ -135,7 +141,7 @@ class OpenAIVisionProvider:
 def build_default_vision_providers() -> list[VisionProvider]:
     providers: list[VisionProvider] = []
     if config.FORMULA_VISION_API_KEY and config.FORMULA_VISION_API_BASE and config.FORMULA_VISION_MODEL:
-        providers.append(OpenAIVisionProvider("glm_vision", config.FORMULA_VISION_API_KEY, config.FORMULA_VISION_API_BASE, config.FORMULA_VISION_MODEL))
+        providers.append(OpenAIVisionProvider("glm_vision", config.FORMULA_VISION_API_KEY, config.FORMULA_VISION_API_BASE, config.FORMULA_VISION_MODEL, config.FORMULA_VISION_THINKING))
     return providers
 
 
@@ -260,6 +266,16 @@ _LATEX_JSON_COMMAND = re.compile(
 )
 
 
+def _extract_answer_payload(raw: str) -> str:
+    """Keep only the final answer when a thinking model ignores the switch."""
+    value = (raw or "").strip()
+    answer = re.search(r"<answer>\s*(.*?)\s*</answer>", value, flags=re.IGNORECASE | re.DOTALL)
+    if answer:
+        return answer.group(1).strip()
+    value = re.sub(r"<think>.*?</think>", "", value, flags=re.IGNORECASE | re.DOTALL)
+    return value.strip()
+
+
 def _repair_latex_transport_controls(value: str) -> str:
     """Restore LaTeX commands lost when a provider emits under-escaped JSON."""
     replacements = {
@@ -274,7 +290,7 @@ def _repair_latex_transport_controls(value: str) -> str:
 
 def _sanitize_vision_formula(raw: str) -> str:
     """Normalize a vision response before applying the shared safety checks."""
-    value = raw.strip()
+    value = _extract_answer_payload(raw)
     if len(value) >= 2 and value[0] == "'" and value[-1] == "'":
         value = value[1:-1].strip()
     value = _decode_transport_escapes(value)
@@ -323,7 +339,7 @@ def _decode_transport_escapes(value: str) -> str:
 
 
 def _normalize_content_response(raw: str) -> tuple[list[dict[str, str]], list[str]]:
-    value = raw.strip()
+    value = _extract_answer_payload(raw)
     # Some GLM responses return a quoted fenced payload containing literal
     # ``\\n`` separators. Strip only the outer quote, then decode separators
     # outside JSON strings so LaTeX backslashes remain untouched.
