@@ -19,6 +19,7 @@ from app.services.formula_conversion_service import (
     sanitize_latex,
 )
 from app.services.image_processing import NormalizedImage
+from app.services.formula_layout_service import detect_regions
 
 logger = logging.getLogger(__name__)
 
@@ -203,8 +204,31 @@ class FormulaVisionService:
                 method = getattr(provider, "recognize_content", None)
                 if method is None:
                     raise FormulaVisionError("视觉 provider 不支持混合内容识别", "upstream_unavailable", 503)
-                raw = await asyncio.wait_for(method(image, remaining), timeout=remaining)
-                blocks, warnings = _normalize_content_response(raw)
+                regions = detect_regions(image.data)
+                if len(regions) <= 1:
+                    raw = await asyncio.wait_for(method(image, remaining), timeout=remaining)
+                    blocks, warnings = _normalize_content_response(raw)
+                else:
+                    # Keep the whole-page path as a fallback, but give the model
+                    # one logical line at a time for multi-formula photographs.
+                    blocks, warnings = [], []
+                    started_at = time.monotonic()
+                    from PIL import Image
+                    from io import BytesIO
+                    with Image.open(BytesIO(image.data)) as source:
+                        for region in regions[:12]:
+                            if time.monotonic() - started_at >= remaining:
+                                raise FormulaVisionError("内容识别超时，请重试", "timeout", 504)
+                            crop = source.crop(region.bbox)
+                            output = BytesIO()
+                            crop.save(output, format="PNG", optimize=True)
+                            crop_image = NormalizedImage(output.getvalue(), "image/png", crop.width, crop.height, image.sha256)
+                            raw = await asyncio.wait_for(method(crop_image, max(0.5, remaining / len(regions))), timeout=max(0.5, remaining / len(regions)))
+                            crop_blocks, crop_warnings = _normalize_content_response(raw)
+                            for block in crop_blocks:
+                                block["bbox"] = list(region.bbox)
+                            blocks.extend(crop_blocks)
+                            warnings.extend(crop_warnings)
                 status = "success"
                 return blocks, warnings
             except FormulaVisionError as exc:

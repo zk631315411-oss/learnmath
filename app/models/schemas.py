@@ -58,12 +58,14 @@ class FormulaConvertResponse(BaseModel):
 class RecognizedTextBlock(BaseModel):
     type: Literal["text"]
     text: str = Field(..., min_length=1, max_length=500)
+    bbox: Optional[List[int]] = None
 
 
 class RecognizedFormulaBlock(BaseModel):
     type: Literal["formula"]
     latex: str = Field(..., min_length=1, max_length=2048)
     display_mode: Literal["inline", "block"]
+    bbox: Optional[List[int]] = None
 
 
 class FormulaRecognizeContentResponse(BaseModel):

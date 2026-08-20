@@ -9,7 +9,8 @@ from PIL import Image
 from app.auth.jwt_handler import create_access_token
 from app.main import app
 from app.services.formula_vision_service import FormulaVisionError, FormulaVisionService
-from app.services.image_processing import ImageProcessingError, NormalizedImage
+from app.services.image_processing import ImageProcessingError, NormalizedImage, normalize_image_bytes
+from app.services.formula_layout_service import detect_regions
 
 
 class FakeVisionProvider:
@@ -45,6 +46,34 @@ def png_bytes(width: int = 40, height: int = 20) -> bytes:
 
 
 class FormulaVisionServiceTests(unittest.IsolatedAsyncioTestCase):
+    def test_layout_detector_returns_ordered_regions_for_multiple_lines(self) -> None:
+        output = BytesIO()
+        image = Image.new('RGB', (320, 180), 'white')
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((30, 25, 290, 35), fill='black')
+        draw.rectangle((70, 120, 260, 130), fill='black')
+        image.save(output, format='PNG')
+        regions = detect_regions(output.getvalue())
+        self.assertGreaterEqual(len(regions), 2)
+        self.assertLess(regions[0].bbox[1], regions[1].bbox[1])
+
+    async def test_content_recognition_segments_multiple_lines_and_attaches_bbox(self) -> None:
+        output = BytesIO()
+        image = Image.new('RGB', (320, 180), 'white')
+        from PIL import ImageDraw
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((30, 25, 290, 35), fill='black')
+        draw.rectangle((70, 120, 260, 130), fill='black')
+        image.save(output, format='PNG')
+        provider = FakeVisionProvider('vision', '{"blocks":[{"type":"formula","latex":"x^2"}],"warnings":[]}')
+        service = FormulaVisionService([provider], total_timeout=2)
+        blocks, warnings = await service.recognize_content(normalize_image_bytes(output.getvalue(), 'image/png'))
+        self.assertGreaterEqual(provider.calls, 2)
+        self.assertGreaterEqual(len(blocks), 2)
+        self.assertTrue(all(block.get('bbox') for block in blocks))
+        self.assertEqual(warnings, [])
+
     async def test_success_sanitizes_json(self) -> None:
         service = FormulaVisionService([FakeVisionProvider('vision', '{"latex":"$x^2$"}')], total_timeout=1)
         self.assertEqual(await service.recognize(normalized_image()), ('x^2', 'inline'))
