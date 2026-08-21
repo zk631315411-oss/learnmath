@@ -6,13 +6,25 @@
 @tailwind utilities;
 
 :root {
+  /* 暖纸 slate 色阶（RGB 通道，供 tailwind <alpha-value>）；暗色在 .dark 块覆盖回冷灰 */
+  --lm-slate-50: 250 248 241;
+  --lm-slate-100: 240 236 225;
+  --lm-slate-200: 227 221 207;
+  --lm-slate-300: 207 199 180;
+  --lm-slate-400: 162 154 134;
+  --lm-slate-500: 139 133 113;
+  --lm-slate-600: 110 104 82;
+  --lm-slate-700: 85 80 63;
+  --lm-slate-800: 41 37 32;
+  --lm-slate-900: 28 25 19;
+  --lm-slate-950: 18 16 12;
   --lm-bg: #f2efe7;
-  --lm-surface: #ffffff;
-  --lm-canvas: #e2e8f0;
-  --lm-border: #e2e8f0;
-  --lm-text: #334155;
-  --lm-text-strong: #0f172a;
-  --lm-text-muted: #64748b;
+  --lm-surface: #fffdf8;
+  --lm-canvas: #e3ddcf;
+  --lm-border: #e3ddcf;
+  --lm-text: #55503f;
+  --lm-text-strong: #1c1913;
+  --lm-text-muted: #8b8571;
   --lm-brand: #4f46e5;
   --lm-brand-strong: #4338ca;
   --lm-danger: #e11d48;
@@ -21,13 +33,13 @@
   --lm-radius-md: 8px;
   --lm-radius-lg: 12px;
   --lm-shadow-panel: 0 1px 3px rgb(15 23 42 / 0.08);
-  --lm-status-unexplored: #cbd5e1;
+  --lm-status-unexplored: #cfc7b4;
   --lm-status-learning: #fbbf24;
   --lm-status-basic: #6ee7b7;
   --lm-status-mastered: #059669;
   --lm-status-review: #fb7185;
   /* 知识地图 E v3：边与类型色 */
-  --lm-edge: #c7cedb;
+  --lm-edge: #cfc7b4;
   --lm-edge-in: #d97706;
   --lm-type-concept: #64748b;
   --lm-type-theorem: #7c3aed;
@@ -37,6 +49,18 @@
 }
 
 .dark {
+  /* 暗色 slate 回到经典冷灰（旧版观感） */
+  --lm-slate-50: 248 250 252;
+  --lm-slate-100: 241 245 249;
+  --lm-slate-200: 226 232 240;
+  --lm-slate-300: 203 213 225;
+  --lm-slate-400: 148 163 184;
+  --lm-slate-500: 100 116 139;
+  --lm-slate-600: 71 85 105;
+  --lm-slate-700: 51 65 85;
+  --lm-slate-800: 30 41 59;
+  --lm-slate-900: 15 23 42;
+  --lm-slate-950: 2 6 23;
   --lm-bg: #0f172a;
   --lm-surface: #1e293b;
   --lm-canvas: #334155;
