@@ -49,5 +49,45 @@ export const relLabel = (type: string) => REL_CN[type] || type;
 /** 小节序号前缀，如 "1.12 xxx" → "1.12"；取不到则回退前 3 字符 */
 export const sectionTag = (section: string) => section.match(/^\d+(?:\.\d+)?/)?.[0] ?? section.slice(0, 3);
 
-/** SVG 文本无法走 KaTeX，去掉 $ 符号保留可读纯文本 */
-export const stripMath = (text: string) => text.replace(/\$/g, '');
+/** 常见 LaTeX 符号命令的纯文本替代（SVG/原生控件无法走 KaTeX 时使用） */
+const LATEX_SYMBOLS: Record<string, string> = {
+  '\\infty': '∞', '\\in': '∈', '\\int': '∫', '\\sum': '∑', '\\prod': '∏',
+  '\\alpha': 'α', '\\beta': 'β', '\\gamma': 'γ', '\\delta': 'δ', '\\lambda': 'λ',
+  '\\mu': 'μ', '\\pi': 'π', '\\sigma': 'σ', '\\phi': 'φ', '\\omega': 'ω',
+  '\\dots': '…', '\\cdots': '…', '\\ln': 'ln', '\\log': 'log', '\\sin': 'sin', '\\cos': 'cos',
+  '\\times': '×', '\\cdot': '·', '\\pm': '±', '\\leq': '≤', '\\geq': '≥', '\\neq': '≠',
+  '\\partial': '∂', '\\subset': '⊂', '\\cup': '∪', '\\cap': '∩', '\\forall': '∀', '\\exists': '∃',
+};
+
+const SUPERSCRIPT: Record<string, string> = {
+  '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵',
+  '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', 'n': 'ⁿ', 'i': 'ⁱ', '-': '⁻', '+': '⁺',
+};
+
+/** SVG 文本/原生控件无法走 KaTeX，把 LaTeX 片段降级为可读纯文本（\pmb{n}→n、\frac{a}{b}→a/b、$ 与花括号去除） */
+export const stripMath = (text: string) => {
+  let out = String(text ?? '');
+  // 数据里偶发泄漏的 Unicode 转义，如 \u2124 → ℤ
+  out = out.replace(/\\u([0-9a-fA-F]{4})/g, (_m, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+  // \frac{a}{b} → a/b（循环以处理嵌套）
+  let prev = '';
+  while (prev !== out) {
+    prev = out;
+    out = out.replace(/\\[a-zA-Z]+\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '$1/$2');
+  }
+  // \pmb{n}、\mathbf{n} 等单参数格式命令 → 保留参数
+  prev = '';
+  while (prev !== out) {
+    prev = out;
+    out = out.replace(/\\[a-zA-Z]+\s*\{([^{}]*)\}/g, '$1');
+  }
+  // 已知符号命令替换（长的在前，避免 \in 吃掉 \infty）
+  for (const cmd of Object.keys(LATEX_SYMBOLS).sort((a, b) => b.length - a.length)) {
+    out = out.split(cmd).join(LATEX_SYMBOLS[cmd]);
+  }
+  // 上标 x^{2} / x^2 → x²；下标记号直接去掉（x_{1} → x1）
+  out = out.replace(/\^\{?([^{}\s])\}?/g, (_m, ch: string) => SUPERSCRIPT[ch] ?? ch);
+  out = out.replace(/_/g, '');
+  // 兜底：去 $、花括号和残留反斜杠
+  return out.replace(/[\$\\{}]/g, '').replace(/\s{2,}/g, ' ').trim();
+};
