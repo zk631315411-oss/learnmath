@@ -1,4 +1,4 @@
-import { BookOpen, MessageSquareText, X } from 'lucide-react';
+import { BookOpen, LocateFixed, MessageSquareText, X } from 'lucide-react';
 
 import type { ChapterCatalogEdge } from '../../catalog/types';
 import type { LearningMapNode } from '../../services/api';
@@ -12,7 +12,7 @@ import { STATUS_LABEL, STATUS_VAR, relLabel, typeMeta } from './shared';
  * 聚焦子图 + 关系 chips（可点击钻取）+ 跨章「通往」chips + 继续学习/来源提问。
  * edges 为整章边数组；章内邻居可点击，跨章端点显示为不可点 chip。
  */
-export default function NodeDetailCard({ node, nodes, edges, onSelect, onClose, onContinueNode, onOpenChat }: {
+export default function NodeDetailCard({ node, nodes, edges, onSelect, onClose, onContinueNode, onOpenChat, onLocate }: {
   node: LearningMapNode;
   nodes: LearningMapNode[];
   edges: ChapterCatalogEdge[];
@@ -20,6 +20,8 @@ export default function NodeDetailCard({ node, nodes, edges, onSelect, onClose, 
   onClose: () => void;
   onContinueNode?: (node: LearningMapNode) => void;
   onOpenChat: (chatId: string) => void;
+  /** 岛屿屏提供：跳到节点所在节的梯子并高亮 */
+  onLocate?: (node: LearningMapNode) => void;
 }) {
   const nodeById = new Map(nodes.map(item => [item.node_id, item]));
   const touching = edges.filter(edge => edge.source === node.node_id || edge.target === node.node_id);
@@ -64,6 +66,7 @@ export default function NodeDetailCard({ node, nodes, edges, onSelect, onClose, 
 
     <div className="mt-4 flex gap-2">
       {onContinueNode && <button type="button" onClick={() => onContinueNode(node)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-indigo-600 px-4 text-xs font-medium text-white hover:bg-indigo-700"><BookOpen className="h-3.5 w-3.5" />{continueLabel}</button>}
+      {onLocate && <button type="button" onClick={() => onLocate(node)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[var(--lm-border)] px-4 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"><LocateFixed className="h-3.5 w-3.5" />定位到节梯子</button>}
       <button type="button" disabled={!node.chat.available || !node.chat.id} onClick={() => node.chat.id && onOpenChat(node.chat.id)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[var(--lm-border)] px-4 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35 dark:text-slate-300 dark:hover:bg-slate-800"><MessageSquareText className="h-3.5 w-3.5" />来源提问</button>
     </div>
   </section>;

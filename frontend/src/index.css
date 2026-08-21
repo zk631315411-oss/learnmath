@@ -39,7 +39,7 @@
   --lm-status-mastered: #059669;
   --lm-status-review: #fb7185;
   /* 知识地图 E v3：边与类型色 */
-  --lm-edge: #cfc7b4;
+  --lm-edge: #a89f88;
   --lm-edge-in: #d97706;
   --lm-type-concept: #64748b;
   --lm-type-theorem: #7c3aed;
@@ -180,8 +180,8 @@
   .kg-e-edge {
     fill: none;
     stroke: var(--lm-edge);
-    stroke-width: 1.2;
-    opacity: 0.55;
+    stroke-width: 1.4;
+    opacity: 0.85;
   }
 
   .kg-e-edge.kg-out {

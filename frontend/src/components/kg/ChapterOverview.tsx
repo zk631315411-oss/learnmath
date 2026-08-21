@@ -9,10 +9,12 @@ import { STATUS_LABEL, STATUS_ORDER, STATUS_VAR } from './shared';
  * 章总览（地图模式首屏）：节列表 + 五态聚合条 + 关系统计。
  * 不画图——图在点开小节后才出现。
  */
-export default function ChapterOverview({ data, edges, onOpenSection }: {
+export default function ChapterOverview({ data, edges, onOpenSection, onOpenIslands }: {
   data: NodeMapResponse;
   edges: ChapterCatalogEdge[];
   onOpenSection: (section: string) => void;
+  /** 俯瞰入口：整章岛屿总览 */
+  onOpenIslands?: () => void;
 }) {
   return <div className="mx-auto w-full max-w-3xl px-4 py-4">
     <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">点开小节查看知识梯子；状态条按节内节点占比着色。</p>
@@ -43,5 +45,8 @@ export default function ChapterOverview({ data, edges, onOpenSection }: {
       })}
       {data.sections.length === 0 && <div className="px-4 py-10 text-center text-sm text-slate-400">本章暂无知识点。</div>}
     </div>
+    {onOpenIslands && <div className="mt-3 text-center">
+      <button type="button" data-testid="open-islands" onClick={onOpenIslands} className="text-xs text-slate-400 underline-offset-4 transition-colors hover:text-indigo-600 hover:underline dark:hover:text-indigo-300">俯瞰整章结构（岛屿总览）→</button>
+    </div>}
   </div>;
 }

@@ -194,3 +194,26 @@ v2（横向蛇形 + 胶囊节点 + NodeEgoPanel 浮层）已废弃：横向排�
 - 详细前端回归快照见 [梯子视图验收记录](../06-acceptance-records/LEARNING_MAP_LADDER_VIEW_TEST_20260821.md)。
 
 Docker 镜像重建和干净设备部署属于发布验收，不作为本计划的前端视图完成条件，按 [当前项目路线图](../04-project-map/PROJECT_ROADMAP.md) 单独跟踪。
+
+### v3.1（2026-08-21 晚，样式与首页）
+
+- 恢复 21 日中午定稿的地图首页纸黄样式（design-demos/map-home 的 C/F 案）：`--lm-bg: #f2efe7`；slate 色阶改走 CSS 变量，`:root` 为暖纸阶、`.dark` 保持旧版冷灰原值。
+- 地图首页整行点击 = 展开小节下拉，「查看地图 →」独立按钮才跳转进章。
+
+### v3.2（2026-08-22，地图/岛屿/梯子三级串联）
+
+- 三级缩放闭环（仿苹果 drill-down，三跳内全功能）：
+  - 章总览是进章默认落点；岛屿总览入口从工具条按钮降级为章总览底部的安静文字链接「俯瞰整章结构（岛屿总览）→」（`data-testid="open-islands"`）。
+  - 岛屿屏节点详情卡新增「定位到节梯子」按钮（LocateFixed 图标），点击后自动切到该节点所在节的梯子屏并选中该节点（题型节点会自动打开「显示题型」），形成岛 → 梯子回链。
+  - 工具条只保留：返回总览、节选择下拉、显示题型、图例。
+- 岛屿主脉边：目录数据无 PREREQUISITE_OF 类型边，ChapterIslands 默认给每节点画一条指向教材序最近前驱的边（优先级 DERIVES > USES > 其他兜底），选中节点时叠加一跳出入边（紫出橙入）。
+- `review-shots.spec.ts` 已适配新入口（进章走「查看地图 →」，岛屿进出走 `open-islands` 链接与「返回总览」）。
+- 验收：`npm run build` 通过；`test:unit` 22 项通过；主 spec 45 passed / 47 skipped / 0 failed；review-shots 2 passed / 2 skipped；真实数据截图验收三点（岛屿链接、详情卡定位按钮、定位后梯子选中 halo）见 `artifacts/linkage/`。
+
+### v3.3（2026-08-22，章前「导入」节并入首小节）
+
+- 「导入」节来自 KG 管道对教材章前导引文字（第 2 章第 51 页，`C02:S00:U00`）的抽取，全书仅第 2 章有，5 个节点（系数行列式、n 阶行列式等）。
+- 处理方式：`scripts/export_learning_catalog.py` 新增构建期归并规则——节名以「导入」结尾的节并入本章第一个编号小节（如 2.1），节点顺序不变（导入节点教材序在最前）；Neo4j 源数据不动。
+- 结果：第 2 章 6 节、129 节点不变；2.1 由 21 节点变为 26 节点；全部目录 JSON 无「导入」残留。
+- 验收：`build` + `test:unit`（22 项）+ 主 spec 与 review-shots（47 passed / 0 failed）通过；真实数据截图见 `artifacts/linkage/5-*.png`、`6-*.png`。
+- 已知小瑕疵：节下拉框显示原始 LaTeX（`2.1 \pmb{n} 元排列`），源数据节名含 `$\pmb{n}$`，下拉不做 LaTeX 渲染。

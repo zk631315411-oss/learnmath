@@ -46,13 +46,33 @@ export default function ChapterIslands({ nodes, edges, selectedId, onSelect }: {
         if (edge.source === sel) nb.add(edge.target);
         if (edge.target === sel) nb.add(edge.source);
       });
-      // 降乱：默认只画前置主干（PREREQUISITE_OF）；选中节点时叠加它的一跳出入边
+      // 降乱：默认每节点只画一条「最近前置依赖」（USES/DERIVES 中教材序最近的前驱），
+      // 整岛呈主脉藤蔓而非蜘蛛网（n 节点最多 n-1 条边）；选中节点时叠加它的一跳出入边
+      const BACKBONE_TYPES = new Set(['DERIVES', 'USES']);
+      const indexOf = new Map(island.positions.map(position => [position.nodeId, position.i]));
+      const backbone: ChapterCatalogEdge[] = [];
+      if (!sel) island.memberIds.forEach(id => {
+        const i = indexOf.get(id) ?? 0;
+        let best: ChapterCatalogEdge | null = null;
+        let bestJ = -1;
+        let bestPri = 99;
+        iedges.forEach(edge => {
+          const other = edge.source === id ? edge.target : edge.target === id ? edge.source : null;
+          if (!other) return;
+          const j = indexOf.get(other) ?? -1;
+          if (j < 0 || j >= i) return;
+          // 优先 DERIVES > USES，都没有时任意类型兜底（保证小岛骨架不断）
+          const pri = edge.type === 'DERIVES' ? 0 : edge.type === 'USES' ? 1 : 2;
+          if (j > bestJ || (j === bestJ && pri < bestPri)) { best = edge; bestJ = j; bestPri = pri; }
+        });
+        if (best) backbone.push(best);
+      });
       const visibleEdges = sel
-        ? iedges.filter(edge => edge.type === 'PREREQUISITE_OF' || edge.source === sel || edge.target === sel)
-        : iedges.filter(edge => edge.type === 'PREREQUISITE_OF');
+        ? iedges.filter(edge => BACKBONE_TYPES.has(edge.type) || edge.source === sel || edge.target === sel)
+        : backbone;
       return <section key={island.memberIds[0]} className="border-t border-[var(--lm-border)] px-2 py-2 first:border-t-0">
         <div className="px-2 py-0.5 text-xs text-slate-500 dark:text-slate-400">
-          岛 {index + 1} · {island.memberIds.length} 节点 · 跨 {secs}{island.memberIds.length === mainSize ? '（本章主干）' : ''} · 横轴=教材出现顺序，纵向按关系聚拢 · 连线只画前置主干，点图形看它的关系
+          岛 {index + 1} · {island.memberIds.length} 节点 · 跨 {secs}{island.memberIds.length === mainSize ? '（本章主干）' : ''}
         </div>
         <div className="overflow-x-auto">
           <svg viewBox={`0 0 ${island.width} ${island.height}`} width={island.width} height={island.height} style={{ display: 'block', margin: '0 auto' }}>

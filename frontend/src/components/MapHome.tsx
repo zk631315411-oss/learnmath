@@ -130,13 +130,13 @@ export default function MapHome({
             const statusClass = failed || (!pending && counts.needs_review) ? 'font-medium text-rose-600 dark:text-rose-300' : 'text-slate-400';
             return <li key={chapter.chapter}>
               <div className="flex items-center">
-                <button type="button" onClick={() => toggleChapter(chapter.chapter)} aria-label={expanded ? `收起${title.title || title.display}小节` : `展开${title.title || title.display}小节`} aria-expanded={expanded} className="icon-button ml-1 shrink-0"><ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} /></button>
-                <button type="button" aria-busy={pending} onClick={() => failed ? onRetry() : onOpenChapter(chapter.chapter)} className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-x-5 px-3 py-4 text-left transition hover:bg-slate-900/[0.04] dark:hover:bg-slate-400/10 sm:grid-cols-[1fr_150px_88px_auto]">
+                <button type="button" aria-busy={pending} aria-expanded={expanded} onClick={() => toggleChapter(chapter.chapter)} className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-4 text-left transition hover:bg-slate-900/[0.04] dark:hover:bg-slate-400/10 sm:grid-cols-[auto_minmax(0,1fr)_150px_88px]">
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-90' : ''}`} aria-hidden="true" />
                   <span className="min-w-0"><span className="block text-[11px] text-slate-400">{title.number || '章节'}</span><span className="serif-zh mt-0.5 block truncate text-base font-semibold text-slate-800 dark:text-slate-100">{title.title || title.display}</span></span>
                   <span className="hidden sm:block"><span className="block h-[3px] overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><span className="block h-full bg-slate-900 dark:bg-slate-300" style={{ width: `${exploredPct}%` }} /></span><span className="mt-1.5 block font-mono text-[11px] tabular-nums text-slate-400">{chapter.exploration_progress.explored ? `${chapter.exploration_progress.explored} / ${chapter.exploration_progress.total} 已探索` : `${chapter.node_count} 个知识点`}</span></span>
                   <span className={`hidden text-right text-xs sm:block ${statusClass}`}>{failed ? '加载失败 · 点击重试' : pending ? '详情准备中…' : statusSummary}</span>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">查看地图 →</span>
                 </button>
+                <button type="button" onClick={() => failed ? onRetry() : onOpenChapter(chapter.chapter)} className="mr-2 shrink-0 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:text-indigo-700 dark:text-slate-400 dark:hover:text-indigo-300">查看地图 →</button>
               </div>
               {expanded && <div className="pb-4 pl-12 pr-4">
                 {response?.sections.length ? <ul>{response.sections.map(section => {

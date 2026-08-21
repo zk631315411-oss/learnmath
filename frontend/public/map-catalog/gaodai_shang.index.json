@@ -1,6 +1,6 @@
 {
   "textbook_id": "gaodai_shang",
-  "catalog_version": "gaodai_shang-f34f4c5596338ed5",
+  "catalog_version": "gaodai_shang-4c58c0980b85ab6b",
   "node_index": [
     {
       "node_id": "gaodai_shang:node:6eaddbaae191",
@@ -425,35 +425,35 @@
     {
       "node_id": "gaodai_shang:node:6e8074527f17",
       "chapter": "第2章 行列式",
-      "section": "第2章 行列式 导入",
+      "section": "2.1 $\\pmb{n}$  元排列",
       "name": "二元一次方程组唯一解判定",
       "order": 60
     },
     {
       "node_id": "gaodai_shang:node:a9190ecc84d3",
       "chapter": "第2章 行列式",
-      "section": "第2章 行列式 导入",
+      "section": "2.1 $\\pmb{n}$  元排列",
       "name": "系数行列式",
       "order": 61
     },
     {
       "node_id": "gaodai_shang:node:afb76a395a2c",
       "chapter": "第2章 行列式",
-      "section": "第2章 行列式 导入",
+      "section": "2.1 $\\pmb{n}$  元排列",
       "name": "二元一次方程组唯一解公式",
       "order": 62
     },
     {
       "node_id": "gaodai_shang:node:066204e09ca3",
       "chapter": "第2章 行列式",
-      "section": "第2章 行列式 导入",
+      "section": "2.1 $\\pmb{n}$  元排列",
       "name": "n元线性方程组求解",
       "order": 63
     },
     {
       "node_id": "gaodai_shang:node:5ba696f0ee44",
       "chapter": "第2章 行列式",
-      "section": "第2章 行列式 导入",
+      "section": "2.1 $\\pmb{n}$  元排列",
       "name": "n阶行列式",
       "order": 64
     },

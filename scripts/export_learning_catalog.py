@@ -98,6 +98,15 @@ def _export_textbook(item: dict[str, Any]) -> dict[str, Any]:
             raise RuntimeError(f"empty chapter name for {textbook_id}")
         chapter_number = _chapter_number(chapter_name)
         nodes = _retry_kg(list_kg_nodes, textbook_id, chapter_name)
+        # 章前「导入」节（如 C02:S00:U00，教材目录中并不存在的引入段）并入本章第一个编号小节，
+        # 避免章总览出现与正式小节并列的伪节。节点顺序保持不变（导入节点教材序在最前）。
+        intro_merge_target: tuple[str, str] | None = None
+        for node in nodes:
+            candidate_name = str(node.get("section") or "").strip()
+            candidate_key = _section_key(candidate_name)
+            if candidate_key and "." in candidate_key:
+                intro_merge_target = (candidate_key, candidate_name)
+                break
         expected_ids = {str(node_id) for node_id in chapter_row.get("node_ids") or [] if node_id}
         actual_ids = {str(node.get("node_id") or "") for node in nodes}
         if expected_ids != actual_ids:
@@ -116,7 +125,10 @@ def _export_textbook(item: dict[str, Any]) -> dict[str, Any]:
                 raise RuntimeError(f"node prefix mismatch in {textbook_id}: {node_id}")
             seen_nodes.add(node_id)
             section_name = str(node.get("section") or "未分节").strip() or "未分节"
-            section_key = _section_key(section_name) or f"unsectioned-{len(section_by_key)}"
+            if intro_merge_target and section_name.endswith("导入"):
+                section_key, section_name = intro_merge_target
+            else:
+                section_key = _section_key(section_name) or f"unsectioned-{len(section_by_key)}"
             section = section_by_key.get(section_key)
             if section is None:
                 section = {

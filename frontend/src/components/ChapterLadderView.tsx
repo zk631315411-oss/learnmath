@@ -39,8 +39,9 @@ function Legend() {
 }
 
 /**
- * 章知识地图（E v3）：章总览 → 节梯子 → 岛屿总览 三屏；
- * 点击图形在图下方内联展开详情卡（聚焦子图 + 关系明细）。
+ * 章知识地图（E v3.2 串联版）：章总览（默认落点，含岛屿入口）→ 节梯子 → 详情卡；
+ * 岛屿总览不再占工具条按钮，从章总览的安静链接进入；
+ * 岛屿里选中节点的详情卡带「定位到节梯子」，形成 岛→梯子 回链。
  */
 export default function ChapterLadderView({ data, edges, onOpenChat, onContinueNode }: {
   data: NodeMapResponse;
@@ -80,14 +81,17 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
     setScreen('ladder');
   };
 
+  // 岛→梯子回链：切到节点所在节并高亮（题型自动展开显示）
+  const locateInLadder = (node: LearningMapNode) => {
+    if (isProblemType(node.type) && !showProblems) setShowProblems(true);
+    setCurrentSection(node.section);
+    setScreen('ladder');
+    setSelectedId(node.node_id);
+  };
+
   const toggleProblems = () => {
     setShowProblems(value => !value);
     if (selected && isProblemType(selected.type)) setSelectedId(null);
-  };
-
-  const toggleIslands = () => {
-    if (screen === 'islands') { setScreen('ladder'); return; }
-    setScreen('islands');
   };
 
   return <div className="flex h-full flex-col bg-[var(--lm-bg)]" data-testid="chapter-ladder-view">
@@ -100,13 +104,12 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
       {screen === 'islands' && <span className="text-sm font-medium text-slate-700 dark:text-slate-200">岛屿总览 · 整章连通分量</span>}
       <div className="ml-auto flex items-center gap-2">
         {screen !== 'overview' && <button type="button" aria-pressed={showProblems} onClick={toggleProblems} className={`inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-medium transition-colors ${showProblems ? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900' : 'border-[var(--lm-border)] text-slate-500 hover:border-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>显示题型</button>}
-        <button type="button" aria-pressed={screen === 'islands'} onClick={toggleIslands} className={`inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-medium transition-colors ${screen === 'islands' ? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900' : 'border-[var(--lm-border)] text-slate-500 hover:border-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>{screen === 'islands' ? '返回梯子' : '岛屿总览'}</button>
         <Legend />
       </div>
     </div>
 
     <div className="min-h-0 flex-1 overflow-y-auto">
-      {screen === 'overview' && <ChapterOverview data={data} edges={edges} onOpenSection={openSection} />}
+      {screen === 'overview' && <ChapterOverview data={data} edges={edges} onOpenSection={openSection} onOpenIslands={() => setScreen('islands')} />}
       {screen === 'ladder' && sectionGroup && <>
         <div className="max-h-[62vh] overflow-y-auto border-b border-[var(--lm-border)] bg-[var(--lm-surface)]">
           <SectionLadder section={sectionGroup} edges={sectionEdges} showProblems={showProblems} selectedId={selectedId} onSelect={toggleSelect} />
@@ -116,8 +119,8 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
       </>}
       {screen === 'islands' && <>
         <ChapterIslands nodes={visibleChapterNodes} edges={edges} selectedId={selectedId} onSelect={toggleSelect} />
-        {!selected && <p className="px-4 py-3 text-center text-xs text-slate-400">点击岛屿中的图形，展开聚焦子图（整章范围）与关系明细</p>}
-        {selected && <div className="px-4 pb-6"><NodeDetailCard node={selected} nodes={nodes} edges={edges} onSelect={goTo} onClose={() => setSelectedId(null)} onContinueNode={onContinueNode} onOpenChat={onOpenChat} /></div>}
+        {!selected && <p className="px-4 py-3 text-center text-xs text-slate-400">点击岛屿中的图形，展开聚焦子图（整章范围）与关系明细，或定位到它所在的节梯子</p>}
+        {selected && <div className="px-4 pb-6"><NodeDetailCard node={selected} nodes={nodes} edges={edges} onSelect={goTo} onClose={() => setSelectedId(null)} onContinueNode={onContinueNode} onOpenChat={onOpenChat} onLocate={locateInLadder} /></div>}
       </>}
     </div>
   </div>;
