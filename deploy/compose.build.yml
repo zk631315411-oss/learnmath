@@ -7,4 +7,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/frontend/Dockerfile
-
+  manim-renderer:
+    build:
+      context: ..
+      dockerfile: deploy/manim/Dockerfile

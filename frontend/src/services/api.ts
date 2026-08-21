@@ -1,4 +1,4 @@
-import type { TokenResponse, UserProfile, CropBBox, ToolActivity } from '../types';
+import type { TokenResponse, UserProfile, CropBBox, ManimArtifact, ToolActivity, ChatHistoryRecord, Source } from '../types';
 // request 别名 apiRequest：fetchWithStage 的 options 参数名 request 会遮蔽该导入，故在模块级改名
 import { request as apiRequest, get, post, patch, del } from './request';
 import { prepareImageUpload } from '../utils/imageProcessing';
@@ -33,22 +33,22 @@ export async function getCurrentUser(token: string): Promise<UserProfile> {
 
 // === 聊天历史 / 徽标 API ===
 
-export async function getChatHistoryByUser(userId: string, page: number, limit: number, textbookId?: string): Promise<any[]> {
+export async function getChatHistoryByUser(userId: string, page: number, limit: number, textbookId?: string): Promise<ChatHistoryRecord[]> {
   // 仅当教材 ID 为真值时追加过滤参数：空字符串/undefined 不拼接，
   // 避免把「未选教材」误传成后端「只查 NULL 老数据」的边界语义
   const textbookParam = textbookId ? `&textbook_id=${encodeURIComponent(textbookId)}` : '';
-  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?page=${page}&limit=${limit}${textbookParam}`);
+  return get<ChatHistoryRecord[]>(`/chat/history/${encodeURIComponent(userId)}?page=${page}&limit=${limit}${textbookParam}`);
 }
 
 // 拉取某用户的全量提问记录（跨所有页码）供侧栏分组展示。
 // 不带 page 参数：后端 page 缺省即不过滤页码，limit 兜底控制上限。
-export async function getAllChatHistory(userId: string, limit = 500, textbookId?: string): Promise<any[]> {
+export async function getAllChatHistory(userId: string, limit = 500, textbookId?: string): Promise<ChatHistoryRecord[]> {
   const textbookParam = textbookId ? `&textbook_id=${encodeURIComponent(textbookId)}` : '';
-  return get<any[]>(`/chat/history/${encodeURIComponent(userId)}?limit=${limit}${textbookParam}`);
+  return get<ChatHistoryRecord[]>(`/chat/history/${encodeURIComponent(userId)}?limit=${limit}${textbookParam}`);
 }
 
-export async function deleteChatHistory(chatId: string): Promise<void> {
-  await del(`/chat/history/${chatId}`);
+export async function deleteChatHistory(chatId: string, token: string): Promise<void> {
+  await del(`/chat/history/${chatId}`, token);
 }
 
 export async function createChatHistory(data: {
@@ -106,6 +106,20 @@ export async function migrateMarkers(oldToken: string, newToken: string): Promis
   await post('/chat/migrate', { old_token: oldToken }, newToken);
 }
 
+// === Manim 动画制品 API ===
+
+export function getManimArtifact(artifactId: string, token: string): Promise<ManimArtifact> {
+  return get(`/manim/artifacts/${encodeURIComponent(artifactId)}`, token, { maxRetries: 0 });
+}
+
+export function getManimArtifactsForChat(chatId: string, token: string): Promise<ManimArtifact[]> {
+  return get(`/manim/artifacts?chat_id=${encodeURIComponent(chatId)}`, token, { maxRetries: 0 });
+}
+
+export function retryManimArtifact(artifactId: string, token: string): Promise<ManimArtifact> {
+  return post(`/manim/artifacts/${encodeURIComponent(artifactId)}/retry`, undefined, token, { maxRetries: 0 });
+}
+
 // === 学习地图 API ===
 
 export type LearningStatus = 'unexplored' | 'learning' | 'basically_mastered' | 'mastered' | 'needs_review';
@@ -122,6 +136,7 @@ export interface LearningMapNode {
   node_id: string;
   name: string;
   type?: string;
+  order?: number;
   section: string;
   status: LearningStatus;
   closed_evidence_count: number;
@@ -204,6 +219,26 @@ export type FetchWithStageCallbacks = {
   onContent?: (text: string) => void;
   // 工具活动状态流转（tool_call / tool_result 事件）
   onToolActivity?: (activity: ToolActivity) => void;
+  onArtifact?: (artifact: ManimArtifact) => void;
+};
+
+type SsePayload = {
+  error?: string;
+  stage?: string;
+  text?: string;
+  id?: string | number;
+  tool?: string;
+  label?: string;
+  status?: ToolActivity['status'];
+  arguments?: Record<string, unknown>;
+  full_text?: string;
+  thinking?: string;
+  sources?: Source[];
+  tool_activities?: ToolActivity[];
+  screenshot_context_id?: string | null;
+  qa_turn_id?: string | null;
+  progress_delta?: LearningProgressResponse | null;
+  artifacts?: ManimArtifact[];
 };
 
 /**
@@ -230,12 +265,13 @@ export async function fetchWithStage({ request, callbacks }: {
   callbacks: FetchWithStageCallbacks;
 }): Promise<{
   answer: string;
-  sources: any[];
+  sources: Source[];
   thinking: string;
   toolActivities: ToolActivity[];
   screenshot_context_id?: string | null;
   qa_turn_id?: string | null;
   progress_delta?: LearningProgressResponse | null;
+  artifacts: ManimArtifact[];
 }> {
   const payload: Record<string, unknown> = {
     user_id: request.user_id,
@@ -274,22 +310,31 @@ export async function fetchWithStage({ request, callbacks }: {
 
   const reader = res.body?.getReader();
   if (!reader) throw new Error('无法读取响应流');
+  let aborted = request.signal?.aborted || false;
+  const abortReader = () => {
+    aborted = true;
+    void reader.cancel().catch(() => undefined);
+  };
+  request.signal?.addEventListener('abort', abortReader, { once: true });
 
   const decoder = new TextDecoder();
   let buffer = '';
   let fullContent = '';
-  let sources: any[] = [];
+  let sources: Source[] = [];
   let thinking = '';
   let toolActivities: ToolActivity[] = [];
   let screenshotContextIdResult: string | null = null;
   let qaTurnIdResult: string | null = null;
   let progressDelta: LearningProgressResponse | null = null;
+  let artifacts: ManimArtifact[] = [];
   let currentEventType: string | null = null;
 
   callbacks.onIsThinkingChange?.(false);
   try {
     while (true) {
+      if (aborted) throw new DOMException('请求已取消', 'AbortError');
       const { done, value } = await reader.read();
+      if (aborted) throw new DOMException('请求已取消', 'AbortError');
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
@@ -301,8 +346,8 @@ export async function fetchWithStage({ request, callbacks }: {
         if (trimmed.startsWith('data:')) {
           const dataStr = trimmed.slice(5).trim();
           if (!dataStr) continue;
-          let data: any;
-          try { data = JSON.parse(dataStr); } catch { continue; }
+          let data: SsePayload;
+          try { data = JSON.parse(dataStr) as SsePayload; } catch { continue; }
           if (data.error && currentEventType === 'error') throw new Error(data.error);
           if (currentEventType === 'stage' && data.stage && data.text) callbacks.onStage(data.stage, data.text);
           else if ((currentEventType === 'tool_call' || currentEventType === 'tool_result') && data.id) {
@@ -326,6 +371,13 @@ export async function fetchWithStage({ request, callbacks }: {
             callbacks.onIsThinkingChange?.(true);
             callbacks.onThinking?.(data.text);
           }
+          else if (currentEventType === 'artifact' && data.id) {
+            const artifact = data as ManimArtifact;
+            artifacts = artifacts.some(item => item.id === artifact.id)
+              ? artifacts.map(item => item.id === artifact.id ? artifact : item)
+              : [...artifacts, artifact];
+            callbacks.onArtifact?.(artifact);
+          }
           else if (currentEventType === 'content' && data.text) {
             callbacks.onIsThinkingChange?.(false);
             fullContent += data.text;
@@ -348,11 +400,16 @@ export async function fetchWithStage({ request, callbacks }: {
             if (data.screenshot_context_id) screenshotContextIdResult = data.screenshot_context_id;
             if (data.qa_turn_id) qaTurnIdResult = String(data.qa_turn_id);
             if (data.progress_delta && typeof data.progress_delta === 'object') progressDelta = data.progress_delta as LearningProgressResponse;
+            if (Array.isArray(data.artifacts)) {
+              artifacts = data.artifacts;
+              artifacts.forEach(artifact => callbacks.onArtifact?.(artifact));
+            }
           }
         }
       }
     }
   } finally {
+    request.signal?.removeEventListener('abort', abortReader);
     callbacks.onIsThinkingChange?.(false);
   }
   return {
@@ -363,6 +420,7 @@ export async function fetchWithStage({ request, callbacks }: {
     screenshot_context_id: screenshotContextIdResult,
     qa_turn_id: qaTurnIdResult,
     progress_delta: progressDelta,
+    artifacts,
   };
 }
 

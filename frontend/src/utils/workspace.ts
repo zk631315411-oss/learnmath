@@ -1,4 +1,5 @@
 import { loadJSON, saveJSON } from './storage';
+import { workspaceStorageKey } from './storageKeys';
 
 export type WorkspaceView = 'map' | 'reader';
 
@@ -8,11 +9,9 @@ export interface WorkspaceState {
   updatedAt: number;
 }
 
-const KEY_PREFIX = 'learnmath.workspace.';
-
 export function loadWorkspace(textbookId: string): WorkspaceState | null {
   if (!textbookId) return null;
-  const value = loadJSON<Partial<WorkspaceState> | null>(`${KEY_PREFIX}${textbookId}`, null);
+  const value = loadJSON<Partial<WorkspaceState> | null>(workspaceStorageKey(textbookId), null);
   if (!value || (value.view !== 'map' && value.view !== 'reader')) return null;
   const page = Number(value.page);
   return {
@@ -24,7 +23,7 @@ export function loadWorkspace(textbookId: string): WorkspaceState | null {
 
 export function saveWorkspace(textbookId: string, state: Pick<WorkspaceState, 'view' | 'page'>): void {
   if (!textbookId) return;
-  saveJSON(`${KEY_PREFIX}${textbookId}`, {
+  saveJSON(workspaceStorageKey(textbookId), {
     view: state.view,
     page: Math.max(1, Math.floor(state.page || 1)),
     updatedAt: Date.now(),

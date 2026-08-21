@@ -2,6 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException
 
+from app.auth.dependencies import user_id_from_token
 from app.auth.jwt_handler import (
     create_access_token,
     decode_token,
@@ -40,11 +41,23 @@ def get_user_id_from_token(authorization: Optional[str]) -> Optional[str]:
     parts = authorization.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
         return None
-    try:
-        token_data = decode_token(parts[1])
-        return token_data.get("user_id")
-    except Exception:
-        return None
+    return user_id_from_token(parts[1], decoder=decode_token)
+
+
+def _token_response(user: dict) -> TokenResponse:
+    """Build the canonical token response for an existing account."""
+    anonymous = is_anonymous_user(user)
+    token = create_access_token({
+        "user_id": user["id"],
+        "username": user["username"],
+        "is_anonymous": anonymous,
+    })
+    return TokenResponse(
+        access_token=token,
+        user_id=user["id"],
+        username=user["username"],
+        is_anonymous=anonymous,
+    )
 
 
 @router.post("/register", response_model=TokenResponse)
@@ -85,13 +98,7 @@ def login(req: UserLogin):
     if not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="用户名或密码错误")
 
-    token = create_access_token({"user_id": user["id"], "username": user["username"], "is_anonymous": is_anonymous_user(user)})
-    return TokenResponse(
-        access_token=token,
-        user_id=user["id"],
-        username=user["username"],
-        is_anonymous=is_anonymous_user(user)
-    )
+    return _token_response(user)
 
 
 @router.post("/anonymous", response_model=TokenResponse)
@@ -100,13 +107,7 @@ def anonymous_access(device_id: str):
     # 检查设备是否已有账户
     existing = get_user_by_device_id(device_id)
     if existing:
-        token = create_access_token({"user_id": existing["id"], "username": existing["username"], "is_anonymous": is_anonymous_user(existing)})
-        return TokenResponse(
-            access_token=token,
-            user_id=existing["id"],
-            username=existing["username"],
-            is_anonymous=is_anonymous_user(existing)
-        )
+        return _token_response(existing)
 
     # 自动创建匿名账户
     user_id = generate_user_id()
@@ -117,13 +118,7 @@ def anonymous_access(device_id: str):
         # 并发下首次查询后可能已被其他请求创建，取回该账户而非报 500
         existing = get_user_by_device_id(device_id)
         if existing:
-            token = create_access_token({"user_id": existing["id"], "username": existing["username"], "is_anonymous": is_anonymous_user(existing)})
-            return TokenResponse(
-                access_token=token,
-                user_id=existing["id"],
-                username=existing["username"],
-                is_anonymous=is_anonymous_user(existing)
-            )
+            return _token_response(existing)
         raise HTTPException(status_code=500, detail="创建匿名账户失败")
 
     # 创建空画像

@@ -220,18 +220,16 @@ test('smart input, selection wrapping and Tab placeholders work in MathLive', as
   await expect(field).toHaveJSProperty('value', '\\frac{a}{b}');
 });
 
-test('PDF capture action recognizes a formula and prefills the editor', async ({ page }, testInfo) => {
+test('PDF capture extracts a formula and inserts it into the chat editor', async ({ page }, testInfo) => {
   await mockAppApi(page);
-  await page.route('**/api/formula/recognize', route => route.fulfill({
+  await page.route('**/api/formula/recognize-content', route => route.fulfill({
     status: 200, contentType: 'application/json',
-    body: JSON.stringify({ latex: '\\int_0^1 x^2\\,dx', display_mode: 'inline' }),
+    body: JSON.stringify({ blocks: [{ type: 'formula', latex: '\\int_0^1 x^2\\,dx', display_mode: 'inline' }], warnings: [] }),
   }));
   await page.goto('/');
   await openChat(page, testInfo.project.name);
   await expect(page.locator('.react-pdf__Page canvas').first()).toBeVisible({ timeout: 15_000 });
-  await page.getByTitle('框选操作').click();
-  await expect(page.getByRole('menuitem', { name: '识别公式' })).toBeVisible();
-  await page.getByRole('menuitem', { name: '识别公式' }).click();
+  await page.getByRole('button', { name: '框选', exact: true }).first().click();
 
   if (testInfo.project.name === 'chromium-mobile') {
     await expect(page.getByText('裁剪截图')).toBeVisible();
@@ -244,10 +242,13 @@ test('PDF capture action recognizes a formula and prefills the editor', async ({
     await page.mouse.up();
     await page.getByTitle('确认截图').click();
   }
-
-  const dialog = page.getByRole('dialog', { name: '公式编辑器' });
-  await expect(dialog).toBeVisible({ timeout: 15_000 });
-  await expect(dialog.locator('math-field')).toHaveJSProperty('value', '\\int_0^1 x^2\\,dx');
+  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提取并编辑' }).click();
+  const result = page.getByRole('dialog', { name: '识别结果' });
+  await expect(result).toBeVisible({ timeout: 15_000 });
+  await expect(result.getByRole('code')).toHaveText('\\int_0^1 x^2\\,dx');
+  await result.getByRole('button', { name: '插入聊天' }).click();
+  const composer = page.getByRole('textbox', { name: '输入问题…' });
+  await expect(composer.getByRole('math')).toBeVisible();
 });
 
 test('formula surfaces stay framed across approved light and dark viewports', async ({ page }, testInfo) => {
@@ -262,7 +263,7 @@ test('formula surfaces stay framed across approved light and dark viewports', as
     await page.setViewportSize(viewport);
     await page.goto('/');
     await page.waitForTimeout(250);
-    if (!(await page.getByRole('button', { name: '框选提问' }).count())) {
+    if (!(await page.getByRole('button', { name: '框选', exact: true }).count())) {
       const start = page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习)$/ }).first();
       await start.evaluate(element => (element as HTMLButtonElement).click());
     }

@@ -143,7 +143,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
                     "report_turn_outcome", [a["tool"] for a in activities],
                     "内部工具不应出现在展示流",
                 )
-                self.assertEqual(fake.main_tool_names, ["retrieve_kg_context"])
+                self.assertEqual(fake.main_tool_names, ["retrieve_kg_context", "render_manim_animation"])
                 self.assertEqual(fake.fork_calls, 1)
                 self.assertNotIn("最终回答", json.dumps(fake.fork_messages, ensure_ascii=False))
                 stages = [json.loads(event["data"]).get("stage") for event in events if event["event"] == "stage"]

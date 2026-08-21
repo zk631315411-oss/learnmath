@@ -9,14 +9,17 @@ import {
   createChatHistory, patchChatHistory,
   appendFollowUp, updateFollowUp,
   collapseExactRepeatedAnswer,
+  getManimArtifactsForChat,
   type FollowUpTurnPayload,
 } from '../services/api';
 import { streamQA } from '../services/streamQA';
+import { useAnswerTasks, type AnswerTask } from './answerTaskStore';
+import { projectThreadMessages } from './threadProjection';
 import type { Marker } from '../components/PageMarker';
 import type { Message, CropBBox, PendingImage, User } from '../types';
 import type { LearningProgressResponse } from '../services/api';
 
-// 待发截图数量上限：超量截图直接拒绝并提示（后端未支持 images[] 前一次只发一张）；导出给 ChatPanel 复用，避免文案与判断条件出现两处字面量
+// 待发图片队列上限；每轮顺序消费一张，导出给 ChatPanel 复用。
 export const MAX_PENDING_IMAGES = 3;
 
 export interface SendMessageOptions {
@@ -58,20 +61,6 @@ export interface UseChatParams {
   onProgressDelta?: (delta: LearningProgressResponse | null | undefined, textbookId?: string) => void;
 }
 
-type AnswerTask = {
-  turnId: string;
-  chatId: string;
-  isNewThread: boolean;
-  userId: string;
-  textbookId: string;
-  pageNumber: number;
-  markerType: Marker['marker_type'];
-  assistantMsgId: string;
-  controller: AbortController;
-  status: 'streaming' | 'completed' | 'interrupted' | 'cancelled';
-  answer: string;
-};
-
 export function useChat({ user, currentPage, textbookId, chatVisible, markersState, onProgressDelta }: UseChatParams) {
   const {
     activeMarker,
@@ -87,16 +76,16 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 待发送截图列表：每张截图带独立裁剪框，支持多图连发（当前一次只发第一张）
+  // 待发图片队列：每张图片保留独立裁剪框，每轮顺序消费一张。
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [thinkingStage, setThinkingStage] = useState<string>('');
   const [thinkingStageKey, setThinkingStageKey] = useState<string>('');
   const [isThinking, setIsThinking] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadByWorkspace, setUnreadByWorkspace] = useState<Record<string, number>>({});
   const [historyVersion, setHistoryVersion] = useState(0);
   const isMountedRef = useRef(true);
-  // SPA 存活期间保留所有流式任务；任务归属固定，不随当前页面/教材变化。
-  const tasksRef = useRef(new Map<string, AnswerTask>());
+  // 任务注册表独立于聊天视图：导航只改变投影，不会改变请求归属。
+  const { store: taskStore, tasks } = useAnswerTasks();
   const viewContextRef = useRef({ textbookId, currentPage, activeThreadId });
   // SSE 长回调的闭包里读不到最新 chatVisible，用 ref 保存最新值供收尾判断，避免闭包竞态
   const chatVisibleRef = useRef(chatVisible);
@@ -106,10 +95,9 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      tasksRef.current.forEach(task => task.controller.abort());
-      tasksRef.current.clear();
+      taskStore.dispose();
     };
-  }, []);
+  }, [taskStore]);
 
   useEffect(() => {
     chatVisibleRef.current = chatVisible;
@@ -117,17 +105,17 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
 
   useEffect(() => {
     viewContextRef.current = { textbookId, currentPage, activeThreadId };
-    const visible = Array.from(tasksRef.current.values()).some(task =>
-      task.status === 'streaming'
+    const visible = tasks.some(task =>
+      (task.status === 'pending' || task.status === 'streaming')
       && task.userId === (user.userId || user.deviceId)
       && task.textbookId === textbookId
       && task.pageNumber === currentPage
       && (task.chatId
-        ? task.chatId === activeThreadId || (task.isNewThread && activeThreadId === null)
-        : task.isNewThread && activeThreadId === null)
+        ? task.chatId === activeThreadId || (task.turnKind === 'root' && activeThreadId === null)
+        : task.turnKind === 'root' && activeThreadId === null)
     );
     setIsLoading(visible);
-  }, [textbookId, currentPage, activeThreadId, user.userId, user.deviceId]);
+  }, [tasks, textbookId, currentPage, activeThreadId, user.userId, user.deviceId]);
 
   const userId = user.userId || user.deviceId;
 
@@ -135,16 +123,27 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   useEffect(() => {
     setMessages([]);
     setError(null);
-    setUnreadCount(0);
     setThinkingStageKey('');
     const previousUserId = previousUserIdRef.current;
     if (previousUserId !== userId) {
-      tasksRef.current.forEach(task => {
-        if (task.userId === previousUserId && task.status === 'streaming') task.controller.abort();
-      });
+      taskStore.cancelForUser(previousUserId);
       previousUserIdRef.current = userId;
     }
-  }, [userId]);
+  }, [taskStore, userId]);
+
+  const unreadKey = `${userId}:${textbookId}`;
+  const unreadCount = unreadByWorkspace[unreadKey] || 0;
+
+  useEffect(() => {
+    setMessages(previous => projectThreadMessages(previous, tasks, {
+      userId,
+      textbookId,
+      pageNumber: currentPage,
+      activeThreadId,
+    }));
+    // Projection intentionally reacts to task snapshots and visible context.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, userId, textbookId, currentPage, activeThreadId]);
 
   // 当 activeMarker 变化，若它属于当前页，则把其问答加载进聊天面板。
   // 依赖里必须带上 currentPage：跨教材点击时先选中 marker、再等 PDFViewer 加载完新教材才回写页码，
@@ -164,6 +163,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         id: `${activeMarker.id}-a`, role: 'assistant', content: collapseExactRepeatedAnswer(activeMarker.answer),
         thinking: activeMarker.thinking || undefined,
         toolActivities: Array.isArray(activeMarker.tool_activities) ? activeMarker.tool_activities : [],
+        artifacts: activeMarker.artifacts,
         failed: rootFailed || undefined,
         pending: rootPending || undefined,
       });
@@ -181,14 +181,40 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         id: `${activeMarker.id}-${turnId}-answer`,
         role: 'assistant', content: collapseExactRepeatedAnswer(fu.answer), thinking: fu.thinking || undefined,
         toolActivities: Array.isArray(fu.tool_activities) ? fu.tool_activities : [],
+        artifacts: fu.artifacts,
         failed: fuFailed || undefined,
         pending: fuPending || undefined,
       });
       else if (fuFailed || fuPending) msgs.push({ id: `${activeMarker.id}-${turnId}-answer`, role: 'assistant', content: '', failed: fuFailed || undefined, pending: fuPending || undefined });
     });
     setMessages(msgs);
+    if (!user.token) return;
+    let cancelled = false;
+    void getManimArtifactsForChat(activeMarker.id, user.token).then(artifacts => {
+      if (cancelled || !artifacts.length) return;
+      const byTurn = new Map<string, typeof artifacts>();
+      artifacts.forEach(artifact => {
+        const key = artifact.client_turn_id || activeMarker.client_turn_id || '';
+        byTurn.set(key, [...(byTurn.get(key) || []), artifact]);
+      });
+      const rootArtifacts = byTurn.get(activeMarker.client_turn_id || '') || [];
+      const hydrated = [...msgs];
+      const attach = (messageId: string, items: typeof artifacts) => {
+        if (!items.length) return;
+        const index = hydrated.findIndex(message => message.id === messageId);
+        if (index >= 0) hydrated[index] = { ...hydrated[index], artifacts: items };
+        else hydrated.push({ id: messageId, role: 'assistant', content: '', artifacts: items });
+      };
+      attach(`${activeMarker.id}-a`, rootArtifacts);
+      (activeMarker.follow_ups || []).forEach((fu, index) => {
+        const turnId = fu.turn_id || `legacy-${index}`;
+        attach(`${activeMarker.id}-${turnId}-answer`, byTurn.get(turnId) || []);
+      });
+      if (!cancelled) setMessages(hydrated);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMarker?.id, currentPage]);
+  }, [activeMarker?.id, currentPage, user.token]);
 
   // 清空整个待发列表（待发送区的「清空」按钮）
   const clearPendingImages = useCallback(() => {
@@ -202,8 +228,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
 
   // 面板展开/用户主动查看时清零未读角标
   const markRead = useCallback(() => {
-    setUnreadCount(0);
-  }, []);
+    setUnreadByWorkspace(previous => ({ ...previous, [unreadKey]: 0 }));
+  }, [unreadKey]);
 
   const isTaskVisible = useCallback((task: AnswerTask) => {
     const context = viewContextRef.current;
@@ -211,8 +237,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       && task.textbookId === context.textbookId
       && task.pageNumber === context.currentPage
       && (task.chatId
-        ? task.chatId === context.activeThreadId || (task.isNewThread && context.activeThreadId === null)
-        : task.isNewThread && context.activeThreadId === null);
+        ? task.chatId === context.activeThreadId || (task.turnKind === 'root' && context.activeThreadId === null)
+        : task.turnKind === 'root' && context.activeThreadId === null);
   }, [user.userId, user.deviceId]);
 
   const handleSendMessage = useCallback(async (content: string, options: SendMessageOptions = {}): Promise<Marker | null> => {
@@ -223,8 +249,8 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     const pending = pendingImages[0];
     const imageSource: PendingImage['source'] = explicitCapture?.source || pending?.source || 'pdf-capture';
     const firstCropBBox = explicitCapture?.cropBBox || pending?.cropBBox || null;
-    const visibleTask = Array.from(tasksRef.current.values()).some(task =>
-      task.status === 'streaming' && isTaskVisible(task)
+    const visibleTask = tasks.some(task =>
+      (task.status === 'pending' || task.status === 'streaming') && isTaskVisible(task)
     );
     if ((!trimmed && !image) || visibleTask) return null;
 
@@ -266,13 +292,14 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     }
 
     const question = trimmed || (image ? '请解答这张图片中的题目' : '');
-    const newUserMsg: Message = { id: generateId(), role: 'user', content: question, image };
+    const messagePrefix = effectiveThreadId ? `${effectiveThreadId}-${turnId}` : turnId;
+    const newUserMsg: Message = { id: `${messagePrefix}-question`, role: 'user', content: question, image };
     if (options.newThread) {
       setActiveThreadId(null);
       setActiveMarker(null);
     }
     setMessages(prev => options.newThread ? [newUserMsg] : [...prev, newUserMsg]);
-    // 本次提问已取走第一张：立即移除，其余截图保留在待发列表（多图连发）
+    // 本轮取走队首图片，其余图片留给后续独立问题。
     if (!explicitCapture) setPendingImages(prev => prev.slice(1));
     setError(null);
     setIsLoading(true);
@@ -280,7 +307,47 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     setThinkingStage('');
     setThinkingStageKey('');
 
+    // 注册必须早于任何持久化 await：切书/切线程发生在创建 history 期间时，任务仍有自己的身份。
+    const assistantMsgId = `${messagePrefix}-answer`;
+    const controller = new AbortController();
     let chatId = effectiveThreadId || '';
+    const task: AnswerTask = {
+      clientTurnId: turnId,
+      userId: userIdVal,
+      chatId,
+      turnKind: isNewThread ? 'root' : 'follow_up',
+      textbookId,
+      pageNumber,
+      markerType,
+      assistantMsgId,
+      request: {
+        user_id: userIdVal,
+        question,
+        teaching_mode: 'socratic',
+        image: requestImage,
+        history: historyPairs.length ? historyPairs : undefined,
+        token: user.token || undefined,
+        textbook_id: textbookId || undefined,
+        page_number: pageNumber,
+        chat_id: chatId || undefined,
+        marker_id: chatId || undefined,
+        client_turn_id: turnId,
+        crop_bbox: requestCropBBox,
+        screenshot_context_id: requestScreenshotContextId,
+      },
+      status: 'pending',
+      answer: '',
+      thinking: '',
+      toolActivities: [],
+      artifacts: [],
+      startedAt: Date.now(),
+      controller,
+    };
+    taskStore.register(task);
+    setMessages(prev => [...prev, {
+      id: assistantMsgId, role: 'assistant', content: '', thinking: '', toolActivities: [],
+    }]);
+
     if (isNewThread) {
       try {
         const res = await createChatHistory({
@@ -297,6 +364,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           crop_bbox: cropBBox ? JSON.stringify(cropBBox) : undefined,
         });
         chatId = res.id;
+        taskStore.update(turnId, { chatId });
       } catch { /* 落库失败不阻断问答 */ }
     }
 
@@ -313,25 +381,11 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       } catch { /* 落库失败不阻断问答 */ }
     }
 
-    const assistantMsgId = generateId();
-    const controller = new AbortController();
-    const task: AnswerTask = {
-      turnId,
+    taskStore.update(turnId, {
       chatId,
-      isNewThread,
-      userId: userIdVal,
-      textbookId,
-      pageNumber,
-      markerType,
-      assistantMsgId,
-      controller,
-      status: 'streaming',
-      answer: '',
-    };
-    tasksRef.current.set(turnId, task);
-    setMessages(prev => [...prev, {
-      id: assistantMsgId, role: 'assistant', content: '', thinking: '', toolActivities: [],
-    }]);
+      request: { ...task.request, chat_id: chatId || undefined, marker_id: chatId || undefined },
+    });
+    taskStore.start(turnId);
 
     setThinkingStage('正在思考…');
     setThinkingStageKey('');
@@ -356,16 +410,22 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           screenshot_context_id: requestScreenshotContextId,
         }, {
         onStage: (stage, text) => {
-          if (!isMountedRef.current || !isTaskVisible(task)) return;
+          if (!taskStore.isActive(turnId) || !isMountedRef.current || !isTaskVisible(task)) return;
           setThinkingStageKey(stage);
           setThinkingStage(text);
         },
         onThinkingChange: value => {
-          if (isMountedRef.current && isTaskVisible(task)) setIsThinking(value);
+          if (taskStore.isActive(turnId) && isMountedRef.current && isTaskVisible(task)) setIsThinking(value);
         },
         onUpdate: snapshot => {
+          if (!taskStore.isActive(turnId)) return;
           partialAnswer = snapshot.answer;
-          task.answer = snapshot.answer;
+          taskStore.update(turnId, {
+            answer: snapshot.answer,
+            thinking: snapshot.thinking,
+            toolActivities: snapshot.toolActivities,
+            artifacts: snapshot.artifacts,
+          });
           // 消息列表归属当前对话：翻页/切视图不算切换对话，流式增量必须落进 messages
           if (!isMountedRef.current) return;
           setMessages(prev => prev.map(message => message.id === assistantMsgId ? {
@@ -373,19 +433,27 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
             content: snapshot.answer,
             thinking: snapshot.thinking,
             toolActivities: snapshot.toolActivities,
+            artifacts: snapshot.artifacts,
           } : message));
         },
       });
 
+      if (!taskStore.isActive(turnId)) throw new DOMException('生成已取消', 'AbortError');
+
       const fullAnswer = result.answer;
-      task.answer = fullAnswer;
-      task.status = 'completed';
       const fullThinking = result.thinking;
       const fullToolActivities = result.toolActivities;
+      taskStore.finish(turnId, 'completed', {
+        qaTurnId: result.qa_turn_id || null,
+        answer: fullAnswer,
+        thinking: fullThinking,
+        toolActivities: fullToolActivities,
+        artifacts: result.artifacts,
+      });
       onProgressDelta?.(result.progress_delta, task.textbookId);
       if (isMountedRef.current) {
         setMessages(prev => prev.map(m => m.id === assistantMsgId
-          ? { ...m, content: fullAnswer, thinking: fullThinking, toolActivities: fullToolActivities }
+          ? { ...m, content: fullAnswer, thinking: fullThinking, toolActivities: fullToolActivities, artifacts: result.artifacts }
           : m));
       }
 
@@ -415,6 +483,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           answer: fullAnswer || null,
           thinking: fullThinking || null,
           tool_activities: fullToolActivities,
+          artifacts: result.artifacts,
           thumbnail: image || null,
           crop_bbox: cropBBox || null,
           screenshot_context_id: result.screenshot_context_id || null,
@@ -441,6 +510,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           qa_turn_id: result.qa_turn_id || null,
           status: 'completed' as const,
           error_message: null,
+          artifacts: result.artifacts,
         };
         const updatedFollowUps = [...(threadMarker.follow_ups || []), followUp];
         const updatedMarker: Marker = {
@@ -478,13 +548,13 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         } catch {}
         completedMarker = updatedMarker;
       }
-      await refreshMarkers();
+      if (task.textbookId === viewContextRef.current.textbookId) await refreshMarkers();
       setHistoryVersion(version => version + 1);
       return completedMarker;
     } catch (e) {
       const msg = (e instanceof Error ? e.message : '回答失败，请重试');
       const terminalStatus = controller.signal.aborted ? 'cancelled' : 'interrupted';
-      task.status = terminalStatus;
+      taskStore.finish(turnId, terminalStatus, { answer: partialAnswer, errorMessage: msg });
       if (isMountedRef.current && isTaskVisible(task)) setError(msg);
       // 失败不再把 [错误] 文案写进 answer：落库已流出的部分正文 + 结构化状态
       if (chatId && isNewThread) {
@@ -514,16 +584,18 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         setThinkingStage('');
         setThinkingStageKey('');
         // done 与 error 两种结束都会走到这里：收尾时若聊天面板不可见，累计一条未读提醒用户
-        if (!chatVisibleRef.current || !isTaskVisible(task)) setUnreadCount(prev => prev + 1);
+        if (!chatVisibleRef.current || !isTaskVisible(task)) {
+          const taskUnreadKey = `${task.userId}:${task.textbookId}`;
+          setUnreadByWorkspace(previous => ({ ...previous, [taskUnreadKey]: (previous[taskUnreadKey] || 0) + 1 }));
+        }
       }
-      tasksRef.current.delete(turnId);
     }
   }, [
     user, currentPage, textbookId, messages, activeThreadId,
     pendingImages,
     addMarker, updateMarker, getMarkerById, refreshMarkers,
     setActiveThreadId, setActiveMarker,
-    onProgressDelta, isTaskVisible,
+    onProgressDelta, isTaskVisible, taskStore,
   ]);
 
   const handleCapture = useCallback((imageData: string, cropBBox: CropBBox | null, source: PendingImage['source'] = 'pdf-capture') => {
@@ -543,16 +615,16 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   }, [setActiveThreadId, setActiveMarker]);
 
   const cancelGeneration = useCallback((turnId?: string) => {
-    if (turnId) tasksRef.current.get(turnId)?.controller.abort();
-    else tasksRef.current.forEach(task => task.controller.abort());
-  }, []);
+    if (turnId) taskStore.cancel(turnId);
+    else taskStore.getAll().filter(task => task.userId === userId).forEach(task => taskStore.cancel(task.clientTurnId));
+  }, [taskStore, userId]);
 
   const cancelVisibleGeneration = useCallback(() => {
-    const task = Array.from(tasksRef.current.values()).find(item =>
-      item.status === 'streaming' && isTaskVisible(item)
+    const task = tasks.find(item =>
+      (item.status === 'pending' || item.status === 'streaming') && isTaskVisible(item)
     );
-    task?.controller.abort();
-  }, [isTaskVisible]);
+    if (task) taskStore.cancel(task.clientTurnId);
+  }, [isTaskVisible, taskStore, tasks]);
 
   return {
     messages,

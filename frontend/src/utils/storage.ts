@@ -1,6 +1,11 @@
 // 统一 localStorage 的读写出口：JSON 型数据走 loadJSON/saveJSON，
 // 普通字符串（如历史遗留的裸字符串 threadId）走 loadString/saveString/removeString，
 // 避免各文件散落 try/catch + JSON.parse 样板，失败时统一降级为兜底值。
+import { STORAGE_KEYS, STORAGE_SCHEMA_VERSION } from './storageKeys';
+
+export function ensureStorageSchema(): void {
+  saveString(STORAGE_KEYS.schemaVersion, STORAGE_SCHEMA_VERSION);
+}
 
 /** 读取并解析 JSON；键缺失或解析失败（如旧版本残留的脏数据）时返回 fallback */
 export function loadJSON<T>(key: string, fallback: T): T {

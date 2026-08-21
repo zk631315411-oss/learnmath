@@ -7,6 +7,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 from sse_starlette.sse import EventSourceResponse
 
+from app.auth.dependencies import require_token_user_id
 from app.auth.jwt_handler import decode_token
 from app.db.user_profile_db import get_user_profile
 from app.models.schemas import QARequest
@@ -73,15 +74,8 @@ async def _generate_with_heartbeat(generate):
 
 def get_user_id_and_profile(request: QARequest) -> tuple:
     """只信任认证 token；前端 user_id/device_id 不参与身份判定。"""
-    if not request.token:
-        raise HTTPException(status_code=401, detail="未登录或token无效")
-    try:
-        user_id = decode_token(request.token).get("user_id")
-    except Exception as exc:
-        raise HTTPException(status_code=401, detail="未登录或token无效") from exc
-    if not user_id:
-        raise HTTPException(status_code=401, detail="未登录或token无效")
-    return str(user_id), get_user_profile(str(user_id))
+    user_id = require_token_user_id(request.token, decoder=decode_token)
+    return user_id, get_user_profile(user_id)
 
 
 def _event_payload(event: dict) -> dict:

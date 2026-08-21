@@ -115,6 +115,53 @@ _UPDATABLE_COLUMNS = {
 }
 
 
+def _parse_follow_ups(value) -> list[dict]:
+    """Decode the legacy JSON column into the one shape mutation code needs."""
+    try:
+        parsed = json.loads(value or "[]")
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _mutate_follow_ups(chat_id: str, mutator) -> Optional[dict]:
+    """Atomically load, mutate, and persist a chat's follow-up list.
+
+    ``mutator`` returns ``None`` for a missing turn, or ``(value, changed)``
+    for a successful operation.  A false ``changed`` result rolls back while
+    still returning the existing value (used by idempotent appends).
+    """
+    conn = get_conn()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute(
+            "SELECT follow_ups FROM chat_history WHERE id=?", (chat_id,),
+        ).fetchone()
+        if row is None:
+            conn.rollback()
+            return None
+        follow_ups = _parse_follow_ups(row["follow_ups"])
+        mutation = mutator(follow_ups)
+        if mutation is None:
+            conn.rollback()
+            return None
+        result, changed = mutation
+        if changed:
+            conn.execute(
+                "UPDATE chat_history SET follow_ups=? WHERE id=?",
+                (json.dumps(follow_ups, ensure_ascii=False), chat_id),
+            )
+            conn.commit()
+        else:
+            conn.rollback()
+        return result
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def update_chat_record(chat_id: str, fields: dict) -> None:
     """按显式字段集合更新：字段在 fields 中即写入（None → 显式置 NULL），未出现的不动。
 
@@ -174,38 +221,16 @@ def append_follow_up(chat_id: str, turn: dict) -> Optional[dict]:
     - BEGIN IMMEDIATE 先取写锁再读改写，串行化并发追加，避免整体 JSON 覆盖丢数据。
     """
     turn_id = turn.get("turn_id")
-    conn = get_conn()
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        row = conn.execute(
-            "SELECT follow_ups FROM chat_history WHERE id=?", (chat_id,),
-        ).fetchone()
-        if row is None:
-            conn.rollback()
-            return None
-        try:
-            follow_ups = json.loads(row["follow_ups"] or "[]")
-        except (json.JSONDecodeError, TypeError):
-            follow_ups = []
-        if not isinstance(follow_ups, list):
-            follow_ups = []
+
+    def mutate(follow_ups: list[dict]):
         if turn_id:
             for existing in follow_ups:
                 if isinstance(existing, dict) and existing.get("turn_id") == turn_id:
-                    conn.rollback()
-                    return existing
+                    return existing, False
         follow_ups.append(turn)
-        conn.execute(
-            "UPDATE chat_history SET follow_ups=? WHERE id=?",
-            (json.dumps(follow_ups, ensure_ascii=False), chat_id),
-        )
-        conn.commit()
-        return turn
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+        return turn, True
+
+    return _mutate_follow_ups(chat_id, mutate)
 
 
 def update_follow_up(chat_id: str, turn_id: str, fields: dict) -> Optional[dict]:
@@ -213,51 +238,41 @@ def update_follow_up(chat_id: str, turn_id: str, fields: dict) -> Optional[dict]
 
     chat_id 或 turn_id 未命中返回 None（路由层转 404）。BEGIN IMMEDIATE 串行化并发写。
     """
-    conn = get_conn()
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        row = conn.execute(
-            "SELECT follow_ups FROM chat_history WHERE id=?", (chat_id,),
-        ).fetchone()
-        if row is None:
-            conn.rollback()
-            return None
-        try:
-            follow_ups = json.loads(row["follow_ups"] or "[]")
-        except (json.JSONDecodeError, TypeError):
-            follow_ups = []
-        if not isinstance(follow_ups, list):
-            follow_ups = []
-        target = None
-        for item in follow_ups:
-            if isinstance(item, dict) and item.get("turn_id") == turn_id:
-                target = item
-                break
+    def mutate(follow_ups: list[dict]):
+        target = next(
+            (item for item in follow_ups
+             if isinstance(item, dict) and item.get("turn_id") == turn_id),
+            None,
+        )
         if target is None:
-            conn.rollback()
             return None
         target.update(fields)
-        conn.execute(
-            "UPDATE chat_history SET follow_ups=? WHERE id=?",
-            (json.dumps(follow_ups, ensure_ascii=False), chat_id),
-        )
-        conn.commit()
-        return target
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+        return target, True
+
+    return _mutate_follow_ups(chat_id, mutate)
 
 
-def delete_chat_history(chat_id: str):
-    """删除单条记录；阶段 1 无可视化/工具痕迹联动，只删 chat_history 本身。"""
+def delete_chat_history(chat_id: str, user_id: str | None = None) -> bool:
+    """Delete a chat and its persisted animation artifacts."""
+    artifact_ids: list[str] = []
     conn = get_conn()
     try:
-        conn.execute("DELETE FROM chat_history WHERE id=?", (chat_id,))
+        where = "chat_id=?" + (" AND user_id=?" if user_id is not None else "")
+        params = (chat_id, user_id) if user_id is not None else (chat_id,)
+        artifact_ids = [str(row[0]) for row in conn.execute(
+            f"SELECT id FROM manim_artifacts WHERE {where}", params,
+        ).fetchall()]
+        conn.execute(f"DELETE FROM manim_artifacts WHERE {where}", params)
+        chat_where = "id=?" + (" AND user_id=?" if user_id is not None else "")
+        cursor = conn.execute(f"DELETE FROM chat_history WHERE {chat_where}", params)
         conn.commit()
     finally:
         conn.close()
+    if artifact_ids:
+        from app.services.manim_queue import clear_artifact_files
+        for artifact_id in artifact_ids:
+            clear_artifact_files(artifact_id, permanent=True)
+    return cursor.rowcount == 1
 
 
 def migrate_user_id(old_user_id: str, new_user_id: str) -> int:
@@ -280,6 +295,10 @@ def migrate_user_id(old_user_id: str, new_user_id: str) -> int:
             conn.execute(
                 "UPDATE evidence_turns SET user_id=? WHERE user_id=?",
                 (new_user_id, old_user_id)
+            )
+            conn.execute(
+                "UPDATE manim_artifacts SET user_id=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?",
+                (new_user_id, old_user_id),
             )
             for textbook_id in affected_textbooks:
                 revisions = [

@@ -34,6 +34,7 @@ class Config:
     def ensure_dirs(cls):
         # 数据库文件写入前必须保证父目录存在，否则 sqlite3.connect 直接报错
         cls.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        cls.MANIM_RENDER_DIR.mkdir(parents=True, exist_ok=True)
 
     # QA 文字回答用的 LLM（OpenAI 兼容协议）
     QA_LLM_API_KEY: str = os.getenv("QA_LLM_API_KEY", "")
@@ -86,6 +87,17 @@ class Config:
     NEO4J_URI: str = os.getenv("NEO4J_URI", "")
     NEO4J_USER: str = os.getenv("NEO4J_USER", "")
     NEO4J_PASSWORD: str = os.getenv("NEO4J_PASSWORD", "")
+
+    MANIM_REDIS_URL: str = os.getenv("MANIM_REDIS_URL", "redis://127.0.0.1:6379/0")
+    MANIM_QUEUE: str = os.getenv("MANIM_QUEUE", "learnmath-manim")
+    MANIM_RENDER_DIR: Path = Path(os.getenv("MANIM_RENDER_DIR", str(DATA_DIR / "manim")))
+    MANIM_SPOOL_DIR: Path = Path(os.getenv("MANIM_SPOOL_DIR", str(DATA_DIR / "manim-spool")))
+    MANIM_RENDER_POLL_SECONDS: float = float(os.getenv("MANIM_RENDER_POLL_SECONDS", "0.5"))
+    MANIM_MAX_QUEUE: int = int(os.getenv("MANIM_MAX_QUEUE", "2"))
+    MANIM_MAX_SOURCE_BYTES: int = int(os.getenv("MANIM_MAX_SOURCE_BYTES", "120000"))
+    MANIM_MAX_DURATION_SECONDS: float = float(os.getenv("MANIM_MAX_DURATION_SECONDS", "12"))
+    MANIM_RENDER_TIMEOUT_SECONDS: int = int(os.getenv("MANIM_RENDER_TIMEOUT_SECONDS", "90"))
+    MANIM_MAX_OUTPUT_BYTES: int = int(os.getenv("MANIM_MAX_OUTPUT_BYTES", "26214400"))
 
 
 config = Config()

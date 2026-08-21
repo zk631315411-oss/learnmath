@@ -8,6 +8,7 @@ import AgentActivity from './AgentActivity';
 import type { Message, PendingImage, RecognizedBlock } from '../types';
 import { MAX_PENDING_IMAGES } from '../hooks/useChat';
 import ChatPlusMenu from './ChatPlusMenu';
+import ManimArtifactCard from './ManimArtifactCard';
 
 interface Props {
   messages: Message[];
@@ -136,7 +137,7 @@ function ChatPanelInner({
   };
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden bg-white dark:bg-slate-800">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--lm-surface)]">
       {!compact && (
         <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-2">
@@ -195,6 +196,9 @@ function ChatPanelInner({
                     <LoadingStatus text={thinkingStage} />
                   </div>
                 )}
+                {msg.role === 'assistant' && msg.artifacts?.map(artifact => (
+                  <ManimArtifactCard key={artifact.id} artifact={artifact} token={token} />
+                ))}
               </div>
             </div>
           </div>
@@ -228,9 +232,9 @@ function ChatPanelInner({
               清空
             </button>
           </div>
-          {/* 后端未支持多图前，多余截图会留在列表等下一轮提问，提示用户避免误以为丢失 */}
+          {/* 每张图片是一轮独立问题，队列按顺序消费。 */}
           {pendingImages.length > 1 && (
-            <p className="text-xs text-amber-600 mb-2 dark:text-amber-400">当前版本一次发送 1 张，其余保留在待发列表</p>
+            <p className="mb-2 text-xs text-amber-600 dark:text-amber-400">每次发送 1 张，其余留给后续问题</p>
           )}
           <div className="flex gap-2 overflow-x-auto">
             {pendingImages.map((item) => (
@@ -250,7 +254,7 @@ function ChatPanelInner({
       )}
 
       {error && (
-        <div className="px-4 py-2 border-t border-red-200 bg-red-50 text-xs text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400" role="alert">
+        <div className="border-t border-rose-200 bg-rose-50 px-4 py-2 text-xs text-[var(--lm-danger)] dark:border-rose-900/60 dark:bg-rose-950/40" role="alert">
           {error}
         </div>
       )}

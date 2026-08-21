@@ -16,6 +16,7 @@ const chapter = {
 type MapFixture = {
   chapters: Record<string, unknown>[];
   nodesByChapter: Record<string, Record<string, unknown>>;
+  edges?: Array<{ source: string; target: string; type: string }>;
 };
 
 type MockOptions = {
@@ -26,6 +27,8 @@ type MockOptions = {
   progressFailureAttempts?: number;
   progressDelta?: Record<string, unknown>;
   staticPage?: number | null;
+  manimArtifacts?: Record<string, unknown>[];
+  streamArtifact?: Record<string, unknown>;
 };
 
 const R1: Record<string, unknown> = {
@@ -69,6 +72,7 @@ async function mockApp(page: Page, options: MockOptions = {}) {
   };
   const mapByTextbook = options.mapByTextbook || { gaodai_shang: defaultMap };
   let progressAttempts = 0;
+  let manimArtifacts = (options.manimArtifacts || []).map(item => ({ ...item }));
   const textbookNames: Record<string, string> = {
     gaodai_shang: '高等代数（上册）丘维声',
     gaodai_xia: '高等代数（下册）丘维声',
@@ -115,7 +119,7 @@ async function mockApp(page: Page, options: MockOptions = {}) {
         sections,
       };
     });
-    return { textbook_id: textbookId, display_name: textbookNames[textbookId] || textbookId, catalog_version: `${textbookId}-e2e`, chapters };
+    return { textbook_id: textbookId, display_name: textbookNames[textbookId] || textbookId, catalog_version: `${textbookId}-e2e`, chapters, edges: fixture.edges || [] };
   };
   const fixtureFor = (textbookId: string) => mapByTextbook[textbookId] || { chapters: [], nodesByChapter: {} };
   const manifestFor = () => {
@@ -178,6 +182,25 @@ async function mockApp(page: Page, options: MockOptions = {}) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ textbook_id: textbookId, catalog_version: `${textbookId}-e2e`, revision: 1, nodes }) });
   });
   await page.route('**/api/textbook/section-page?*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ page: 26, confidence: 1, matched_text: '1.1' }) }));
+  await page.route('**/api/manim/artifacts**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    const retry = pathname.match(/\/api\/manim\/artifacts\/([^/]+)\/retry$/);
+    const item = pathname.match(/\/api\/manim\/artifacts\/([^/]+)$/);
+    if (retry && route.request().method() === 'POST') {
+      const id = decodeURIComponent(retry[1]);
+      manimArtifacts = manimArtifacts.map(artifact => artifact.id === id
+        ? { ...artifact, status: 'queued', error_code: null, error_message: null }
+        : artifact);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manimArtifacts.find(artifact => artifact.id === id)) });
+    }
+    if (item) {
+      const id = decodeURIComponent(item[1]);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manimArtifacts.find(artifact => artifact.id === id)) });
+    }
+    const chatId = new URL(route.request().url()).searchParams.get('chat_id');
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manimArtifacts.filter(artifact => artifact.chat_id === chatId)) });
+  });
+  await page.route('**/mock-manim.mp4', route => route.fulfill({ status: 200, contentType: 'video/mp4', body: Buffer.from([]) }));
   await page.route('**/api/chat/history**', async route => {
     const method = route.request().method();
     // Batch 1：追问 turn 级端点 /api/chat/history/{id}/follow-ups[/{turnId}]
@@ -227,6 +250,11 @@ async function mockApp(page: Page, options: MockOptions = {}) {
   await page.route('**/api/qa/solve-stream', async route => {
     await new Promise(resolve => setTimeout(resolve, streamDelayMs));
     const body = [
+      ...(options.streamArtifact ? [
+        'event: artifact',
+        `data: ${JSON.stringify(options.streamArtifact)}`,
+        '',
+      ] : []),
       'event: content',
       `data: ${JSON.stringify({ text: '先观察系数矩阵的秩。' })}`,
       '',
@@ -234,7 +262,27 @@ async function mockApp(page: Page, options: MockOptions = {}) {
       `data: ${JSON.stringify({ stage: 'evidence_report', text: '正在记录学习进度…' })}`,
       '',
       'event: done',
-      `data: ${JSON.stringify({ full_text: '先观察系数矩阵的秩。', sources: [], tool_activities: [], qa_turn_id: 'mock-qa-turn-1', progress_delta: options.progressDelta || null })}`,
+      `data: ${JSON.stringify({ full_text: '先观察系数矩阵的秩。', sources: [], tool_activities: [], qa_turn_id: 'mock-qa-turn-1', progress_delta: options.progressDelta || null, artifacts: options.streamArtifact ? [options.streamArtifact] : [] })}`,
+      '',
+      '',
+    ].join('\n');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body });
+  });
+}
+
+async function installStreamSequence(page: Page, responses: Array<{ text: string; delayMs: number; progressDelta?: Record<string, unknown> | null }>) {
+  let index = 0;
+  await page.unroute('**/api/qa/solve-stream');
+  await page.route('**/api/qa/solve-stream', async route => {
+    const response = responses[Math.min(index, responses.length - 1)];
+    index += 1;
+    await new Promise(resolve => setTimeout(resolve, response.delayMs));
+    const body = [
+      'event: content',
+      `data: ${JSON.stringify({ text: response.text })}`,
+      '',
+      'event: done',
+      `data: ${JSON.stringify({ full_text: response.text, sources: [], tool_activities: [], qa_turn_id: `qa-${index}`, progress_delta: response.progressDelta || null })}`,
       '',
       '',
     ].join('\n');
@@ -245,7 +293,7 @@ async function mockApp(page: Page, options: MockOptions = {}) {
 async function enterReader(page: Page) {
   await page.goto('/');
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
-  await page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习)$/ }).first().click();
+  await page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习|复习这一节)$/ }).first().click();
   await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: '下一页' }).first()).toBeEnabled();
 }
@@ -274,6 +322,48 @@ test('first visit opens map and later restores the reader workspace', async ({ p
   await page.reload();
   await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
   await expect(page.getByText('学习地图', { exact: true }).first()).not.toBeVisible();
+});
+
+test('Manim artifact restores inside its assistant message and retry is contained', async ({ page }) => {
+  await mockApp(page, {
+    initialHistory: [{ ...R1, client_turn_id: 'root-turn' }],
+    manimArtifacts: [{
+      id: 'animation-1', chat_id: 't1', client_turn_id: 'root-turn', title: '线性变换示意',
+      rationale: '观察网格和向量如何同时变化。', status: 'completed', attempt: 1, repair_count: 0,
+      video_url: '/mock-manim.mp4', poster_url: null,
+    }, {
+      id: 'animation-2', chat_id: 't1', client_turn_id: 'root-turn', title: '失败示意',
+      rationale: '失败不会影响文字回答。', status: 'failed', attempt: 1, repair_count: 1,
+      error_code: 'render_failed', error_message: '动画场景执行失败，文字与公式回答仍可正常使用。',
+    }],
+  });
+  await enterReader(page);
+  await openQuestionFromHistory(page, '什么是秩？');
+  const card = page.getByTestId('manim-artifact-animation-1');
+  await expect(card).toBeVisible();
+  await expect(card.getByText('线性变换示意')).toBeVisible();
+  await expect(card.locator('video')).toBeVisible();
+  await expect(card).toHaveCSS('overflow', 'hidden');
+  const box = await card.boundingBox();
+  expect(box?.width || 0).toBeGreaterThan(240);
+  expect(box?.width || 0).toBeLessThanOrEqual(page.viewportSize()?.width || 1440);
+  await page.getByRole('button', { name: '重新生成动画' }).click();
+  await expect(page.getByTestId('manim-artifact-animation-2').getByText('等待渲染')).toBeVisible();
+});
+
+test('Manim artifact SSE event appears before the text answer finishes', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page, {
+    streamDelayMs: 50,
+    streamArtifact: {
+      id: 'animation-stream', chat_id: 'mock-thread-1', client_turn_id: 'stream-turn', title: '函数平移',
+      rationale: '观察图像位置变化。', status: 'queued', attempt: 0, repair_count: 0,
+    },
+  });
+  await enterReader(page);
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await expect(page.getByTestId('manim-artifact-animation-stream')).toBeVisible();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
 });
 
 test('utility drawer opens and closes without taking layout width', async ({ page }, testInfo) => {
@@ -385,9 +475,8 @@ test('visual regression archive covers the approved viewports and surfaces', asy
     await page.evaluate(value => document.documentElement.classList.toggle('dark', value), dark);
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await expect.poll(() => page.evaluate(expectedDark => {
-      const card = document.querySelector('main button.group');
       return document.documentElement.classList.contains('dark') === expectedDark
-        && (!card || getComputedStyle(card).backgroundColor === (expectedDark ? 'rgb(15, 23, 42)' : 'rgb(255, 255, 255)'));
+        && getComputedStyle(document.body).backgroundColor === (expectedDark ? 'rgb(15, 23, 42)' : 'rgb(246, 247, 251)');
     }, dark)).toBe(true);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await page.screenshot({ path: resolve(artifactDir, `${scene}-${width}-${dark ? 'dark' : 'light'}.png`), fullPage: true });
@@ -410,11 +499,21 @@ test('visual regression archive covers the approved viewports and surfaces', asy
     await expect(page.getByRole('listbox', { name: '教材列表' })).toBeVisible();
     await capture('map-textbook-menu', viewport.width, false);
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: /第 1 章.*查看地图/ }).click();
+    await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
     await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
-    await page.getByRole('button', { name: /1\.1/ }).click();
-    for (const dark of viewport.themes) await capture('chapter-detail', viewport.width, dark);
-    await page.getByRole('button', { name: '返回章节' }).click();
+    if (viewport.width < 640) {
+      await expect(page.getByTitle('列表视图')).toHaveAttribute('aria-pressed', 'true');
+      await page.getByRole('button', { name: /1\.1/ }).click();
+      await capture('chapter-list', viewport.width, false);
+      await page.getByTitle('地图视图').click();
+    }
+    await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
+    for (const dark of viewport.themes) await capture('chapter-overview', viewport.width, dark);
+    await page.evaluate(() => document.documentElement.classList.remove('dark'));
+    await page.getByTestId('overview-section-1.1').click();
+    await expect(page.getByTestId('ladder-section-1.1')).toBeVisible();
+    for (const dark of viewport.themes) await capture('chapter-ladder', viewport.width, dark);
+    await page.getByRole('button', { name: '返回章节总览' }).click();
   }
 
   const readerCases = [
@@ -612,8 +711,9 @@ test('E7 chapter card opens the chapter map and its primary action enters the re
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
   await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
-  await page.getByText('显示全部', { exact: true }).click();
-  await expect(page.getByText('1.1', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
+  await page.getByTestId('overview-section-1.1').click();
+  await expect(page.getByTestId('ladder-section-1.1')).toBeVisible();
   const sectionRequests: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/textbook/section-page')) sectionRequests.push(request.url()); });
   await page.getByRole('button', { name: '开始本章' }).click();
@@ -699,7 +799,7 @@ test('M2 map cache is isolated when the authenticated user changes', async ({ pa
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page, { mapByTextbook: { gaodai_shang: { chapters: [chapter], nodesByChapter: {} } } });
   await page.goto('/');
-  await expect(page.getByText('线性方程组', { exact: true })).toBeVisible();
+  await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
   const legacyRequests: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/learning-map/')) legacyRequests.push(request.url()); });
 
@@ -707,7 +807,7 @@ test('M2 map cache is isolated when the authenticated user changes', async ({ pa
   await page.route('**/api/auth/anonymous?*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: 'e2e-token-b', token_type: 'bearer', user_id: 'e2e-user-b', username: 'anonymous-b', is_anonymous: true }) }));
   await page.evaluate(() => localStorage.removeItem('auth_token'));
   await page.reload();
-  await expect(page.getByText('线性方程组', { exact: true })).toBeVisible();
+  await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
   expect(legacyRequests).toHaveLength(0);
 });
 
@@ -740,7 +840,7 @@ test('M3 static chapter index renders without legacy node requests', async ({ pa
   const legacyRequests: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/learning-map/')) legacyRequests.push(request.url()); });
   await page.goto('/');
-  await expect(page.getByText('线性方程组', { exact: true })).toBeVisible();
+  await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
   await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
   await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
   expect(legacyRequests).toHaveLength(0);
@@ -789,8 +889,9 @@ test('M6 knowledge section takes priority over an unrelated source question page
   });
   await page.goto('/');
   await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
-  await page.getByRole('button', { name: /1\.2/ }).click();
-  await page.getByRole('button', { name: '继续' }).click();
+  await page.getByTestId('overview-section-1.2').click();
+  await page.getByRole('button', { name: /线性方程组，学习中/ }).click();
+  await page.getByTestId('node-detail-card').getByRole('button', { name: '继续学习' }).click();
   await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('26');
 });
 
@@ -814,8 +915,9 @@ test('M6 falls back from node section to the chapter first section', async ({ pa
   page.on('request', request => { if (request.url().includes('/api/textbook/section-page')) sectionsRequested.push(request.url()); });
   await page.goto('/');
   await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
-  await page.getByRole('button', { name: /1\.2/ }).click();
-  await page.getByRole('button', { name: '继续' }).click();
+  await page.getByTestId('overview-section-1.2').click();
+  await page.getByRole('button', { name: /线性方程组，学习中/ }).click();
+  await page.getByTestId('node-detail-card').getByRole('button', { name: '继续学习' }).click();
   await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('26');
   expect(sectionsRequested).toHaveLength(0);
 });
@@ -824,10 +926,74 @@ test('M7 progress errors keep the static map and reading escape hatch', async ({
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page, { progressFailureAttempts: 1 });
   await page.goto('/');
-  await expect(page.getByText('线性方程组', { exact: true })).toBeVisible();
+  await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习)$/ })).toBeVisible();
   await page.getByRole('button', { name: '刷新学习地图' }).click();
-  await expect(page.getByText('线性方程组', { exact: true })).toBeVisible();
+  await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
+});
+
+test('B1 chapter map: overview → sine ladder → inline detail card → cross-chapter chip', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  const first = {
+    chapter: '第1章 线性方程组', node_count: 3,
+    status_counts: { unexplored: 1, learning: 1, basically_mastered: 0, mastered: 1, needs_review: 0 },
+    exploration_progress: { explored: 2, total: 3 },
+  };
+  const second = {
+    chapter: '第2章 矩阵', node_count: 1,
+    status_counts: { unexplored: 1, learning: 0, basically_mastered: 0, mastered: 0, needs_review: 0 },
+    exploration_progress: { explored: 0, total: 1 },
+  };
+  await mockApp(page, { mapByTextbook: { gaodai_shang: {
+    chapters: [first, second],
+    nodesByChapter: {
+      [first.chapter]: { textbook_id: 'gaodai_shang', chapter: first.chapter, sections: [{ section: '1.1 消元法', nodes: [
+        { node_id: 'n1', name: '线性方程组', type: 'Concept', order: 0, section: '1.1 消元法', status: 'learning', closed_evidence_count: 1, blocked: false, chat: { id: 't1', available: true } },
+        { node_id: 'n2', name: '矩阵消元法', type: 'Method', order: 1, section: '1.1 消元法', status: 'mastered', closed_evidence_count: 2, blocked: false, chat: { id: null, available: false } },
+        { node_id: 'p1', name: '参数方程组题型', type: 'ProblemClass', order: 2, section: '1.1 消元法', status: 'unexplored', closed_evidence_count: 0, blocked: false, chat: { id: null, available: false } },
+      ] }] },
+      [second.chapter]: { textbook_id: 'gaodai_shang', chapter: second.chapter, sections: [{ section: '2.1 矩阵', nodes: [
+        { node_id: 'n3', name: '矩阵', type: 'Concept', order: 3, section: '2.1 矩阵', status: 'unexplored', closed_evidence_count: 0, blocked: false, chat: { id: null, available: false } },
+      ] }] },
+    },
+    edges: [
+      { source: 'n1', target: 'n2', type: 'SUPERIOR' },
+      { source: 'p1', target: 'n2', type: 'USES' },
+      { source: 'n2', target: 'n3', type: 'DERIVES' },
+    ],
+  } } });
+  await page.goto('/');
+  await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
+  await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
+  // 首屏是章总览（不画图），点节行进入梯子
+  await expect(page.getByTestId('overview-section-1.1 消元法')).toBeVisible();
+  await page.getByTestId('overview-section-1.1 消元法').click();
+  await expect(page.getByTestId('ladder-section-1.1 消元法')).toBeVisible();
+  // 题型默认收起，梯子上只有核心节点
+  await expect(page.getByLabel(/参数方程组题型，未探索/)).toBeHidden();
+  // 点击图形 → 内联详情卡（聚焦子图 + 关系 chips）
+  await page.getByLabel(/线性方程组，学习中/).click();
+  const card = page.getByTestId('node-detail-card');
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId('focus-subgraph')).toBeVisible();
+  // 出边 chip 钻取到邻居；n2 有一条通往第2章的跨章边
+  await card.getByRole('button', { name: /上位于 → 矩阵消元法/ }).click();
+  await expect(card.getByText(/通往 第2章 矩阵/)).toBeVisible();
+  await card.getByRole('button', { name: '关闭详情' }).click();
+  await expect(page.getByTestId('node-detail-card')).toBeHidden();
+  // 显示题型开关：题型侧枝出现
+  await page.getByText('显示题型', { exact: true }).click();
+  await expect(page.getByLabel(/参数方程组题型，未探索/)).toBeVisible();
+});
+
+test('B2 mobile chapter view defaults to list and can switch to the ladder', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.goto('/');
+  await page.locator('main button').filter({ hasText: '线性方程组' }).last().click();
+  await expect(page.getByTitle('列表视图')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTitle('地图视图').click();
+  await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
 });
 
 test('D1 SSE progress delta updates the map without a full progress refetch', async ({ page }, testInfo) => {
@@ -931,4 +1097,303 @@ test('E10 streaming allows navigation while preserving the background task conte
   // 导航回来应直接停在对话视图，流式答案完整保留
   await expect(page.getByText('对话视图', { exact: true })).toBeVisible();
   await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+});
+
+test('E11 two textbooks can answer concurrently without crossing messages', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page, { mapByTextbook: {
+    gaodai_shang: { chapters: [chapter], nodesByChapter: {} },
+    gaodai_xia: { chapters: [{ ...chapter, chapter: '第1章 多项式' }], nodesByChapter: {} },
+  } });
+  await installStreamSequence(page, [
+    { text: '上册后台回答。', delayMs: 1200 },
+    { text: '下册快速回答。', delayMs: 120 },
+  ]);
+  await enterReader(page);
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await expect(page.getByRole('button', { name: '停止生成' })).toBeVisible();
+  await page.locator('header select').selectOption('gaodai_xia');
+  await page.getByRole('button', { name: '打开教材' }).click();
+  await page.getByRole('textbox', { name: '输入问题…' }).fill('下册问题');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByText('下册快速回答。')).toBeVisible();
+  await expect(page.getByText('上册后台回答。')).toHaveCount(0);
+  await page.locator('header select').selectOption('gaodai_shang');
+  await expect(page.getByText('上册后台回答。')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText('下册快速回答。')).toHaveCount(0);
+});
+
+test('E12 a running thread is serialized while another thread remains sendable', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page, { initialHistory: [R1, R2] });
+  await installStreamSequence(page, [
+    { text: '线程一回答。', delayMs: 1100 },
+    { text: '线程二回答。', delayMs: 120 },
+  ]);
+  await enterReader(page);
+  await openQuestionFromHistory(page, '什么是秩？');
+  const input = page.getByRole('textbox', { name: '输入问题…' });
+  await input.click();
+  await input.pressSequentially('线程一追问');
+  await expect(page.getByRole('button', { name: '发送' })).toBeEnabled();
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByRole('button', { name: '停止生成' })).toBeVisible();
+  await openQuestionFromHistory(page, '线性无关怎么判？');
+  await expect(page.getByRole('button', { name: '发送' })).toBeVisible();
+  await input.click();
+  await input.pressSequentially('线程二追问');
+  await expect(page.getByRole('button', { name: '发送' })).toBeEnabled();
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByText('线程二回答。')).toBeVisible();
+});
+
+test('E13 changing display surfaces never duplicates the active request', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  await installStreamSequence(page, [{ text: '唯一请求完成。', delayMs: 700 }]);
+  let requests = 0;
+  page.on('request', request => { if (request.url().includes('/api/qa/solve-stream')) requests += 1; });
+  await enterReader(page);
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await page.locator('header').getByRole('button', { name: '地图' }).click();
+  await page.getByTitle('开始阅读').click();
+  await expect(page.getByText('唯一请求完成。')).toBeVisible();
+  expect(requests).toBe(1);
+});
+
+test('E14 an interrupted stream preserves partial text and persists interrupted state', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  const patches: Record<string, unknown>[] = [];
+  page.on('request', request => {
+    if (request.method() === 'PATCH' && /\/api\/chat\/history\/[^/]+$/.test(new URL(request.url()).pathname)) {
+      try { patches.push(request.postDataJSON()); } catch { /* ignore */ }
+    }
+  });
+  await enterReader(page);
+  await page.evaluate(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/api/qa/solve-stream')) return nativeFetch(input, init);
+      const encoder = new TextEncoder();
+      const body = new ReadableStream<Uint8Array>({ start(controller) {
+        controller.enqueue(encoder.encode(`event: content\ndata: ${JSON.stringify({ text: '保留下来的部分回答。' })}\n\n`));
+        setTimeout(() => controller.error(new Error('mock disconnect')), 80);
+      } });
+      return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    };
+  });
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await expect(page.getByText('保留下来的部分回答。')).toBeVisible();
+  await expect(page.getByText(/回答中断，以上为已生成的部分回答/)).toBeVisible();
+  await expect.poll(() => patches.some(item => item.generation_status === 'interrupted' && item.answer === '保留下来的部分回答。')).toBe(true);
+});
+
+test('E15 stopping generation preserves partial text and persists cancelled state', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  const patches: Record<string, unknown>[] = [];
+  page.on('request', request => {
+    if (request.method() === 'PATCH' && /\/api\/chat\/history\/[^/]+$/.test(new URL(request.url()).pathname)) {
+      try { patches.push(request.postDataJSON()); } catch { /* ignore */ }
+    }
+  });
+  await enterReader(page);
+  await page.evaluate(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/api/qa/solve-stream')) return nativeFetch(input, init);
+      const encoder = new TextEncoder();
+      const body = new ReadableStream<Uint8Array>({ start(controller) {
+        controller.enqueue(encoder.encode(`event: content\ndata: ${JSON.stringify({ text: '停止前的回答。' })}\n\n`));
+        init?.signal?.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
+      } });
+      return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    };
+  });
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await expect(page.getByText('停止前的回答。')).toBeVisible();
+  await page.getByRole('button', { name: '停止生成' }).click();
+  await expect(page.getByText(/回答中断，以上为已生成的部分回答/)).toBeVisible();
+  await expect.poll(() => patches.some(item => item.generation_status === 'cancelled' && item.answer === '停止前的回答。')).toBe(true);
+});
+
+test('E16 logging in cancels the previous identity task and hides its late output', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  await page.unroute('**/api/auth/me');
+  await page.route('**/api/auth/me', route => {
+    const token = route.request().headers().authorization || '';
+    const signedIn = token.includes('signed-token');
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: signedIn ? 'signed-user' : 'e2e-user', username: signedIn ? 'student' : 'anonymous', is_anonymous: !signedIn }) });
+  });
+  await page.route('**/api/auth/login', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: 'signed-token', token_type: 'bearer', user_id: 'signed-user', username: 'student', is_anonymous: false }) }));
+  await page.route('**/api/chat/migrate', route => route.fulfill({ status: 204 }));
+  const patches: Record<string, unknown>[] = [];
+  page.on('request', request => {
+    if (request.method() === 'PATCH' && /\/api\/chat\/history\/[^/]+$/.test(new URL(request.url()).pathname)) {
+      try { patches.push(request.postDataJSON()); } catch { /* ignore */ }
+    }
+  });
+  await enterReader(page);
+  await page.evaluate(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/api/qa/solve-stream')) return nativeFetch(input, init);
+      const body = new ReadableStream<Uint8Array>({ start(controller) {
+        init?.signal?.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
+      } });
+      return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    };
+  });
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await page.locator('header').getByRole('button', { name: '登录' }).click();
+  const modal = page.locator('.fixed').filter({ hasText: '还没有账号？' });
+  await modal.locator('input[type="text"]').fill('student');
+  await modal.locator('input[type="password"]').fill('password');
+  await modal.getByRole('button', { name: '登录', exact: true }).click();
+  await expect(page.locator('header').getByText('student', { exact: true })).toBeVisible();
+  await expect.poll(() => patches.some(item => item.generation_status === 'cancelled')).toBe(true);
+  await expect(page.getByText('这页哪里没看懂？')).toHaveCount(0);
+});
+
+test('E17 duplicate done events apply one progress revision', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  const learningChapter = { ...chapter, status_counts: { unexplored: 0, learning: 1, basically_mastered: 0, mastered: 0, needs_review: 0 } };
+  await mockApp(page, { mapByTextbook: { gaodai_shang: { chapters: [learningChapter], nodesByChapter: { [learningChapter.chapter]: { textbook_id: 'gaodai_shang', chapter: learningChapter.chapter, sections: [{ section: '1.1', nodes: [{ node_id: 'n1', name: '线性方程组', section: '1.1', status: 'learning', closed_evidence_count: 1, blocked: false, chat: { id: null, available: false } }] }] } } } } });
+  const delta = { textbook_id: 'gaodai_shang', catalog_version: 'gaodai_shang-e2e', revision: 2, nodes: { n1: { status: 'mastered', closed_evidence_count: 2, source_chat_id: null } } };
+  await enterReader(page);
+  await page.evaluate((progress) => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/api/qa/solve-stream')) return nativeFetch(input, init);
+      const done = `event: content\ndata: ${JSON.stringify({ text: '幂等回答。' })}\n\nevent: done\ndata: ${JSON.stringify({ full_text: '幂等回答。', progress_delta: progress })}\n\nevent: done\ndata: ${JSON.stringify({ full_text: '幂等回答。', progress_delta: progress })}\n\n`;
+      return new Response(done, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    };
+  }, delta);
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await page.locator('header').getByRole('button', { name: '地图' }).click();
+  await expect(page.getByText('全部掌握', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 / 1 已探索', { exact: true })).toBeVisible();
+});
+
+test('E18 reader page restores and remains isolated when textbooks change', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await page.addInitScript(() => localStorage.setItem('learnmath.workspace.gaodai_shang', JSON.stringify({ view: 'reader', page: 7 })));
+  await mockApp(page, { mapByTextbook: {
+    gaodai_shang: { chapters: [chapter], nodesByChapter: {} },
+    gaodai_xia: { chapters: [{ ...chapter, chapter: '第1章 多项式' }], nodesByChapter: {} },
+  } });
+  await page.goto('/');
+  await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('7');
+  await page.locator('header select').selectOption('gaodai_xia');
+  await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: '选择教材' }).click();
+  await page.getByRole('option', { name: '高等代数（上册）丘维声' }).click();
+  await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('7');
+});
+
+test('E19 URL deep links and browser history restore the reader thread', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page, { initialHistory: [R1, R2] });
+  await page.goto('/?view=reader&textbook=gaodai_shang&page=2&thread=t2');
+  await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('2');
+  await expect(page.getByText('看齐次线性组合是否只有零解。')).toBeVisible();
+  await page.locator('header').getByRole('button', { name: '地图' }).click();
+  await expect(page).toHaveURL(/view=map/);
+  await expect(page).not.toHaveURL(/thread=/);
+  await page.goBack();
+  await expect(page).toHaveURL(/view=reader.*textbook=gaodai_shang.*page=2.*thread=t2/);
+  await expect(page.getByText('看齐次线性组合是否只有零解。')).toBeVisible();
+
+  await page.goto('/?view=reader&textbook=gaodai_shang&page=2&thread=missing');
+  await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('2');
+  await expect(page).not.toHaveURL(/thread=missing/);
+});
+
+test('E20 keyboard paging updates the URL and ignores focused editors', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  await enterReader(page);
+  const pageInput = page.getByRole('textbox', { name: '当前页码' });
+  await expect(pageInput).toHaveValue('1');
+  await page.keyboard.press('ArrowRight');
+  await expect(pageInput).toHaveValue('2');
+  await expect(page).toHaveURL(/page=2/);
+  const composer = page.getByRole('textbox', { name: '输入问题…' });
+  await composer.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(pageInput).toHaveValue('2');
+  await page.keyboard.press('PageDown');
+  await expect(pageInput).toHaveValue('2');
+});
+
+test('P1 long formula thread remains responsive while streaming', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  const followUps = Array.from({ length: 24 }, (_, index) => ({
+    turn_id: `long-${index}`,
+    question: `第 ${index + 1} 个追问：为什么这个变换成立？`,
+    answer: `由 $A_${index}x=b_${index}$ 可得第 ${index + 1} 步结论。`,
+    thinking: null,
+    tool_activities: [],
+    status: 'completed',
+  }));
+  await mockApp(page, { initialHistory: [{ ...R1, follow_ups: followUps }] });
+  await enterReader(page);
+  await openQuestionFromHistory(page, '什么是秩？');
+  await expect(page.locator('.chat-message')).toHaveCount(50);
+  await page.evaluate(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const gaps: number[] = [];
+    let previous = performance.now();
+    let profiling = true;
+    const sample = (now: number) => {
+      gaps.push(now - previous);
+      previous = now;
+      if (profiling) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+    (window as any).__lmFinishProfile = () => {
+      profiling = false;
+      return gaps;
+    };
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.includes('/api/qa/solve-stream')) return nativeFetch(input, init);
+      const encoder = new TextEncoder();
+      let index = 0;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const timer = window.setInterval(() => {
+            if (index < 60) {
+              controller.enqueue(encoder.encode(`event: content\ndata: ${JSON.stringify({ text: `第${index + 1}步，$x_${index + 1}$。` })}\n\n`));
+              index += 1;
+              return;
+            }
+            window.clearInterval(timer);
+            controller.enqueue(encoder.encode(`event: done\ndata: ${JSON.stringify({ sources: [] })}\n\n`));
+            controller.close();
+          }, 8);
+        },
+      });
+      return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    };
+  });
+  const composer = page.getByRole('textbox', { name: '输入问题…' });
+  await composer.fill('继续推导');
+  await page.getByRole('button', { name: '发送' }).click();
+  await expect(page.getByRole('button', { name: '停止生成' })).toBeHidden({ timeout: 15_000 });
+  const gaps = await page.evaluate(() => (window as any).__lmFinishProfile() as number[]);
+  const sorted = [...gaps].sort((left, right) => left - right);
+  const p95 = sorted[Math.floor(sorted.length * 0.95)] || 0;
+  await testInfo.attach('stream-performance.json', {
+    body: JSON.stringify({ samples: gaps.length, maxFrameGapMs: Math.max(...gaps), p95FrameGapMs: p95 }, null, 2),
+    contentType: 'application/json',
+  });
+  expect(Math.max(...gaps)).toBeLessThan(350);
+  expect(p95).toBeLessThan(100);
 });

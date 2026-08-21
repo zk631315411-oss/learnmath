@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) { throw "Docker Desktop is not running." }
 $env:LEARNMATH_VERSION = $Version
 
 Write-Host "[LearnMath] Building application images..." -ForegroundColor Cyan
-& docker compose -f (Join-Path $DeployDir "compose.yml") -f (Join-Path $DeployDir "compose.build.yml") build api web
+& docker compose -f (Join-Path $DeployDir "compose.yml") -f (Join-Path $DeployDir "compose.build.yml") build api web manim-renderer
 if ($LASTEXITCODE -ne 0) { throw "Container image build failed." }
 
 if (Test-Path -LiteralPath $OutputDirectory) {
@@ -49,7 +49,14 @@ Get-ChildItem -LiteralPath (Join-Path $RootDir "data\textbooks") -Filter *.pdf |
 
 $imagesArchive = Join-Path $assetImages "learnmath-images.tar"
 Write-Host "[LearnMath] Saving container images. This can take several minutes..." -ForegroundColor Cyan
-& docker save --output $imagesArchive "learnmath-api:$Version" "learnmath-web:$Version"
+$redisImage = "redis:7.4.5-alpine"
+& docker image inspect $redisImage *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[LearnMath] Redis image is not cached; pulling $redisImage..." -ForegroundColor DarkYellow
+    & docker pull $redisImage
+    if ($LASTEXITCODE -ne 0) { throw "Unable to pull the pinned Redis image." }
+}
+& docker save --output $imagesArchive "learnmath-api:$Version" "learnmath-web:$Version" "learnmath-manim:$Version" "redis:7.4.5-alpine"
 if ($LASTEXITCODE -ne 0) { throw "Unable to create the offline image archive." }
 
 Write-Host "[LearnMath] Offline package ready: $OutputDirectory" -ForegroundColor Green

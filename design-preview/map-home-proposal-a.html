@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>学习地图 · 纸面目录（方案 A 小样）</title>
+<style>
+  :root {
+    --paper: #fafafa;
+    --ink: #0a0a0a;
+    --ink-2: #3d3d3d;
+    --ink-3: #6b6b6b;
+    --ink-4: #a3a3a3;
+    --line: #e5e5e5;
+    --dot-mastered: #059669;
+    --dot-learning: #d97706;
+    --dot-review: #e11d48;
+    --ease: cubic-bezier(.77, 0, .175, 1);
+  }
+  [data-theme="dark"] {
+    --paper: #0a0a0a;
+    --ink: #fafafa;
+    --ink-2: #c9c9c9;
+    --ink-3: #8f8f8f;
+    --ink-4: #5c5c5c;
+    --line: #262626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    transition: background .5s var(--ease), color .5s var(--ease);
+  }
+  .serif { font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif; }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .page { max-width: 880px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  /* ---------- 刊头 ---------- */
+  .masthead {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    padding-bottom: 20px; border-bottom: 1px solid var(--ink);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand-mark { font-weight: 700; font-size: 15px; letter-spacing: .02em; }
+  .brand-sub { font-size: 11px; letter-spacing: .22em; color: var(--ink-3); text-transform: uppercase; }
+  .masthead-right { display: flex; align-items: center; gap: 14px; }
+  .textbook-switch {
+    font: inherit; background: none; border: none; cursor: pointer;
+    font-size: 13px; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 2px 0;
+  }
+  .theme-toggle {
+    font: inherit; background: none; border: 1px solid var(--line); border-radius: 999px;
+    width: 30px; height: 30px; cursor: pointer; color: var(--ink-2); font-size: 13px; line-height: 1;
+  }
+  .theme-toggle:hover { border-color: var(--ink-4); }
+
+  /* ---------- 正在读 ---------- */
+  .now { padding: 44px 0 40px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .label { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: baseline; gap: 8px; }
+  .label .zh { letter-spacing: .34em; }
+  .now h1 { font-size: 34px; font-weight: 600; letter-spacing: .01em; margin-top: 14px; }
+  .now .meta { margin-top: 12px; font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+  .now .meta .mono { font-size: 12px; }
+  .now-actions { display: flex; align-items: center; gap: 18px; shrink: 0; }
+  .play {
+    width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--ink); background: none;
+    cursor: pointer; display: grid; place-items: center; color: var(--ink);
+    transition: background .25s var(--ease), color .25s var(--ease);
+  }
+  .play:hover { background: var(--ink); color: var(--paper); }
+  .play svg { margin-left: 3px; }
+  .source-link { font-size: 13px; color: var(--ink-3); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
+  .source-link:hover { color: var(--ink); }
+
+  /* ---------- 目录统计 ---------- */
+  .catalog-stats { display: flex; justify-content: space-between; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .catalog-stats .mono { font-size: 12px; color: var(--ink-3); letter-spacing: .04em; }
+
+  /* ---------- 目录行 ---------- */
+  .toc { list-style: none; }
+  .toc-row { border-bottom: 1px solid var(--line); }
+  .toc-row-main {
+    width: 100%; display: grid; grid-template-columns: 56px 1fr auto; gap: 18px; align-items: baseline;
+    padding: 22px 8px; background: none; border: none; font: inherit; color: inherit;
+    cursor: pointer; text-align: left; transition: background .25s var(--ease), padding-left .35s var(--ease);
+  }
+  .toc-row-main:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); padding-left: 14px; }
+  .toc-num { font-size: 13px; color: var(--ink-4); letter-spacing: .08em; }
+  .toc-row-main:hover .toc-num { color: var(--ink); }
+  .toc-title { font-size: 19px; font-weight: 600; letter-spacing: .01em; }
+  .toc-title .sub { display: block; margin-top: 4px; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12px; font-weight: 400; color: var(--ink-3); }
+  .toc-right { display: flex; align-items: baseline; gap: 18px; }
+  .toc-count { font-size: 12px; color: var(--ink-3); }
+  .toc-status { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-3); min-width: 76px; justify-content: flex-end; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .dot.learning { background: var(--dot-learning); animation: blink 3s linear infinite; }
+  .dot.mastered { background: var(--dot-mastered); }
+  .dot.review { background: var(--dot-review); }
+  .dot.idle { background: var(--line); }
+  [data-theme="dark"] .dot.idle { background: #333; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+  .toc-caret { font-size: 12px; color: var(--ink-4); transition: transform .4s var(--ease); }
+  .toc-row.open .toc-caret { transform: rotate(90deg); color: var(--ink); }
+
+  /* ---------- 展开的小节 ---------- */
+  .toc-detail { max-height: 0; overflow: hidden; transition: max-height .5s ease-in-out; }
+  .toc-row.open .toc-detail { max-height: 320px; }
+  .toc-detail-inner { padding: 2px 8px 24px 82px; }
+  .sec-row { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: baseline; padding: 9px 0; border-top: 1px dashed var(--line); font-size: 13px; }
+  .sec-num { font-size: 11.5px; color: var(--ink-4); }
+  .sec-name { color: var(--ink-2); }
+  .sec-state { font-size: 11.5px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; }
+  .sec-row .bar { grid-column: 1 / -1; height: 2px; background: var(--line); position: relative; margin-top: 2px; }
+  .sec-row .bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); display: block; }
+
+  /* ---------- 入场 ---------- */
+  .rise { opacity: 0; animation: rise .7s var(--ease) forwards; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; } .dot.learning { animation: none; } }
+
+  @media (max-width: 640px) {
+    .page { padding: 32px 18px 72px; }
+    .now { flex-direction: column; align-items: flex-start; }
+    .now h1 { font-size: 26px; }
+    .toc-row-main { grid-template-columns: 40px 1fr; }
+    .toc-right { grid-column: 2; justify-content: flex-start; }
+    .toc-detail-inner { padding-left: 58px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 刊头 -->
+  <header class="masthead rise" style="animation-delay:.05s">
+    <div class="brand">
+      <span class="brand-mark">学数有道</span>
+      <span class="brand-sub">LearnMath</span>
+    </div>
+    <div class="masthead-right">
+      <button class="textbook-switch">高等代数（上册）丘维声 ▾</button>
+      <button class="theme-toggle" id="themeToggle" title="切换墨/纸">◐</button>
+    </div>
+  </header>
+
+  <!-- 正在读 -->
+  <section class="now rise" style="animation-delay:.15s">
+    <div>
+      <p class="label"><span>Now reading</span><span class="zh">正在读</span></p>
+      <h1 class="serif">线性方程组的解法 · 初等行变换</h1>
+      <div class="meta">
+        <span class="mono">CH.01</span>
+        <span>·</span><span>§1.2 线性方程组的解的情况及其判别准则</span>
+        <span>·</span><span class="toc-status" style="min-width:0"><i class="dot learning"></i>学习中</span>
+      </div>
+    </div>
+    <div class="now-actions">
+      <button class="source-link">来源提问</button>
+      <button class="play" title="继续学习" aria-label="继续学习">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- 目录 -->
+  <div class="catalog-stats rise" style="animation-delay:.25s">
+    <p class="label"><span>Contents</span><span class="zh">目录</span></p>
+    <p class="mono">6 章 · 1514 个知识点 · 1 个已探索</p>
+  </div>
+
+  <ol class="toc" id="toc">
+    <li class="toc-row open rise" style="animation-delay:.32s">
+      <button class="toc-row-main">
+        <span class="toc-num mono">01</span>
+        <span class="toc-title serif">线性方程组的解法<span class="sub">消元法 · 初等行变换 · 阶梯形</span></span>
+        <span class="toc-right">
+          <span class="toc-count mono">112 个知识点 · 1 已探索</span>
+          <span class="toc-status"><i class="dot learning"></i>学习中</span>
+          <span class="toc-caret">→</span>
+        </span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner">
+        <div class="sec-row"><span class="sec-num mono">§1.1</span><span class="sec-name">线性方程组的解法（消元法）</span><span class="sec-state"><i class="dot learning"></i>学习中</span><span class="bar"><i style="width:12%"></i></span></div>
+        <div class="sec-row"><span class="sec-num mono">§1.2</span><span class="sec-name">线性方程组的解的情况及其判别准则</span><span class="sec-state"><i class="dot idle"></i>未探索</span><span class="bar"><i style="width:0%"></i></span></div>
+        <div class="sec-row"><span class="sec-num mono">§1.3</span><span class="sec-name">数域</span><span class="sec-state"><i class="dot idle"></i>未探索</span><span class="bar"><i style="width:0%"></i></span></div>
+      </div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.39s">
+      <button class="toc-row-main">
+        <span class="toc-num mono">02</span>
+        <span class="toc-title serif">行列式<span class="sub">n 阶行列式的定义 · 性质 · 展开</span></span>
+        <span class="toc-right">
+          <span class="toc-count mono">273 个知识点</span>
+          <span class="toc-status"><i class="dot idle"></i>尚未开始</span>
+          <span class="toc-caret">→</span>
+        </span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner">
+        <div class="sec-row"><span class="sec-num mono">§2.1</span><span class="sec-name">n 阶行列式的定义</span><span class="sec-state"><i class="dot idle"></i>未探索</span><span class="bar"><i style="width:0%"></i></span></div>
+      </div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.46s">
+      <button class="toc-row-main">
+        <span class="toc-num mono">03</span>
+        <span class="toc-title serif">线性方程组的解集的结构<span class="sub">解空间 · 基础解系</span></span>
+        <span class="toc-right">
+          <span class="toc-count mono">443 个知识点</span>
+          <span class="toc-status"><i class="dot idle"></i>尚未开始</span>
+          <span class="toc-caret">→</span>
+        </span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.53s">
+      <button class="toc-row-main">
+        <span class="toc-num mono">04</span>
+        <span class="toc-title serif">矩阵的运算<span class="sub">加法 · 乘法 · 逆矩阵</span></span>
+        <span class="toc-right">
+          <span class="toc-count mono">283 个知识点</span>
+          <span class="toc-status"><i class="dot idle"></i>尚未开始</span>
+          <span class="toc-caret">→</span>
+        </span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.60s">
+      <button class="toc-row-main">
+        <span class="toc-num mono">05</span>
+        <span class="toc-title serif">矩阵的相抵与相似<span class="sub">相抵标准形 · 特征值</span></span>
+        <span class="toc-right">
+          <span class="toc-count mono">193 个知识点</span>
+          <span class="toc-status"><i class="dot idle"></i>尚未开始</span>
+          <span class="toc-caret">→</span>
+        </span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.67s">
+      <button class="toc-row-main">
+        <span class="toc-num mono">06</span>
+        <span class="toc-title serif">二次型 · 矩阵的合同<span class="sub">标准形 · 正定性</span></span>
+        <span class="toc-right">
+          <span class="toc-count mono">210 个知识点</span>
+          <span class="toc-status"><i class="dot idle"></i>尚未开始</span>
+          <span class="toc-caret">→</span>
+        </span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+  </ol>
+
+  <p class="mono rise" style="animation-delay:.8s; margin-top:36px; font-size:11px; color:var(--ink-4); letter-spacing:.06em;">
+    方案 A · 纸面目录 — 墨纸单色 / 宋体章节题 / 等宽数字 / 行展开小节预览
+  </p>
+</div>
+
+<script>
+  // 行展开（高度动画）
+  document.querySelectorAll('.toc-row-main').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.toc-row').classList.toggle('open'));
+  });
+  // 墨/纸反转
+  const toggle = document.getElementById('themeToggle');
+  const apply = mode => document.documentElement.dataset.theme = mode;
+  apply(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  toggle.addEventListener('click', () => {
+    apply(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>

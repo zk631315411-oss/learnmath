@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 D2 · 纵向路径 — 学数有道</title>
+<style>
+  :root {
+    --ink: #0a0a0a; --ink-2: #3d3d3c; --ink-3: #8b8b88;
+    --paper: #fafafa; --line: #e0e0de; --card: #ffffff;
+    /* 五态色：与章内梯子视图同一语义 */
+    --st-un: #cbd5e1; --st-ing: #fbbf24; --st-base: #6ee7b7; --st-done: #059669; --st-review: #fb7185;
+  }
+  [data-theme="dark"] {
+    --ink: #f5f5f4; --ink-2: #c9c9c6; --ink-3: #757572;
+    --paper: #0e0e0d; --line: #2c2c2a; --card: #161614;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; transition: background .2s, color .2s; }
+  .serif { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .brand .mark { width: 26px; height: 26px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 13px; border-radius: 6px; }
+  .top-actions { display: flex; gap: 16px; font-size: 13px; color: var(--ink-3); align-items: center; }
+  .theme-btn { background: none; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  .ledger { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--ink-3); margin-bottom: 20px; }
+  .ledger .book { color: var(--ink); font-weight: 600; font-size: 15px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin-bottom: 30px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* ── 纵向路径：章 = 站，站间距 = 本章体量（柔化），方向与章内梯子一致 ── */
+  .route { display: flex; flex-direction: column; }
+  .stop { position: relative; padding-left: 34px; }
+  /* 轨道竖线 */
+  .stop::before { content: ""; position: absolute; top: 0; bottom: 0; left: 7px; width: 2px; background: var(--line); }
+  .stop:first-child::before { top: 8px; }
+  .stop:last-child::before { bottom: calc(100% - 8px); }
+  /* 站点圆 */
+  .stop .dot { position: absolute; top: 2px; left: 0; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--st-un); background: var(--paper); }
+  .stop.now .dot { background: var(--st-ing); border-color: var(--st-ing); box-shadow: 0 0 0 5px color-mix(in srgb, var(--st-ing) 22%, transparent); }
+
+  .stop a { display: block; text-decoration: none; color: inherit; padding: 0 0 10px; }
+  .stop .no { display: block; font-size: 11px; letter-spacing: .12em; color: var(--ink-3); margin-bottom: 3px; }
+  .stop .name { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; font-size: 18px; font-weight: 700; color: var(--ink-3); transition: color .2s; }
+  .stop.now .name, .stop a:hover .name { color: var(--ink); }
+  .stop .cnt { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; margin-left: 10px; }
+
+  /* 站间距 = 本章知识点体量（柔化：基础 26px + 每 14 个知识点加 1px，封顶 56px） */
+  .stop .gap { display: block; }
+
+  /* 当前站：位置卡内联展开，不做浮层 */
+  .here {
+    margin: 2px 0 6px; background: var(--card); border: 1px solid var(--ink); border-radius: 10px;
+    padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,.07);
+    max-width: 420px;
+  }
+  [data-theme="dark"] .here { box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .here .kicker { font-size: 11px; letter-spacing: .16em; color: var(--ink-3); margin-bottom: 7px; }
+  .here .meta { font-size: 12.5px; color: var(--ink-2); }
+  .here .row2 { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .here .frac { font-size: 13px; color: var(--ink-2); }
+  .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 600; border-radius: 7px; white-space: nowrap; }
+  .btn-primary:hover { opacity: .82; }
+
+  .spec { margin-top: 68px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .spec h2 { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); margin-bottom: 12px; }
+  .spec li { font-size: 13px; color: var(--ink-2); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .spec li::before { content: ""; position: absolute; left: 0; top: .78em; width: 6px; height: 1px; background: var(--ink-3); }
+
+  nav.demos { position: fixed; right: 20px; bottom: 20px; display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  nav.demos a { padding: 5px 12px; border-radius: 999px; text-decoration: none; color: var(--ink-3); }
+  nav.demos a.here2 { background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">学</span>学数有道</div>
+  <div class="top-actions"><span>阅读</span><button class="theme-btn" onclick="toggleTheme()">暗色</button><span>kz · 退出</span></div>
+</header>
+
+<main>
+  <div class="ledger tnum">
+    <span class="book">高等代数（上册）丘维声 ⌄</span>
+    <span>6 章 · 1514 个知识点 · 1 个已探索</span>
+  </div>
+  <div class="legend tnum">
+    <span><i style="background:var(--st-un)"></i>未探索</span>
+    <span><i style="background:var(--st-ing)"></i>学习中</span>
+    <span><i style="background:var(--st-base)"></i>基本掌握</span>
+    <span><i style="background:var(--st-done)"></i>已掌握</span>
+    <span><i style="background:var(--st-review)"></i>需巩固</span>
+  </div>
+
+  <div class="route">
+    <div class="stop now">
+      <span class="dot"></span>
+      <a href="#" class="tnum"><span class="no">第 1 章 · 学习中</span><span class="name">线性方程组的解法</span><span class="cnt">112 个知识点</span></a>
+      <div class="here">
+        <p class="kicker">你在这里</p>
+        <p class="meta">1.2 解的情况及其判别准则 · 初等行变换</p>
+        <div class="row2 tnum"><span class="frac">1 / 112 已探索</span><button class="btn-primary">▶ 继续学习</button></div>
+      </div>
+      <span class="gap" style="height:34px"></span>
+    </div>
+    <div class="stop">
+      <span class="dot"></span>
+      <a href="#" class="tnum"><span class="no">第 2 章</span><span class="name">行列式</span><span class="cnt">273 个知识点</span></a>
+      <span class="gap" style="height:45px"></span>
+    </div>
+    <div class="stop">
+      <span class="dot"></span>
+      <a href="#" class="tnum"><span class="no">第 3 章</span><span class="name">线性方程组的解集的结构</span><span class="cnt">443 个知识点</span></a>
+      <span class="gap" style="height:56px"></span>
+    </div>
+    <div class="stop">
+      <span class="dot"></span>
+      <a href="#" class="tnum"><span class="no">第 4 章</span><span class="name">矩阵的运算</span><span class="cnt">283 个知识点</span></a>
+      <span class="gap" style="height:46px"></span>
+    </div>
+    <div class="stop">
+      <span class="dot"></span>
+      <a href="#" class="tnum"><span class="no">第 5 章</span><span class="name">矩阵的相抵与相似</span><span class="cnt">193 个知识点</span></a>
+      <span class="gap" style="height:40px"></span>
+    </div>
+    <div class="stop">
+      <span class="dot"></span>
+      <a href="#" class="tnum"><span class="no">第 6 章</span><span class="name">二次型 · 矩阵的合同</span><span class="cnt">210 个知识点</span></a>
+    </div>
+  </div>
+
+  <section class="spec">
+    <h2>方案 D2 · 纵向路径 — 与横向 D 的差异</h2>
+    <ul>
+      <li>方向与章内梯子一致：总览纵向选章，点进去纵向爬节——两层导航同向，不用在大脑里拐 90°</li>
+      <li>章名解放：整行横排，宋体 18px 一行放下，横向版的窄列断行问题整个消失</li>
+      <li>位置卡不再做浮层：当前站下方内联展开，无遮挡、无净空预留、无定位计算，工程量明显下降</li>
+      <li>站间距保留体量语义但柔化（基础 + 体量加成封顶），纵向空间比横向便宜，滚动方向与页面一致</li>
+      <li>桌面 / 移动同一形态，不再维护两套方向</li>
+    </ul>
+  </section>
+</main>
+
+<nav class="demos"><a href="a-ink-ledger.html">A</a><a href="d-route-map.html">D 横向</a><a class="here2" href="d2-route-vertical.html">D2 纵向</a><a href="e-page-ruler.html">E</a><a href="f-card-drawer.html">F</a></nav>
+
+<script>
+  const saved = localStorage.getItem('lm-demo-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('lm-demo-theme', next);
+  }
+</script>
+</body>
+</html>

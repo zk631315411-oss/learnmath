@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCatalogEntry, loadCatalogIndex, loadTextbookCatalog } from '../catalog/loadCatalog';
 import { chapterMapFromCatalog, chapterMapFromIndex, chapterSummary } from '../catalog/catalogData';
-import type { CatalogEntry, CatalogIndex, TextbookCatalog } from '../catalog/types';
+import type { CatalogEntry, CatalogIndex, TextbookCatalog, ChapterCatalogEdge } from '../catalog/types';
 import type { ChapterMapItem, NodeMapResponse } from '../services/api';
 import { useLearningProgress } from './useLearningProgress';
 import { normalizeSectionKey } from '../utils/sectionKey';
@@ -10,7 +10,12 @@ export function clearMapHomeCache(): void {
   // Static assets are browser-cached. Progress is owned by useLearningProgress.
 }
 
-export function useMapHomeData(token: string | undefined, textbookId: string, cacheScope = 'anonymous') {
+export function useMapHomeData(
+  token: string | undefined,
+  textbookId: string,
+  cacheScope = 'anonymous',
+  authReady = true,
+) {
   const [entry, setEntry] = useState<CatalogEntry | null>(null);
   const [index, setIndex] = useState<CatalogIndex | null>(null);
   const [catalog, setCatalog] = useState<TextbookCatalog | null>(null);
@@ -18,7 +23,7 @@ export function useMapHomeData(token: string | undefined, textbookId: string, ca
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [catalogRetry, setCatalogRetry] = useState(0);
-  const progress = useLearningProgress(token, textbookId, entry?.catalog_version || '', cacheScope);
+  const progress = useLearningProgress(token, textbookId, entry?.catalog_version || '', cacheScope, authReady);
 
   useEffect(() => {
     let active = true;
@@ -61,6 +66,22 @@ export function useMapHomeData(token: string | undefined, textbookId: string, ca
     return result;
   }, [catalog, entry, index, progress.nodes]);
 
+  const edgesByChapter = useMemo<Record<string, ChapterCatalogEdge[]>>(() => {
+    if (!catalog?.edges) return {};
+    const nodeChapter = new Map<string, string>();
+    catalog.chapters.forEach(chapter => chapter.sections.forEach(section => section.nodes.forEach(node => nodeChapter.set(node.node_id, chapter.name))));
+    const result: Record<string, ChapterCatalogEdge[]> = {};
+    catalog.chapters.forEach(chapter => { result[chapter.name] = []; });
+    catalog.edges.forEach(edge => {
+      const sourceChapter = nodeChapter.get(edge.source);
+      const targetChapter = nodeChapter.get(edge.target);
+      const enriched = { ...edge, sourceChapter, targetChapter };
+      if (sourceChapter && result[sourceChapter]) result[sourceChapter].push(enriched);
+      if (targetChapter && targetChapter !== sourceChapter && result[targetChapter]) result[targetChapter].push(enriched);
+    });
+    return result;
+  }, [catalog]);
+
   const openChapter = useCallback(async (chapter: string): Promise<TextbookCatalog | null> => {
     if (catalog?.chapters.some(item => item.name === chapter)) return catalog;
     setSelectedErrors(previous => { const next = { ...previous }; delete next[chapter]; return next; });
@@ -91,6 +112,7 @@ export function useMapHomeData(token: string | undefined, textbookId: string, ca
   return {
     chapters,
     nodesByChapter,
+    edgesByChapter,
     errors,
     loading: loading || progress.loading,
     ready,

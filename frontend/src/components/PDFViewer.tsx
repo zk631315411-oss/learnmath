@@ -3,6 +3,7 @@ import { Document, Page, pdfjs, type DocumentProps } from 'react-pdf';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-react';
 
 import { loadJSON, saveJSON } from '../utils/storage';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 import PageMarker, { type Marker } from './PageMarker';
 import type { TextbookId } from '../textbooks';
 
@@ -12,18 +13,17 @@ pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 interface Props {
   pdfUrl: string;
   textbookId: TextbookId;
-  onPageChange?: (page: number) => void;
+  page: number;
+  onPageRequest: (page: number) => void;
   mobile?: boolean;
   markers?: Marker[];
-  pdfContainerRef?: React.RefObject<HTMLDivElement | null>;
+  pdfContainerRef?: React.RefCallback<HTMLDivElement>;
   onMarkerClick?: (marker: Marker) => void;
-  viewerPage: number;
   hideToolbar?: boolean;
   onControlsChange?: (controls: PDFViewerControls | null) => void;
   pageOverlay?: React.ReactNode;
 }
 
-const ZOOM_PREFS_KEY = 'pdf_view_preferences_v1';
 const VIEWER_HORIZONTAL_PADDING = 32;
 const VIEWER_VERTICAL_PADDING = 32;
 const MOBILE_TOOLBAR_HEIGHT = 48;
@@ -54,16 +54,9 @@ export type PDFViewerControls = {
   setZoomMode: (mode: ZoomMode | number) => void;
 };
 
-type PageImageConfig = { basePath: string; pageCount: number; width: number; height: number; };
-const PAGE_IMAGE_CONFIGS: Record<string, PageImageConfig> = {};
-
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function getPageImageUrl(config: PageImageConfig, page: number): string {
-  return `${config.basePath}/page-${String(page).padStart(3, '0')}.webp`;
 }
 
 function getLayoutClass(mobile: boolean): LayoutClass {
@@ -76,7 +69,7 @@ function getDefaultZoomMode(layout: LayoutClass): ZoomMode {
 }
 
 function getSavedZoomPreference(textbookId: string, layout: LayoutClass, fallback: ZoomMode): ZoomPreference {
-  const data = loadJSON<Record<string, ZoomPreference>>(ZOOM_PREFS_KEY, {});
+  const data = loadJSON<Record<string, ZoomPreference>>(STORAGE_KEYS.pdfZoom, {});
   const saved = data[`${textbookId}:${layout}`];
   if (saved?.mode === 'fit-page' || saved?.mode === 'fit-width') return saved;
   if (saved?.mode === 'manual' && Number.isFinite(saved.scale)) return saved;
@@ -85,16 +78,15 @@ function getSavedZoomPreference(textbookId: string, layout: LayoutClass, fallbac
 
 function saveZoomPreference(textbookId: string, layout: LayoutClass, preference: ZoomPreference) {
   if (!textbookId) return;
-  const data = loadJSON<Record<string, ZoomPreference>>(ZOOM_PREFS_KEY, {});
+  const data = loadJSON<Record<string, ZoomPreference>>(STORAGE_KEYS.pdfZoom, {});
   data[`${textbookId}:${layout}`] = preference;
-  saveJSON(ZOOM_PREFS_KEY, data);
+  saveJSON(STORAGE_KEYS.pdfZoom, data);
 }
 
-function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdfContainerRef, onMarkerClick, viewerPage, hideToolbar = false, onControlsChange, pageOverlay }: Props) {
+function PDFViewerInner({ pdfUrl, textbookId, page, onPageRequest, mobile, markers, pdfContainerRef, onMarkerClick, hideToolbar = false, onControlsChange, pageOverlay }: Props) {
   const [numPages, setNumPages] = useState<number>(0);
-  const currentPage = viewerPage;
+  const currentPage = page;
   const [pdfError, setPdfError] = useState<string>('');
-  const [pageImageError, setPageImageError] = useState<string>('');
   const [loadProgress, setLoadProgress] = useState<PdfLoadProgress | null>(null);
   const [layoutClass, setLayoutClass] = useState<LayoutClass>(() => getLayoutClass(Boolean(mobile)));
   const [zoomMode, setZoomMode] = useState<ZoomMode>(() => getDefaultZoomMode(getLayoutClass(Boolean(mobile))));
@@ -127,15 +119,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
   const [viewerContentHeight, setViewerContentHeight] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const localContainerRef = useRef<HTMLDivElement | null>(null);
-  const pageImageConfig = PAGE_IMAGE_CONFIGS[textbookId];
-  const pageImageUrl = pageImageConfig ? getPageImageUrl(pageImageConfig, currentPage) : '';
-  const pageImageWidth = pageImageConfig
-    ? Math.max(1, Math.round(pageImageConfig.width * scale))
-    : 0;
-  const pageImageHeight = pageImageConfig
-    ? pageImageWidth * (pageImageConfig.height / pageImageConfig.width)
-    : 0;
-  const pageWidthForAlignment = pageImageConfig ? pageImageWidth : pageDimensions ? pageDimensions.width * scale : 0;
+  const pageWidthForAlignment = pageDimensions ? pageDimensions.width * scale : 0;
   const alignPageToStart = Boolean(
     viewerContentWidth && pageWidthForAlignment > viewerContentWidth + 1
   );
@@ -194,10 +178,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
   // Merge incoming ref with local ref for container height tracking
   const setContainerRef = useCallback((node: HTMLDivElement | null) => {
     localContainerRef.current = node;
-    if (pdfContainerRef) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (pdfContainerRef as any).current = node;
-    }
+    pdfContainerRef?.(node);
   }, [pdfContainerRef]);
 
   const resetToolbarTimer = useCallback(() => {
@@ -216,7 +197,6 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
 
   useEffect(() => {
     setPdfError('');
-    setPageImageError('');
     setLoadProgress(null);
     setNumPages(0);
     setPageDimensions(null);
@@ -233,8 +213,8 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
 
   // Page changes are requested from App/usePdfPosition.
   const handlePageChange = useCallback((page: number) => {
-    onPageChange?.(page);
-  }, [onPageChange]);
+    onPageRequest(page);
+  }, [onPageRequest]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -278,7 +258,7 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     setNumPages(numPages);
     setLoadProgress(null);
     // 如果 saved page > 总页数， clamp 一下
-    if (currentPage > numPages) onPageChange?.(numPages);
+    if (currentPage > numPages) onPageRequest(numPages);
   };
 
   const loadingMessage = loadProgress?.total
@@ -286,19 +266,6 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
     : loadProgress?.loaded
       ? `加载PDF中... 已读取 ${formatBytes(loadProgress.loaded)}`
       : '加载PDF中...';
-
-  useEffect(() => {
-    setPageImageError('');
-  }, [pageImageUrl]);
-
-  useEffect(() => {
-    if (!pageImageConfig) return;
-    setNumPages(pageImageConfig.pageCount);
-    setLoadProgress(null);
-    setPageImageError('');
-    setPageDimensions({ width: pageImageConfig.width, height: pageImageConfig.height });
-    if (currentPage > pageImageConfig.pageCount) onPageChange?.(pageImageConfig.pageCount);
-  }, [currentPage, onPageChange, pageImageConfig]);
 
   const handlePageInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -382,25 +349,24 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
       <div className="relative min-w-0 flex-1 overflow-hidden">
         <div ref={scrollContainerRef} data-testid="pdf-scroll-container"
           data-zoom-mode={zoomMode}
-          className={`h-full overflow-auto bg-slate-200 p-4 ${mobile && !hideToolbar ? 'pb-16' : ''}`}
+          className={`h-full overflow-auto bg-[var(--lm-canvas)] p-4 ${mobile && !hideToolbar ? 'pb-16' : ''}`}
           onClick={mobile ? resetToolbarTimer : undefined}>
           <div className={`flex ${alignPageToStart ? 'justify-start' : 'justify-center'}`}>
             <div className="relative inline-block" ref={setContainerRef}>
-            {!pageImageConfig && (
               <Document
                 file={pdfUrl}
                 options={PDF_LOADING_OPTIONS}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadProgress={({ loaded, total }) => setLoadProgress({ loaded, total })}
-                loading={<div className="text-gray-500 p-8 text-sm">{loadingMessage}</div>}
-                onLoadError={(e: Error) => setPdfError(e.message)}
-                error={<div className="text-red-500 p-8 text-sm"><p className="font-bold mb-1">PDF加载失败</p><p className="text-xs opacity-70">{pdfError || '未知错误'}</p></div>}
+                loading={<div className="p-8 text-sm text-slate-500">{loadingMessage}</div>}
+                onLoadError={(error: Error) => setPdfError(error.message)}
+                error={<div className="p-8 text-sm text-[var(--lm-danger)]"><p className="mb-1 font-bold">PDF加载失败</p><p className="text-xs opacity-70">{pdfError || '未知错误'}</p></div>}
               >
                 <Page
                   pageNumber={currentPage}
                   scale={scale}
-                  onLoadSuccess={(page) => {
-                    const viewport = page.getViewport({ scale: 1 });
+                  onLoadSuccess={loadedPage => {
+                    const viewport = loadedPage.getViewport({ scale: 1 });
                     setPageDimensions({ width: viewport.width, height: viewport.height });
                   }}
                   renderTextLayer={false}
@@ -408,44 +374,10 @@ function PDFViewerInner({ pdfUrl, textbookId, onPageChange, mobile, markers, pdf
                   className="shadow-lg"
                 />
               </Document>
-            )}
-            {pageImageConfig && (
-              <div
-                className="react-pdf__Document"
-                style={{ width: pageImageWidth || undefined }}
-              >
-                <div
-                  className="react-pdf__Page shadow-lg bg-white"
-                  data-page-number={currentPage}
-                  style={{
-                    width: pageImageWidth,
-                    height: pageImageHeight,
-                    position: 'relative',
-                  }}
-                >
-                  {pageImageError ? (
-                    <div className="flex h-full items-center justify-center p-8 text-sm text-red-500">
-                      {pageImageError}
-                    </div>
-                  ) : (
-                    <img
-                      src={pageImageUrl}
-                      width={pageImageConfig.width}
-                      height={pageImageConfig.height}
-                      alt={`第 ${currentPage} 页`}
-                      className="block h-full w-full select-none"
-                      draggable={false}
-                      onError={() => setPageImageError('页面图片加载失败，请重试')}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-              {markers && onMarkerClick && viewerPage && pdfContainerRef && (
+              {markers && onMarkerClick && currentPage && pdfContainerRef && (
                 <PageMarker
                   markers={markers}
-                  currentPage={viewerPage}
-                  containerRef={pdfContainerRef}
+                  currentPage={currentPage}
                   containerHeight={pageContainerHeight}
                   onMarkerClick={onMarkerClick}
                 />

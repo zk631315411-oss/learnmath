@@ -4,6 +4,7 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from app.auth.dependencies import require_user_id
 from app.auth.jwt_handler import decode_token
 
 from app.db.chat_history_db import (
@@ -150,8 +151,10 @@ def update_follow_up_turn(chat_id: str, turn_id: str, req: FollowUpUpdateIn):
 
 
 @router.delete("/history/{chat_id}")
-def delete_history(chat_id: str):
-    delete_chat_history(chat_id)
+def delete_history(chat_id: str, authorization: Optional[str] = Header(None)):
+    user_id = require_user_id(authorization, decoder=decode_token)
+    if not delete_chat_history(chat_id, user_id):
+        raise HTTPException(status_code=404, detail="提问记录不存在")
     return {"status": "deleted"}
 
 

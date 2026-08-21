@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import { X } from 'lucide-react';
+import { loadJSON, saveJSON } from '../../utils/storage';
+import { STORAGE_KEYS } from '../../utils/storageKeys';
 
 // P1：最近公式——自动记录每次成功插入的公式，跨会话可一键回填。
 // 与收藏不同：收藏要用户显式点按钮保存，最近公式是系统悄悄记下"插过什么"。
 // 数据损坏/存储不可用时静默回退，不能影响公式编辑主流程。
-const STORAGE_KEY = 'formula_history';
 const HISTORY_EVENT = 'formula-history-updated';
 const MAX_ITEMS = 20;
 
@@ -19,19 +20,12 @@ function toItem(latex: string): HistoryFormula {
 }
 
 function loadHistory(): HistoryFormula[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? // latex 与 label 都必须非空：latex 空串会渲染出点击无效的空内容按钮，label 空串会渲染出空标签按钮，直接过滤
-        parsed.filter((item) =>
-          typeof item?.latex === 'string' && item.latex.trim().length > 0 &&
-          typeof item?.label === 'string' && item.label.trim().length > 0)
-      : [];
-  } catch {
-    return [];
-  }
+  const parsed = loadJSON<unknown>(STORAGE_KEYS.formulaHistory, []);
+  return Array.isArray(parsed)
+    ? parsed.filter((item): item is HistoryFormula => Boolean(item) &&
+      typeof item.latex === 'string' && item.latex.trim().length > 0 &&
+      typeof item.label === 'string' && item.label.trim().length > 0)
+    : [];
 }
 
 // 记录公式使用：去重（相同 latex 移最前）+ 上限 20 条 + 新记录在最前。
@@ -41,11 +35,7 @@ export function recordFormulaUsage(latex: string): void {
   const clean = latex.trim();
   if (!clean) return;
   const next = [toItem(clean), ...loadHistory().filter((item) => item.latex !== clean)].slice(0, MAX_ITEMS);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // 隐私模式或存储已满时静默失败，最近记录只是增强功能
-  }
+  saveJSON(STORAGE_KEYS.formulaHistory, next);
   window.dispatchEvent(new Event(HISTORY_EVENT));
 }
 
@@ -66,11 +56,7 @@ export default function FormulaHistory({ onInsert }: Props) {
 
   const removeHistory = (index: number) => {
     const next = history.filter((_, i) => i !== index);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // 静默失败，与收藏删除行为保持一致
-    }
+    saveJSON(STORAGE_KEYS.formulaHistory, next);
     setHistory(next);
   };
 

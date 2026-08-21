@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.db.connection import init_db
-from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook
+from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook, manim
 
 # 确保数据目录存在并初始化数据库（幂等，重复启动无副作用）
 config.ensure_dirs()
@@ -46,6 +46,7 @@ app.include_router(qa.router)
 app.include_router(learning_map.router)
 app.include_router(learning_progress.router)
 app.include_router(textbook.router)
+app.include_router(manim.router)
 
 
 @app.get("/")

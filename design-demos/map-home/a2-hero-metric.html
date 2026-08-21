@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 A2 · 数字锚点 — 学数有道</title>
+<style>
+  :root {
+    --ink: #0a0a0a; --ink-2: #3d3d3c; --ink-3: #8b8b88;
+    --paper: #fafafa; --line: #e5e5e4; --row-hover: #f0f0ee;
+  }
+  [data-theme="dark"] {
+    --ink: #f5f5f4; --ink-2: #c9c9c6; --ink-3: #757572;
+    --paper: #0e0e0d; --line: #2a2a28; --row-hover: #1a1a18;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; transition: background .2s, color .2s; }
+  .serif { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .brand .mark { width: 26px; height: 26px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 13px; border-radius: 6px; }
+  .top-actions { display: flex; gap: 16px; font-size: 13px; color: var(--ink-3); align-items: center; }
+  .theme-btn { background: none; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+
+  main { max-width: 880px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  /* ── hero A2：右侧大数字账本做锚点 ── */
+  .hero { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 32px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 28px; }
+  .hero .kicker { font-size: 11px; letter-spacing: .18em; color: var(--ink-3); margin-bottom: 12px; }
+  .hero h1 { font-size: 28px; font-weight: 700; line-height: 1.3; }
+  .hero .meta { margin-top: 8px; font-size: 13px; color: var(--ink-3); }
+  .hero .metric { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .hero .metric .num { font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -.01em; }
+  .hero .metric .num small { font-size: 14px; font-weight: 400; color: var(--ink-3); margin-left: 4px; }
+  .hero .metric .lbl { font-size: 11px; letter-spacing: .14em; color: var(--ink-3); }
+  .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; height: 42px; padding: 0 20px; font-size: 14px; font-weight: 600; border-radius: 8px; white-space: nowrap; }
+  .btn-primary:hover { opacity: .82; }
+
+  .map-head { display: flex; align-items: baseline; justify-content: space-between; margin: 44px 0 4px; flex-wrap: wrap; gap: 8px; }
+  .map-head .book { font-size: 17px; font-weight: 700; }
+  .map-head .stats { font-size: 12px; color: var(--ink-3); }
+
+  .cols, .row { display: grid; align-items: center; grid-template-columns: 4.5rem minmax(0,1fr) 9rem 5rem 1.5rem; column-gap: 16px; }
+  .cols { padding: 10px 12px; font-size: 11px; letter-spacing: .14em; color: var(--ink-3); border-bottom: 1px solid var(--line); }
+  .row { padding: 18px 12px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background-color .3s ease-out; text-decoration: none; color: inherit; display: grid; }
+  .row:hover { background: var(--row-hover); }
+  .row .no { font-size: 12px; color: var(--ink-3); }
+  .row .name { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row.active .name { font-weight: 700; }
+  .row .prog { display: flex; flex-direction: column; gap: 6px; }
+  .row .prog .frac { font-size: 12px; color: var(--ink-2); }
+  .row .prog .bar { height: 2px; background: var(--line); }
+  .row .prog .bar i { display: block; height: 100%; background: var(--ink); }
+  .row .status { font-size: 12px; color: var(--ink-3); }
+  .row .status.on { color: var(--ink); font-weight: 600; }
+  .row .go { font-size: 14px; color: var(--ink-3); opacity: 0; transform: translateX(-4px); transition: opacity .3s, transform .3s; }
+  .row:hover .go { opacity: 1; transform: translateX(0); }
+
+  .spec { margin-top: 72px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .spec h2 { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); margin-bottom: 12px; }
+  .spec li { font-size: 13px; color: var(--ink-2); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .spec li::before { content: ""; position: absolute; left: 0; top: .78em; width: 6px; height: 1px; background: var(--ink-3); }
+
+  nav.demos { position: fixed; right: 20px; bottom: 20px; display: flex; gap: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 4px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  nav.demos a { padding: 5px 12px; border-radius: 999px; text-decoration: none; color: var(--ink-3); }
+  nav.demos a.here { background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">学</span>学数有道</div>
+  <div class="top-actions"><span>阅读</span><button class="theme-btn" onclick="toggleTheme()">暗色</button><span>kz · 退出</span></div>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <p class="kicker">正在学习 · 第 1 章</p>
+      <h1 class="serif">线性方程组的解法</h1>
+      <p class="meta">1.2 解的情况及其判别准则 · 初等行变换</p>
+    </div>
+    <div class="metric tnum">
+      <p class="num">1<small>/ 112</small></p>
+      <p class="lbl">本章已探索</p>
+      <button class="btn-primary">▶ 继续学习</button>
+    </div>
+  </section>
+
+  <div class="map-head">
+    <p class="book">高等代数（上册）丘维声 <span style="color:var(--ink-3); font-weight:400;">⌄</span></p>
+    <p class="stats tnum">6 章 · 1514 个知识点 · 1 个已探索</p>
+  </div>
+
+  <div class="cols tnum"><span>章节</span><span>名称</span><span>已探索</span><span>状态</span><span></span></div>
+  <a class="row active tnum" href="#"><span class="no">第 1 章</span><span class="name">线性方程组的解法</span><span class="prog"><span class="frac">1 / 112</span><span class="bar"><i style="width:1%"></i></span></span><span class="status on">学习中</span><span class="go">→</span></a>
+  <a class="row tnum" href="#"><span class="no">第 2 章</span><span class="name">行列式</span><span class="prog"><span class="frac">273 个知识点</span><span class="bar"><i style="width:0"></i></span></span><span class="status">尚未开始</span><span class="go">→</span></a>
+  <a class="row tnum" href="#"><span class="no">第 3 章</span><span class="name">线性方程组的解集的结构</span><span class="prog"><span class="frac">443 个知识点</span><span class="bar"><i style="width:0"></i></span></span><span class="status">尚未开始</span><span class="go">→</span></a>
+  <a class="row tnum" href="#"><span class="no">第 4 章</span><span class="name">矩阵的运算</span><span class="prog"><span class="frac">283 个知识点</span><span class="bar"><i style="width:0"></i></span></span><span class="status">尚未开始</span><span class="go">→</span></a>
+  <a class="row tnum" href="#"><span class="no">第 5 章</span><span class="name">矩阵的相抵与相似</span><span class="prog"><span class="frac">193 个知识点</span><span class="bar"><i style="width:0"></i></span></span><span class="status">尚未开始</span><span class="go">→</span></a>
+  <a class="row tnum" href="#"><span class="no">第 6 章</span><span class="name">二次型 · 矩阵的合同</span><span class="prog"><span class="frac">210 个知识点</span><span class="bar"><i style="width:0"></i></span></span><span class="status">尚未开始</span><span class="go">→</span></a>
+
+  <section class="spec">
+    <h2>A2 · 相对 A 的改动</h2>
+    <ul>
+      <li>视觉锚点 = 右侧大数字「1 / 112 本章已探索」，和清单里的进度列同构，一眼读出"我学到哪了"</li>
+      <li>meta 从四段砍到一段：教材名删除（下方教材选择器已有）、「学习中」并入 kicker「正在学习 · 第 1 章」</li>
+      <li>「继续学习」按钮收进数字列下方，右侧形成完整的"状态 → 行动"区</li>
+      <li>网格清单不变</li>
+    </ul>
+  </section>
+</main>
+
+<nav class="demos"><a href="a-ink-ledger.html">A</a><a href="a1-hero-anchor.html">A1 章数</a><a class="here" href="a2-hero-metric.html">A2 数字</a><a href="b-toc-page.html">B</a><a href="c-marginalia.html">C</a></nav>
+
+<script>
+  const saved = localStorage.getItem('lm-demo-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('lm-demo-theme', next);
+  }
+</script>
+</body>
+</html>

@@ -199,7 +199,7 @@ class UnifiedQARoutingTests(unittest.IsolatedAsyncioTestCase):
             ))]
 
         self.assertEqual(captured["scope"], ("gaodai_shang", 88))
-        self.assertEqual((captured["rounds"], captured["calls"]), (7, 3))
+        self.assertEqual((captured["rounds"], captured["calls"]), (7, 4))
         self.assertEqual(events[-1]["event"], "done")
 
     async def test_multimodal_tool_call_failure_is_an_explicit_error(self):

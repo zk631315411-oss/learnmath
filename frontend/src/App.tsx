@@ -13,7 +13,6 @@ import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
 import BottomSheet, { type SheetStage } from './components/BottomSheet';
 import PageNotesPanel from './components/PageNotesPanel';
-import type { CaptureDraft } from './components/CapturePreviewSheet';
 import type { PDFViewerControls } from './components/PDFViewer';
 import ThemeToggle from './components/ThemeToggle';
 import type { Marker } from './components/PageMarker';
@@ -24,18 +23,18 @@ import { useQuestionList } from './hooks/useQuestionList';
 import { useMapHomeData } from './hooks/useMapHomeData';
 import { useChat } from './hooks/useChat';
 import { usePdfPosition } from './hooks/usePdfPosition';
+import { useCaptureFlow, type OverlaySurface } from './hooks/useCaptureFlow';
+import { useWorkspaceNav } from './hooks/useWorkspaceNav';
 import { useDarkMode } from './hooks/useDarkMode';
-import { loadJSON, saveJSON } from './utils/storage';
-import { loadWorkspace, saveWorkspace, type WorkspaceView } from './utils/workspace';
+import { ensureStorageSchema, loadJSON, saveJSON } from './utils/storage';
+import { STORAGE_KEYS } from './utils/storageKeys';
+import { saveWorkspace } from './utils/workspace';
 import { normalizeSectionKey } from './utils/sectionKey';
 import { getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
-import type { CropBBox } from './types';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
 import CapturePreviewSheet from './components/CapturePreviewSheet';
-import type { RecognizedBlock } from './types';
 import { applyProgressDelta } from './hooks/useLearningProgress';
-import type { ExternalFormulaDraft } from './components/formula/FormulaComposer';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
 const ScreenCapture = lazy(() => import('./components/ScreenCapture'));
@@ -61,54 +60,18 @@ export default function App() {
 
   const { selectedPdf, textbookId, setTextbookId } = useTextbookPreference();
 
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [captureDraft, setCaptureDraft] = useState<CaptureDraft | null>(null);
-  const [captureBusy, setCaptureBusy] = useState(false);
-  const [externalFormula, setExternalFormula] = useState<ExternalFormulaDraft | null>(null);
-  const [externalContent, setExternalContent] = useState<{ blocks: RecognizedBlock[]; nonce: string } | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const { currentPage, setCurrentPage, saveTextbookPage } = usePdfPosition(textbookId);
+  const { currentPage, setCurrentPage, setTextbookPage } = usePdfPosition(textbookId);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
-  const [overlaySurface, setOverlaySurface] = useState<'none' | 'drawer' | 'capture-preview' | 'sheet-half' | 'sheet-full' | 'photo'>('none');
+  const [overlaySurface, setOverlaySurface] = useState<OverlaySurface>('none');
   const sheetStage: SheetStage = overlaySurface === 'sheet-half' ? 'half' : overlaySurface === 'sheet-full' ? 'full' : 'collapsed';
   const drawerOpen = overlaySurface === 'drawer';
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('questions');
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
-  const [desktopChatCollapsed, setDesktopChatCollapsed] = useState(() => loadJSON('learnmath.ui.desktopChatCollapsed', false));
-  const [view, setView] = useState<WorkspaceView>('map');
-  const [startupReady, setStartupReady] = useState(false);
-  const [panelMode, setPanelMode] = useState<'page' | 'thread'>('page');
-  const [selectedMapChapter, setSelectedMapChapter] = useState<string | null>(null);
+  const [desktopChatCollapsed, setDesktopChatCollapsed] = useState(() => loadJSON(STORAGE_KEYS.desktopChatCollapsed, false));
   const [threadRequestKey, setThreadRequestKey] = useState(0);
-  const pdfContainerRef = useRef<HTMLDivElement>(null);
-  const startupKeyRef = useRef('');
-  // SSE 问答属于独立后台任务，流式期间允许阅读导航；选区内容提取期间锁定局部导航。
-  const interactionLocked = captureBusy;
-
-  // Keep the browser's back/forward buttons meaningful for the main SPA views.
-  const navigatePage = (nextView: WorkspaceView, chapter: string | null = null) => {
-    const params = new URLSearchParams({ view: nextView });
-    if (nextView === 'map' && chapter) params.set('chapter', chapter);
-    const url = `${window.location.pathname}?${params.toString()}`;
-    window.history.pushState({ learnmath: true, view: nextView, chapter }, '', url);
-    setView(nextView);
-    setSelectedMapChapter(nextView === 'map' ? chapter : null);
-  };
-
-  useEffect(() => {
-    const syncFromHistory = () => {
-      const params = new URLSearchParams(window.location.search);
-      const nextView: WorkspaceView = params.get('view') === 'reader' ? 'reader' : 'map';
-      setView(nextView);
-      setSelectedMapChapter(nextView === 'map' ? params.get('chapter') : null);
-    };
-    if (!window.history.state?.learnmath) {
-      const params = new URLSearchParams(window.location.search);
-      const initialView: WorkspaceView = params.get('view') === 'reader' ? 'reader' : 'map';
-      window.history.replaceState({ learnmath: true, view: initialView, chapter: params.get('chapter') }, '', window.location.href);
-    }
-    window.addEventListener('popstate', syncFromHistory);
-    return () => window.removeEventListener('popstate', syncFromHistory);
+  const pdfContainerRef = useRef<HTMLDivElement | null>(null);
+  const setPdfContainerNode = useCallback((node: HTMLDivElement | null) => {
+    pdfContainerRef.current = node;
   }, []);
 
   // 桌面端右栏可见时不累计未读；移动端 BottomSheet 半屏展开才算正在查看旁批。
@@ -118,38 +81,42 @@ export default function App() {
   const chat = useChat({ user, currentPage, textbookId, chatVisible, markersState: markers,
     onProgressDelta: (delta, sourceTextbookId) => applyProgressDelta(mapCacheScope, sourceTextbookId || textbookId, delta),
   });
+  const revealDesktopChat = useCallback(() => {
+    setDesktopChatCollapsed(false);
+    saveJSON(STORAGE_KEYS.desktopChatCollapsed, false);
+  }, []);
+  const capture = useCaptureFlow({
+    currentPage,
+    isDesktop,
+    setOverlaySurface,
+    queueImage: chat.handleCapture,
+    revealDesktopChat,
+  });
+  // SSE 问答属于独立后台任务，流式期间允许阅读导航；选区内容提取期间锁定局部导航。
+  const interactionLocked = capture.busy;
   // 提问记录侧栏：以消息条数变化作为刷新信号（新提问落库后长度必然 +1）
   const questionList = useQuestionList(user, chat.historyVersion, textbookId);
-  const mapHome = useMapHomeData(user.token || undefined, textbookId, mapCacheScope);
+  const mapHome = useMapHomeData(user.token || undefined, textbookId, mapCacheScope, authReady);
+  const navigation = useWorkspaceNav({
+    textbookId,
+    currentPage,
+    activeThreadId: markers.activeThreadId,
+    authReady,
+    mapReady: !user.token || mapHome.ready,
+    userKey: user.userId || user.deviceId,
+    onTextbookRequest: value => {
+      if (PRESET_PDFS.some(item => item.textbookId === value)) setTextbookId(value as TextbookId);
+    },
+    onPageRequest: setTextbookPage,
+  });
+  const { view, selectedMapChapter, startupReady } = navigation;
+  const navigatePage = navigation.navigate;
+
+  useEffect(() => ensureStorageSchema(), []);
 
   useEffect(() => {
     if (migrationVersion > 0) void mapHome.refresh();
   }, [mapHome.refresh, migrationVersion]);
-
-  useEffect(() => { setSelectedMapChapter(null); }, [textbookId]);
-
-  // 首次进入地图；之后仅在该教材有证据且保存过 reader 状态时恢复阅读。
-  useEffect(() => {
-    if (!textbookId || !authReady) return;
-    if (user.token && !mapHome.ready) return;
-    const key = `${user.userId || user.deviceId}:${textbookId}`;
-    if (startupKeyRef.current === key) return;
-    const workspace = loadWorkspace(textbookId);
-    // A persisted reader workspace is the user's explicit continuation point.
-    // It must not depend on the timing of the static index or progress request.
-    if (workspace?.view === 'reader') {
-      setCurrentPage(workspace.page);
-      setView('reader');
-    } else {
-      setView('map');
-    }
-    startupKeyRef.current = key;
-    setStartupReady(true);
-  }, [authReady, mapHome.chapters, mapHome.ready, mapHome.errors, textbookId, user.deviceId, user.token, user.userId]);
-
-  useEffect(() => {
-    if (startupReady && textbookId) saveWorkspace(textbookId, { view, page: currentPage });
-  }, [currentPage, startupReady, textbookId, view]);
 
   // 切书时重置当前对话线程：旧书线程不能带到新书。
   // 用 ref 记录上一次 textbookId 以跳过首次挂载（首帧 prev===textbookId 直接返回）。
@@ -173,34 +140,57 @@ export default function App() {
   // 点击提问记录条目：跳页 + 加载该串对话。直接设 active 态而非走 handleMarkerClick，
   // 是为了避免移动端误弹 MarkerPopover；移动端改为展开 BottomSheet 展示对话。
   const handleQuestionSelect = (marker: Marker) => {
-    setCaptureDraft(null);
+    capture.clearDraft();
     setOverlaySurface('none');
-    navigatePage('reader');
-    // 跨教材记录：先写目标教材的页码恢复键，再切书，让 PDFViewer 既有的恢复机制落到目标页。
-    // 不能切书后再 setCurrentPage——恢复 effect 会用旧页码覆盖，产生时序竞态。
+    const targetTextbookId = marker.textbook_id || textbookId;
     if (marker.textbook_id && marker.textbook_id !== textbookId) {
-      saveTextbookPage(marker.textbook_id, marker.page_number);
+      setTextbookPage(marker.textbook_id, marker.page_number);
       saveWorkspace(marker.textbook_id, { view: 'reader', page: marker.page_number });
       setTextbookId(marker.textbook_id as TextbookId);
     } else {
-      // 同书 / NULL 老数据：维持现状直跳当前书页码
       setCurrentPage(marker.page_number);
     }
+    navigatePage('reader', null, { textbookId: targetTextbookId, page: marker.page_number, threadId: marker.id });
     markers.setActiveThreadId(marker.id);
     markers.setActiveMarker(marker);
     setThreadRequestKey(value => value + 1);
     if (isDesktop) {
-      setDesktopChatCollapsed(false);
-      saveJSON('learnmath.ui.desktopChatCollapsed', false);
+      revealDesktopChat();
     } else {
       setOverlaySurface('sheet-half');
     }
   };
 
+  useEffect(() => {
+    const request = navigation.threadRestore;
+    if (!request || questionList.loading || !questionList.ready) return;
+    if (!request.id) {
+      markers.setActiveThreadId(null);
+      markers.setActiveMarker(null);
+      chat.clearMessages();
+      navigation.consumeThreadRestore();
+      return;
+    }
+    const marker = questionList.items.find(item => item.id === request.id);
+    if (marker) {
+      markers.setActiveThreadId(marker.id);
+      markers.setActiveMarker(marker);
+      setThreadRequestKey(value => value + 1);
+      if (isDesktop) revealDesktopChat();
+      else setOverlaySurface('sheet-half');
+    } else {
+      markers.setActiveThreadId(null);
+      markers.setActiveMarker(null);
+      chat.clearMessages();
+      navigation.clearInvalidThread();
+    }
+    navigation.consumeThreadRestore();
+    // The request nonce is the event identity; the remaining values are read from the current workspace snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation.threadRestore?.nonce, questionList.loading, questionList.ready]);
+
   const markReaderStarted = (page = currentPage) => {
-    startupKeyRef.current = `${user.userId || user.deviceId}:${textbookId}`;
-    setStartupReady(true);
-    navigatePage('reader');
+    navigatePage('reader', null, { page });
     saveWorkspace(textbookId, { view: 'reader', page });
   };
 
@@ -272,23 +262,21 @@ export default function App() {
 
   const openDrawer = (tab: SidebarTab) => {
     if (interactionLocked) return;
-    setIsCapturing(false);
-    setCaptureDraft(null);
+    capture.cancel();
+    capture.clearDraft();
     setSidebarTab(tab);
     setOverlaySurface(isDesktop ? 'drawer' : 'sheet-full');
   };
 
   const startCapture = () => {
     if (interactionLocked) return;
-    setCaptureDraft(null);
-    setOverlaySurface('none');
-    setIsCapturing(true);
+    capture.start();
   };
 
   const toggleDesktopChat = () => {
     setDesktopChatCollapsed(previous => {
       const next = !previous;
-      saveJSON('learnmath.ui.desktopChatCollapsed', next);
+      saveJSON(STORAGE_KEYS.desktopChatCollapsed, next);
       return next;
     });
   };
@@ -300,65 +288,38 @@ export default function App() {
 
   const pageNotesPanel = <PageNotesPanel
     key={textbookId}
-    currentPage={currentPage}
-    items={questionList.items}
-    activeMarker={markers.activeMarker}
-    messages={chat.messages}
-    isLoading={chat.isLoading}
-    token={user.token}
-    pendingImages={chat.pendingImages}
-    error={chat.error}
-    thinkingStage={chat.thinkingStage}
-    thinkingStageKey={chat.thinkingStageKey}
-    isThinking={chat.isThinking}
-    onOpenThread={handleQuestionSelect}
-    onSendNew={sendNewPageQuestion}
-    onSendFollowUp={chat.handleSendMessage}
-    onClearMessages={chat.clearMessages}
-    onRemovePendingImage={chat.removePendingImage}
-    onClearPendingImages={chat.clearPendingImages}
-    threadRequestKey={threadRequestKey}
-    onModeChange={setPanelMode}
-    itemsLoading={questionList.loading}
-    itemsError={questionList.error}
-    onRetryItems={() => { void questionList.refresh(); }}
-    externalFormula={externalFormula}
-    onExternalFormulaConsumed={nonce => setExternalFormula(current => current?.nonce === nonce ? null : current)}
-    onCancelGeneration={chat.cancelVisibleGeneration}
-    onOpenPhoto={file => { setPhotoFile(file); setOverlaySurface('photo'); }}
-    externalContent={externalContent}
-    onExternalContentConsumed={nonce => setExternalContent(current => current?.nonce === nonce ? null : current)}
+    page={{
+      currentPage,
+      items: questionList.items,
+      activeMarker: markers.activeMarker,
+      loading: questionList.loading,
+      error: questionList.error,
+      onRetry: () => { void questionList.refresh(); },
+      onOpenThread: handleQuestionSelect,
+      threadRequestKey,
+    }}
+    conversation={{
+      messages: chat.messages,
+      isLoading: chat.isLoading,
+      token: user.token,
+      pendingImages: chat.pendingImages,
+      error: chat.error,
+      thinkingStage: chat.thinkingStage,
+      thinkingStageKey: chat.thinkingStageKey,
+      isThinking: chat.isThinking,
+      onSendNew: sendNewPageQuestion,
+      onSendFollowUp: chat.handleSendMessage,
+      onClearMessages: chat.clearMessages,
+      onRemovePendingImage: chat.removePendingImage,
+      onClearPendingImages: chat.clearPendingImages,
+      onCancelGeneration: chat.cancelVisibleGeneration,
+    }}
+    composer={{
+      onOpenPhoto: capture.openPhoto,
+      externalContent: capture.externalContent,
+      onExternalContentConsumed: capture.consumeExternalContent,
+    }}
   />;
-
-  const handlePhotoQuestion = (image: string) => {
-    setPhotoFile(null);
-    chat.handleCapture(image, null, 'photo');
-    setOverlaySurface(isDesktop ? 'none' : 'sheet-half');
-  };
-
-  const handleCapture = (imageData: string, _pageRatioX: number, _pageRatioY: number, cropBBox: CropBBox) => {
-    setIsCapturing(false);
-    setCaptureDraft({ image: imageData, cropBBox, page: currentPage });
-    setOverlaySurface('capture-preview');
-  };
-
-  const askCapturedQuestion = () => {
-    const draft = captureDraft;
-    if (!draft) return;
-    // 提问只把截图放入正常聊天输入区，用户补充问题后自行发送。
-    chat.handleCapture(draft.image, draft.cropBBox);
-    setOverlaySurface('none');
-    setCaptureDraft(null);
-    if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); }
-    else setOverlaySurface('sheet-half');
-  };
-
-  const insertCapturedContent = (blocks: RecognizedBlock[]) => {
-    setExternalContent({ blocks, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` });
-    setCaptureDraft(null);
-    if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); setOverlaySurface('none'); }
-    else setOverlaySurface('sheet-half');
-  };
 
   useEffect(() => {
     const onResize = () => setIsDesktop(window.innerWidth >= 1024);
@@ -368,7 +329,7 @@ export default function App() {
 
   const handlePageChange = useCallback((page: number) => {
     if (interactionLocked) return;
-    setCaptureDraft(null);
+    capture.clearDraft();
     setCurrentPage(page);
   }, [interactionLocked, overlaySurface, setCurrentPage]);
 
@@ -378,7 +339,7 @@ export default function App() {
     <ErrorBoundary>
       <div className="flex h-screen flex-col bg-[var(--lm-bg)] dark:bg-slate-950">
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-200 dark:bg-indigo-500 dark:shadow-none">
               学
@@ -417,9 +378,9 @@ export default function App() {
               textbookName={PRESET_PDFS.find(item => item.textbookId === textbookId)?.name || '选择教材'}
               chapters={mapHome.chapters}
               nodesByChapter={mapHome.nodesByChapter}
+              edgesByChapter={mapHome.edgesByChapter}
               errors={mapHome.errors}
               loading={mapHome.loading || !startupReady}
-              questionItems={questionList.items}
               onContinue={openChapter}
               onOpenChapter={openMapChapter}
               selectedChapter={selectedMapChapter}
@@ -429,7 +390,6 @@ export default function App() {
               onStartChapter={() => { if (selectedMapChapter) void openChapter(selectedMapChapter); }}
               onContinueNode={node => { if (selectedMapChapter) void openChapter(selectedMapChapter, node); }}
               onOpenChat={handleMapChatSelect}
-              onOpenQuestion={handleQuestionSelect}
               onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
               textbookId={textbookId}
@@ -438,15 +398,15 @@ export default function App() {
             />
           ) : isDesktop ? (
             <>
-              <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="lm-panel flex min-w-0 flex-1 flex-col overflow-hidden">
                 {selectedPdf && textbookId ? (
                   <>
                     <PDFToolbar controls={pdfControls} onOpenDrawer={openDrawer} onCapture={startCapture} captureDisabled={!selectedPdf}
                       navigationDisabled={interactionLocked}
                       chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} />
                     <div className="min-h-0 flex-1">
-                      <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange}
-                        markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage}
+                      <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange}
+                        markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
                         hideToolbar onControlsChange={setPdfControls} pageOverlay={null} /></DeferredPanel>
                     </div>
                   </>
@@ -454,17 +414,17 @@ export default function App() {
                   <EmptyGuideCard />
                 )}
               </div>
-              {!desktopChatCollapsed && <div className="w-[360px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 min-[1440px]:w-[400px]">
+              {!desktopChatCollapsed && <div className="lm-panel w-[360px] shrink-0 overflow-hidden min-[1440px]:w-[400px]">
                 {pageNotesPanel}
               </div>}
             </>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="lm-panel flex min-h-0 flex-1 flex-col overflow-hidden">
                 {selectedPdf && textbookId ? (
                   <div className="min-h-0 flex-1">
-                      <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} onPageChange={handlePageChange} mobile
-                        markers={markers.markers} pdfContainerRef={pdfContainerRef} onMarkerClick={handleMarkerClick} viewerPage={currentPage}
+                      <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange} mobile
+                        markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
                         hideToolbar onControlsChange={setPdfControls} pageOverlay={null} /></DeferredPanel>
                   </div>
                 ) : (
@@ -492,20 +452,20 @@ export default function App() {
           {learningSidebar(() => setOverlaySurface('none'))}
         </UtilityDrawer>
 
-        {isCapturing && (
-          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={handleCapture} onCancel={() => setIsCapturing(false)} /></DeferredPanel>
+        {capture.isCapturing && (
+          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={capture.completeSelection} onCancel={capture.cancel} /></DeferredPanel>
         )}
 
-        {overlaySurface === 'capture-preview' && captureDraft && <CapturePreviewSheet
-          capture={captureDraft}
+        {overlaySurface === 'capture-preview' && capture.captureDraft && <CapturePreviewSheet
+          capture={capture.captureDraft}
           token={user.token}
-          onQuestion={askCapturedQuestion}
-          onInsert={insertCapturedContent}
-          onReselect={() => { setOverlaySurface('none'); setCaptureDraft(null); startCapture(); }}
-          onClose={() => { setCaptureDraft(null); setOverlaySurface('none'); }}
-          onBusyChange={setCaptureBusy}
+          onQuestion={capture.queueCapture}
+          onInsert={capture.insertContent}
+          onReselect={capture.reselect}
+          onClose={capture.closePreview}
+          onBusyChange={capture.setBusy}
         />}
-        {overlaySurface === 'photo' && photoFile && <PhotoPreviewSheet initialFile={photoFile} token={user.token} onPhotoQuestion={handlePhotoQuestion} onInsert={blocks => { setExternalContent({ blocks, nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}` }); setPhotoFile(null); if (isDesktop) { setDesktopChatCollapsed(false); saveJSON('learnmath.ui.desktopChatCollapsed', false); setOverlaySurface('none'); } else setOverlaySurface('sheet-half'); }} onClose={() => { setPhotoFile(null); setOverlaySurface(isDesktop ? 'none' : 'sheet-half'); }} />}
+        {overlaySurface === 'photo' && capture.photoFile && <PhotoPreviewSheet initialFile={capture.photoFile} token={user.token} onPhotoQuestion={capture.queuePhoto} onInsert={capture.insertContent} onClose={capture.closePhoto} />}
 
         {showAuthModal && (
           <AuthModal mode={authMode} username={authUsername} password={authPassword} error={authError}

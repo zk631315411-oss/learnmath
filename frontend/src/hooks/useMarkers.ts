@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 
 import { loadString, saveString, removeString } from '../utils/storage';
+import { activeThreadStorageKey as getActiveThreadStorageKey } from '../utils/storageKeys';
 import { normalizeChatHistoryRecord } from '../utils/chatHistory';
 import { getChatHistoryByUser, deleteChatHistory } from '../services/api';
 import type { Marker } from '../components/PageMarker';
@@ -13,7 +14,7 @@ export function useMarkers(user: User, currentPage: number, textbookId: string) 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
   const userId = user.userId || user.deviceId;
-  const activeThreadStorageKey = userId ? `active_chat_thread:${userId}` : null;
+  const activeThreadStorageKey = userId ? getActiveThreadStorageKey(userId) : null;
 
   const selectActiveThreadId = useCallback((threadId: string | null) => {
     setActiveThreadId(threadId);
@@ -60,12 +61,13 @@ export function useMarkers(user: User, currentPage: number, textbookId: string) 
 
   const handleDeleteMarker = useCallback(async (markerId: string) => {
     try {
-      await deleteChatHistory(markerId);
+      if (!user.token) return;
+      await deleteChatHistory(markerId, user.token);
       setMarkers(prev => prev.filter(m => m.id !== markerId));
       setActiveMarker(prev => prev?.id === markerId ? null : prev);
       if (activeThreadId === markerId) selectActiveThreadId(null);
     } catch {}
-  }, [activeThreadId, selectActiveThreadId]);
+  }, [activeThreadId, selectActiveThreadId, user.token]);
 
   const addMarker = useCallback((marker: Marker) => {
     setMarkers(prev => [...prev, marker]);

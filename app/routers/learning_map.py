@@ -6,6 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException
 
+from app.auth.dependencies import require_user_id
 from app.auth.jwt_handler import decode_token
 from app.db import kg_v44
 from app.db.chat_history_db import get_chat_history
@@ -13,21 +14,6 @@ from app.db.evidence_db import list_evidence_for_user
 from app.services.learning.projection import is_blocked, project_status
 
 router = APIRouter(prefix="/api/learning-map", tags=["学习地图"])
-
-
-def _user_id(authorization: Optional[str]) -> str:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="未登录或token无效")
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="未登录或token无效")
-    try:
-        user_id = decode_token(parts[1]).get("user_id")
-    except Exception as exc:
-        raise HTTPException(status_code=401, detail="未登录或token无效") from exc
-    if not user_id:
-        raise HTTPException(status_code=401, detail="未登录或token无效")
-    return str(user_id)
 
 
 def _kg_call(func, *args, **kwargs):
@@ -39,7 +25,7 @@ def _kg_call(func, *args, **kwargs):
 
 @router.get("/chapters")
 def chapters(textbook_id: str, authorization: Optional[str] = Header(None)):
-    user_id = _user_id(authorization)
+    user_id = require_user_id(authorization, decoder=decode_token)
     chapter_rows = _kg_call(kg_v44.list_kg_chapter_nodes, textbook_id)
     evidence = list_evidence_for_user(user_id, textbook_id=textbook_id)
     by_node: dict[str, list[dict]] = defaultdict(list)
@@ -66,7 +52,7 @@ def chapters(textbook_id: str, authorization: Optional[str] = Header(None)):
 
 @router.get("/nodes")
 def nodes(textbook_id: str, chapter: str, authorization: Optional[str] = Header(None)):
-    user_id = _user_id(authorization)
+    user_id = require_user_id(authorization, decoder=decode_token)
     raw_nodes = _kg_call(kg_v44.list_kg_nodes, textbook_id, chapter)
     evidence = list_evidence_for_user(user_id, textbook_id=textbook_id)
     by_node: dict[str, list[dict]] = defaultdict(list)

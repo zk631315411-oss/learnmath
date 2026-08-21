@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -16,7 +17,7 @@ interface Props {
   applyFormatMath?: boolean;  // 默认 true，ExercisePanel 可传 false
 }
 
-export default function MarkdownRenderer({ children, className, applyFormatMath = true }: Props) {
+function MarkdownRenderer({ children, className, applyFormatMath = true }: Props) {
   const content = applyFormatMath ? formatMath(children) : children;
   return (
     <ReactMarkdown
@@ -36,3 +37,5 @@ export default function MarkdownRenderer({ children, className, applyFormatMath 
     </ReactMarkdown>
   );
 }
+
+export default memo(MarkdownRenderer);

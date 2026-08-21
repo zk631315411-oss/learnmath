@@ -6,19 +6,56 @@
 @tailwind utilities;
 
 :root {
-  --lm-bg: #f6f7fb;
+  --lm-bg: #f2efe7;
   --lm-surface: #ffffff;
+  --lm-canvas: #e2e8f0;
   --lm-border: #e2e8f0;
+  --lm-text: #334155;
+  --lm-text-strong: #0f172a;
+  --lm-text-muted: #64748b;
   --lm-brand: #4f46e5;
   --lm-brand-strong: #4338ca;
+  --lm-danger: #e11d48;
+  --lm-success: #059669;
+  --lm-radius-sm: 4px;
+  --lm-radius-md: 8px;
+  --lm-radius-lg: 12px;
+  --lm-shadow-panel: 0 1px 3px rgb(15 23 42 / 0.08);
+  --lm-status-unexplored: #cbd5e1;
+  --lm-status-learning: #fbbf24;
+  --lm-status-basic: #6ee7b7;
+  --lm-status-mastered: #059669;
+  --lm-status-review: #fb7185;
+  /* 知识地图 E v3：边与类型色 */
+  --lm-edge: #c7cedb;
+  --lm-edge-in: #d97706;
+  --lm-type-concept: #64748b;
+  --lm-type-theorem: #7c3aed;
+  --lm-type-formula: #0d9488;
+  --lm-type-method: #2563eb;
+  --lm-type-problem: #d97706;
 }
 
 .dark {
   --lm-bg: #0f172a;
   --lm-surface: #1e293b;
+  --lm-canvas: #334155;
   --lm-border: #334155;
+  --lm-text: #cbd5e1;
+  --lm-text-strong: #f8fafc;
+  --lm-text-muted: #94a3b8;
   --lm-brand: #818cf8;
   --lm-brand-strong: #6366f1;
+  --lm-danger: #fb7185;
+  --lm-success: #10b981;
+  --lm-shadow-panel: 0 1px 3px rgb(0 0 0 / 0.32);
+  --lm-status-unexplored: #64748b;
+  --lm-status-learning: #fbbf24;
+  --lm-status-basic: #6ee7b7;
+  --lm-status-mastered: #10b981;
+  --lm-status-review: #fb7185;
+  --lm-edge: #475569;
+  --lm-edge-in: #fbbf24;
 }
 
 @layer components {
@@ -37,13 +74,147 @@
   .serif-zh {
     font-family: 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'SimSun', serif;
   }
+
+  .lm-panel {
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-lg);
+    background: var(--lm-surface);
+    box-shadow: var(--lm-shadow-panel);
+  }
+
+  /* === 知识地图 E v3（正弦梯子 / 聚焦子图 / 岛屿总览） === */
+  .kg-spine {
+    stroke: var(--lm-border);
+    stroke-width: 9;
+    stroke-linecap: round;
+  }
+
+  .kg-twig {
+    stroke: var(--lm-edge);
+    stroke-width: 1.4;
+    opacity: 0.9;
+  }
+
+  .kg-glyph {
+    cursor: pointer;
+  }
+
+  .kg-glyph .kg-halo {
+    opacity: 0;
+  }
+
+  .kg-glyph.kg-sel .kg-halo {
+    opacity: 1;
+  }
+
+  .kg-glyph.kg-nb .kg-halo {
+    opacity: 0.6;
+    stroke: var(--lm-text-muted);
+  }
+
+  .kg-nm {
+    fill: var(--lm-text);
+    font-size: 13px;
+  }
+
+  .kg-nm-dim {
+    fill: var(--lm-text-muted);
+    opacity: 0.55;
+  }
+
+  .kg-dlabel {
+    paint-order: stroke;
+    stroke: var(--lm-surface);
+    stroke-width: 3.5px;
+    stroke-linejoin: round;
+  }
+
+  .kg-focus-edge {
+    fill: none;
+    stroke: var(--lm-edge);
+    stroke-width: 1.6;
+  }
+
+  .kg-focus-edge.kg-out {
+    stroke: var(--lm-brand);
+    stroke-width: 2.2;
+  }
+
+  .kg-focus-edge.kg-in {
+    stroke: var(--lm-edge-in);
+    stroke-width: 2.2;
+  }
+
+  .kg-focus-lab {
+    font-size: 10.5px;
+    paint-order: stroke;
+    stroke: var(--lm-surface);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+
+  .kg-e-edge {
+    fill: none;
+    stroke: var(--lm-edge);
+    stroke-width: 1.2;
+    opacity: 0.55;
+  }
+
+  .kg-e-edge.kg-out {
+    stroke: var(--lm-brand);
+    stroke-width: 2.2;
+    opacity: 1;
+  }
+
+  .kg-e-edge.kg-in {
+    stroke: var(--lm-edge-in);
+    stroke-width: 2.2;
+    opacity: 1;
+  }
+
+  .kg-e-edge.kg-dim {
+    opacity: 0.08;
+  }
+
+  .kg-xlab {
+    font-size: 10px;
+    fill: var(--lm-text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .kg-relchip {
+    display: inline-block;
+    margin: 2px 6px 2px 0;
+    padding: 1px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid var(--lm-border);
+    color: var(--lm-text);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .kg-relchip.kg-out {
+    border-color: var(--lm-brand);
+    color: var(--lm-brand);
+  }
+
+  .kg-relchip.kg-in {
+    border-color: var(--lm-edge-in);
+    color: var(--lm-edge-in);
+  }
+
+  .kg-relchip:disabled {
+    cursor: default;
+    opacity: 0.75;
+  }
 }
 
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif;
   background: var(--lm-bg);
-  color: #334155;
+  color: var(--lm-text);
 }
 
 /* === 柔和现代 — 品牌背景渐变 === */

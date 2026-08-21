@@ -1,0 +1,29 @@
+总体判断：**这份审查大部分属实，不是凭空挑刺，但部分措辞扩大了问题范围。**其中 7 项明确成立，6 项方向正确但有夸张，1 项取决于产品对浏览器导航的定义。
+
+| 项目 | 判断 | 核对结果 |
+|---|---|---|
+| 1. `App.tsx` 上帝组件 | 基本属实 | 当前确实是 551 行，承担认证、教材、地图、阅读器、截图、聊天和覆盖层协调。但只有约 16 个本地 `useState`，不是“20+”。没有 Context/状态库本身也不是缺陷，真正问题是职责过度集中。[App.tsx](/D:/LearnMath/frontend/src/App.tsx:49) |
+| 2. effect + ref 修补竞态 | 属实 | `startupKeyRef`、`prevTextbookIdRef`、教材切换和页码恢复都有时序守卫，注释也明确记录了竞态。[App.tsx](/D:/LearnMath/frontend/src/App.tsx:133) |
+| 3. 页码双数据源 | 完全属实 | App 有 `currentPage`，PDFViewer 内部又有一份，通过 `viewerPage`、effect 和回调双向同步。[PDFViewer.tsx](/D:/LearnMath/frontend/src/components/PDFViewer.tsx:94) |
+| 4. 手写路由不完整 | 事实属实，严重度有争议 | History 只恢复 `view` 和 `chapter`。[App.tsx](/D:/LearnMath/frontend/src/App.tsx:86) 但抽屉、BottomSheet 档位是否应该进入浏览器历史，属于产品决定；并非所有临时 UI 都必须路由化。 |
+| 5. `interactionLocked` 锁死 UI | 部分属实，范围被夸大 | 锁只在截图气泡回答流式输出或公式识别时启用，不是所有右栏问答都会锁。锁住翻页、切书、地图和抽屉确实是 UX 债务。[App.tsx](/D:/LearnMath/frontend/src/App.tsx:84) 当前 SSE 问答也确实没有取消入口。 |
+| 6. 失败回答污染数据 | 完全属实，优先级很高 | 失败后会把 ``[错误] ${msg}`` 写进正式 answer；同时用错误文案覆盖已经流出的部分内容。[useChat.ts](/D:/LearnMath/frontend/src/hooks/useChat.ts:333) |
+| 7. 前 8 字符作为 key | 完全属实 | 问题和答案都用 `slice(0, 8)` 构造 ID，存在直接碰撞风险。[useChat.ts](/D:/LearnMath/frontend/src/hooks/useChat.ts:113) |
+| 8. PDF 阅读能力不足 | 属实 | 文本层和注释层都关闭，没有找到搜索、目录大纲和键盘翻页。[PDFViewer.tsx](/D:/LearnMath/frontend/src/components/PDFViewer.tsx:415) 但扫描版 PDF 即使开启文本层，也未必有可用文字。 |
+| 9. 多图连发名不副实 | 部分属实 | 最多可排队 3 张，但每轮只消费第一张。[useChat.ts](/D:/LearnMath/frontend/src/hooks/useChat.ts:142) UI 已明确提示“一次发送 1 张”，所以不是静默丢图，更准确地说是“多图队列”，而不是“多图单轮发送”。 |
+| 10. 页图分支是死代码 | 完全属实 | `PAGE_IMAGE_CONFIGS` 是空对象，模块内没有写入路径，对应 WebP 分支不可达。[PDFViewer.tsx](/D:/LearnMath/frontend/src/components/PDFViewer.tsx:58) |
+| 11. 类型安全缺口 | 属实 | 存在 `Promise<any[]>`、`sources: any[]` 和 ref 强转。[api.ts](/D:/LearnMath/frontend/src/services/api.ts:35) 这是清理项，但优先级低于状态和数据错误。 |
+| 12. 样式缺少统一 token | 部分属实 | CSS 变量、Tailwind 色值及不同圆角/阴影并存。混用本身正常，问题是语义 token 覆盖不完整，而不是“三套系统必然冲突”。 |
+| 13. localStorage 当数据库 | 部分属实，措辞偏重 | 页码、workspace、缩放、进度等确实分散且缺少统一迁移版本，但项目已经有集中读写工具。[storage.ts](/D:/LearnMath/frontend/src/utils/storage.ts:1) 用 localStorage 保存偏好本身合理。 |
+| 14. 流式渲染性能 | 风险属实，结论未证实 | 每次内容、思考或工具事件都会更新整个 `messages` 数组。[useChat.ts](/D:/LearnMath/frontend/src/hooks/useChat.ts:245) `ChatPanel` 已经 `memo`，但 messages 引用持续变化；`MarkdownRenderer` 没有 memo，历史 Markdown/KaTeX 可能重复解析。[MarkdownRenderer.tsx](/D:/LearnMath/frontend/src/components/MarkdownRenderer.tsx:19) “必然掉帧”仍需性能分析证明。 |
+
+我会把实际优先级调整为：
+
+1. 修复失败落库和部分答案被覆盖，这是已经发生的数据正确性问题。
+2. 给追问使用稳定真实 ID。
+3. 给 SSE 增加取消、请求身份和后台完成机制，缩小截图气泡期间的 UI 锁定范围。
+4. 将 PDF 页码收敛为单一数据源。
+5. 再按领域拆分 App，而不是简单把 16 个 `useState` 全塞进一个大 reducer。
+6. PDF 搜索、文本层和 Markdown 流式性能在真实教材、长对话下测量后推进。
+
+所以，这位审查者对“补丁密度过高、状态模型开始失控”的总体诊断是可信的；主要需要修正的是第 5 项的影响范围，以及第 9、12、13、14 项过于绝对的表述。本次只是静态代码核查，没有修改文件，也没有通过运行时 profiling 验证掉帧程度。

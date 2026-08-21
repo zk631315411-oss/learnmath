@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { getAllChatHistory } from '../services/api';
 import { normalizeChatHistoryRecord } from '../utils/chatHistory';
@@ -16,24 +16,32 @@ import type { User } from '../types';
 export function useQuestionList(user: User, chatMessageCount: number, textbookId: string) {
   const [items, setItems] = useState<Marker[]>([]);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const userId = user.userId || user.deviceId;
+  const requestSequence = useRef(0);
 
   const refresh = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     if (!userId) {
       setItems([]);
+      setReady(true);
       return;
     }
     setLoading(true);
+    setReady(false);
     setError(null);
     try {
       // 透传教材 ID 过滤：侧栏只列当前教材的提问（NULL 老数据仍全教材可见，由后端统一处理）
       const data = await getAllChatHistory(userId, 500, textbookId);
-      setItems(Array.isArray(data) ? data.map(normalizeChatHistoryRecord) : []);
+      if (requestId === requestSequence.current) setItems(Array.isArray(data) ? data.map(normalizeChatHistoryRecord) : []);
     } catch {
-      setError('提问记录加载失败');
+      if (requestId === requestSequence.current) setError('提问记录加载失败');
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) {
+        setLoading(false);
+        setReady(true);
+      }
     }
   }, [userId, textbookId]);
 
@@ -43,5 +51,5 @@ export function useQuestionList(user: User, chatMessageCount: number, textbookId
     void refresh();
   }, [userId, chatMessageCount, refresh]);
 
-  return { items, loading, error, refresh };
+  return { items, loading, ready, error, refresh };
 }

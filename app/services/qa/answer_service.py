@@ -39,6 +39,7 @@ from app.services.qa.streaming_service import (
     sse_thinking,
     sse_tool_call,
     sse_tool_result,
+    sse_event,
 )
 from app.services.qa.vision_context_service import (
     prepare_screenshot_context,
@@ -103,10 +104,16 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             textbook_id=turn_input.textbook_id,
             page_number=turn_input.page_number,
         )
-
         if not tool_defs:
             yield sse_error("KG 工具未配置，无法启动统一教学 Agent；未执行无工具直答")
             return
+        if turn_input.user_id:
+            from app.services.agents.tools.render_manim_animation import build_render_manim_tool
+            tool_defs.append(build_render_manim_tool(
+                user_id=turn_input.user_id,
+                chat_id=turn_input.chat_id,
+                client_turn_id=turn_input.client_turn_id,
+            ))
 
         yield sse_stage("planning", "正在组织本轮讲解策略...")
 
@@ -135,10 +142,11 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         runtime = ToolRuntime(
             tools=tool_defs,
             model_call=model_call,
+            artifact_handler=_accept_manim_artifact,
             config=ToolRuntimeConfig(
                 max_model_rounds=7,
                 # retrieve_kg_context itself is bounded to three calls.
-                max_total_calls=3,
+                max_total_calls=4,
                 max_consecutive_failure_rounds=2,
             ),
         )
@@ -167,6 +175,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         evidence_persisted = 0
         invalid_node_ids = 0
         progress_delta: dict | None = None
+        manim_artifacts: list[dict] = []
 
         async for event in runtime.run(initial_messages, context):
             event_type = event.type
@@ -175,12 +184,15 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             if event_type == "tool_call":
                 call_id = str(data.get("tool_call_id") or "")
                 tool_name = str(data.get("name") or "")
+                public_arguments = dict(data.get("arguments") or {})
+                if tool_name == "render_manim_animation":
+                    public_arguments.pop("scene_code", None)
                 activity = {
                     "id": call_id,
                     "tool": tool_name,
                     "label": str(data.get("display_name") or "调用辅助工具"),
                     "status": "running",
-                    "arguments": data.get("arguments") or {},
+                    "arguments": public_arguments,
                     "round": data.get("round"),
                 }
                 tool_activities[call_id] = activity
@@ -230,6 +242,11 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                 if text:
                     full_thinking += text
                     yield sse_thinking(text)
+
+            elif event_type == "visualization":
+                artifact = dict(data)
+                manim_artifacts.append(artifact)
+                yield sse_event("artifact", artifact)
 
             elif event_type == "content_delta":
                 text = str(data.get("text") or "")
@@ -374,6 +391,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             screenshot_context_id=cache_id or None,
             qa_turn_id=turn_id, latency_ms=latency_ms,
             progress_delta=progress_delta,
+            artifacts=manim_artifacts,
         )
 
     except asyncio.CancelledError:
@@ -386,3 +404,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             )
         else:
             yield sse_error(f"回答生成失败：{exc}")
+
+
+async def _accept_manim_artifact(artifact: dict, _outcome) -> dict | None:
+    return artifact if artifact.get("id") else None

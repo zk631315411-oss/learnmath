@@ -19,7 +19,8 @@ export function nodeFromCatalog(node: CatalogNode | CatalogNodeIndexItem, progre
   return {
     node_id: node.node_id,
     name: node.name,
-    type: 'concept',
+    type: 'type' in node ? node.type || 'concept' : 'concept',
+    order: node.order,
     section: node.section,
     status,
     closed_evidence_count: state?.closed_evidence_count || 0,

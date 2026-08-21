@@ -1,10 +1,11 @@
 import { fetchWithStage, type FetchWithStageRequest } from './api';
-import type { ToolActivity } from '../types';
+import type { ManimArtifact, ToolActivity } from '../types';
 
 export interface StreamQASnapshot {
   answer: string;
   thinking: string;
   toolActivities: ToolActivity[];
+  artifacts: ManimArtifact[];
 }
 
 interface StreamQAHandlers {
@@ -24,11 +25,12 @@ export async function streamQA(
   request: FetchWithStageRequest,
   handlers: StreamQAHandlers = {},
 ) {
-  const snapshot: StreamQASnapshot = { answer: '', thinking: '', toolActivities: [] };
+  const snapshot: StreamQASnapshot = { answer: '', thinking: '', toolActivities: [], artifacts: [] };
   const publish = () => handlers.onUpdate?.({
     answer: snapshot.answer,
     thinking: snapshot.thinking,
     toolActivities: [...snapshot.toolActivities],
+    artifacts: [...snapshot.artifacts],
   });
 
   const result = await fetchWithStage({
@@ -48,12 +50,19 @@ export async function streamQA(
         snapshot.toolActivities = upsertToolActivity(snapshot.toolActivities, activity);
         publish();
       },
+      onArtifact: artifact => {
+        snapshot.artifacts = snapshot.artifacts.some(item => item.id === artifact.id)
+          ? snapshot.artifacts.map(item => item.id === artifact.id ? artifact : item)
+          : [...snapshot.artifacts, artifact];
+        publish();
+      },
     },
   });
 
   snapshot.answer ||= result.answer;
   snapshot.thinking ||= result.thinking;
   if (!snapshot.toolActivities.length) snapshot.toolActivities = result.toolActivities;
+  if (!snapshot.artifacts.length) snapshot.artifacts = result.artifacts;
   publish();
   return { ...result, ...snapshot };
 }

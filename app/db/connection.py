@@ -94,6 +94,12 @@ def init_db():
     # 兼容历史库：早期建表缺 is_anonymous 列时补上
     if "is_anonymous" not in {row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()}:
         cursor.execute("ALTER TABLE users ADD COLUMN is_anonymous INTEGER NOT NULL DEFAULT 0")
+    # 一个设备最多对应一个匿名身份；正式账号仍可复用同一 device_id。
+    # 部分唯一索引兼容已有正式账号和历史数据。
+    cursor.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_anonymous_device_id "
+        "ON users(device_id) WHERE is_anonymous=1"
+    )
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id)
@@ -195,6 +201,42 @@ def init_db():
           PRIMARY KEY (user_id, textbook_id)
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS manim_artifacts (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          chat_id TEXT,
+          client_turn_id TEXT,
+          title TEXT NOT NULL,
+          rationale TEXT NOT NULL DEFAULT '',
+          source_code TEXT NOT NULL,
+          source_hash TEXT NOT NULL,
+          status TEXT NOT NULL,
+          rq_job_id TEXT,
+          attempt INTEGER NOT NULL DEFAULT 0,
+          repair_count INTEGER NOT NULL DEFAULT 0,
+          duration_seconds REAL NOT NULL DEFAULT 12,
+          quality TEXT NOT NULL DEFAULT 'low',
+          video_path TEXT,
+          poster_path TEXT,
+          error_code TEXT,
+          error_message TEXT,
+          created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_manim_artifacts_user ON manim_artifacts(user_id, created_at)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_manim_artifacts_chat ON manim_artifacts(chat_id, created_at)")
+    manim_columns = {row[1] for row in cursor.execute("PRAGMA table_info(manim_artifacts)").fetchall()}
+    if "rq_job_id" not in manim_columns:
+        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN rq_job_id TEXT")
+    if "repair_count" not in manim_columns:
+        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN repair_count INTEGER NOT NULL DEFAULT 0")
+    if "duration_seconds" not in manim_columns:
+        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN duration_seconds REAL NOT NULL DEFAULT 12")
+    if "quality" not in manim_columns:
+        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN quality TEXT NOT NULL DEFAULT 'low'")
 
     conn.commit()
     conn.close()

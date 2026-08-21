@@ -1,9 +1,12 @@
 # LearnMath one-click deployment
 
-The LearnMath application package contains two containers:
+The LearnMath application package contains five services:
 
 - `web`: the built React application, Nginx reverse proxy, and textbook PDF serving;
 - `api`: FastAPI, SQLite persistence, the teaching Agent, and the Aura connection.
+- `redis`: internal-only bounded animation queue;
+- `manim-dispatcher`: trusted Redis-to-file-spool bridge with no model or database secrets;
+- `manim-renderer`: network-disabled, resource-limited Manim renderer and the only writer of video artifacts.
 
 ## Build the application package
 
@@ -13,7 +16,7 @@ Build the release package with:
 powershell -ExecutionPolicy Bypass -File .\deploy\prepare-offline-package.ps1 -Version 0.1.0
 ```
 
-The script builds and saves both application images and copies the four textbook PDFs into `release\LearnMath`. Docker Desktop is deliberately excluded from this package.
+The script builds and saves the API, web, pinned Redis, and pinned Manim images and copies the four textbook PDFs into `release\LearnMath`. Docker Desktop is deliberately excluded from this package.
 
 Build the separate Docker setup package with:
 

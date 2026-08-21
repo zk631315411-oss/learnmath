@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 B · 目录即页 — 学数有道</title>
+<style>
+  :root {
+    --ink: #000000;
+    --paper: #ffffff;
+    --dim: rgba(0,0,0,.28);   /* 未探索章节的墨浓度 */
+    --dim-2: rgba(0,0,0,.5);
+  }
+  [data-theme="dark"] {
+    --ink: #ffffff;
+    --paper: #000000;
+    --dim: rgba(255,255,255,.28);
+    --dim-2: rgba(255,255,255,.55);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  ::selection { background: #003cff; color: #fff; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .serif { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px;
+  }
+  .brand { font-weight: 700; font-size: 15px; display: flex; gap: 10px; align-items: center; }
+  .brand .mark { width: 26px; height: 26px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 13px; border-radius: 6px; }
+  .top-actions { display: flex; gap: 16px; font-size: 13px; color: var(--dim-2); align-items: center; }
+  .theme-btn { background: none; border: 1px solid var(--dim); color: var(--ink); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 6vh 32px 14vh; }
+
+  /* 顶部一句话账本 */
+  .ledger {
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;
+    font-size: 13px; color: var(--dim-2); margin-bottom: 7vh;
+  }
+  .ledger .book { color: var(--ink); font-weight: 600; }
+
+  /* 目录即内容：章名是大字排版元素 */
+  .toc { display: flex; flex-direction: column; }
+  .toc a {
+    display: block; text-decoration: none; color: var(--ink);
+    padding: 2.2vh 0; border-top: 1px solid currentColor;
+  }
+  .toc a:last-child { border-bottom: 1px solid currentColor; }
+  .toc a .sup {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; letter-spacing: .12em; margin-bottom: .8vh;
+  }
+  .toc a h2 {
+    font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
+    font-size: clamp(30px, 5.2vw, 54px);
+    font-weight: 700; line-height: 1.15; letter-spacing: 0;
+  }
+
+  /* 未开始：淡墨；学习中：浓墨常驻反转 */
+  .toc a.idle { color: var(--dim); }
+  .toc a.idle .sup { color: var(--dim); }
+
+  /* hover 即时反转，无过渡——数字感 */
+  .toc a:hover { background: var(--ink); color: var(--paper); padding-left: 18px; padding-right: 18px; }
+  .toc a.idle:hover { color: var(--paper); }
+  .toc a.idle:hover .sup { color: rgba(255,255,255,.6); }
+  [data-theme="dark"] .toc a.idle:hover .sup { color: rgba(0,0,0,.55); }
+
+  .toc a.current { background: var(--ink); color: var(--paper); padding-left: 18px; padding-right: 18px; }
+  .toc a.current .sup { color: rgba(255,255,255,.6); }
+  [data-theme="dark"] .toc a.current .sup { color: rgba(0,0,0,.55); }
+  .toc a.current .resume {
+    display: inline-block; margin-top: 1.4vh; font-size: 14px; font-weight: 600;
+    border-bottom: 2px solid var(--paper); padding-bottom: 2px;
+  }
+
+  .spec { margin-top: 10vh; }
+  .spec h2 { font-size: 12px; letter-spacing: .14em; color: var(--dim-2); margin-bottom: 12px; }
+  .spec li { font-size: 13px; color: var(--dim-2); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .spec li::before { content: ""; position: absolute; left: 0; top: .78em; width: 6px; height: 1px; background: var(--dim-2); }
+
+  nav.demos {
+    position: fixed; right: 20px; bottom: 20px; display: flex; gap: 4px;
+    background: var(--paper); border: 1px solid var(--dim); border-radius: 999px; padding: 4px;
+    font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.06);
+  }
+  nav.demos a { padding: 5px 12px; border-radius: 999px; text-decoration: none; color: var(--dim-2); }
+  nav.demos a.here { background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">学</span>学数有道</div>
+  <div class="top-actions"><span>阅读</span><button class="theme-btn" onclick="toggleTheme()">暗色</button><span>kz · 退出</span></div>
+</header>
+
+<main>
+  <div class="ledger tnum">
+    <span class="book">高等代数（上册）丘维声 ⌄</span>
+    <span>6 章 · 1514 个知识点 · 1 个已探索</span>
+  </div>
+
+  <div class="toc">
+    <a href="#" class="current tnum">
+      <span class="sup"><span>第一章 · 学习中</span><span>1 / 112</span></span>
+      <h2>线性方程组的解法</h2>
+      <span class="resume">▶ 继续 1.2 解的情况及其判别准则 →</span>
+    </a>
+    <a href="#" class="idle tnum">
+      <span class="sup"><span>第二章 · 尚未开始</span><span>273 个知识点</span></span>
+      <h2>行列式</h2>
+    </a>
+    <a href="#" class="idle tnum">
+      <span class="sup"><span>第三章 · 尚未开始</span><span>443 个知识点</span></span>
+      <h2>线性方程组的解集的结构</h2>
+    </a>
+    <a href="#" class="idle tnum">
+      <span class="sup"><span>第四章 · 尚未开始</span><span>283 个知识点</span></span>
+      <h2>矩阵的运算</h2>
+    </a>
+    <a href="#" class="idle tnum">
+      <span class="sup"><span>第五章 · 尚未开始</span><span>193 个知识点</span></span>
+      <h2>矩阵的相抵与相似</h2>
+    </a>
+    <a href="#" class="idle tnum">
+      <span class="sup"><span>第六章 · 尚未开始</span><span>210 个知识点</span></span>
+      <h2>二次型 · 矩阵的合同</h2>
+    </a>
+  </div>
+
+  <section class="spec">
+    <h2>方案 B · 目录即页 — 语言规则</h2>
+    <ul>
+      <li>目录本身就是页面：章名用宋体大字（clamp 30–54px）堆叠，不另设 hero，当前章内嵌「继续」锚点</li>
+      <li>进度用墨浓度表达：学习中 = 100% 墨 + 常驻墨底反白；尚未开始 = 28% 淡墨，一眼扫出哪章在动</li>
+      <li>唯一交互是 hover 瞬时墨底反白（零过渡，数字感），整行可点进章节地图</li>
+      <li>激进约束：一个字族层级、纯黑白两色、一种形状（发丝线分隔的通栏行）、一种交互（反转）</li>
+    </ul>
+  </section>
+</main>
+
+<nav class="demos"><a href="a-ink-ledger.html">A 墨档</a><a class="here" href="b-toc-page.html">B 目录即页</a><a href="c-marginalia.html">C 行间注</a></nav>
+
+<script>
+  const saved = localStorage.getItem('lm-demo-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('lm-demo-theme', next);
+  }
+</script>
+</body>
+</html>

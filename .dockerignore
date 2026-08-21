@@ -8,6 +8,10 @@
 !deploy/
 !deploy/frontend/
 !deploy/frontend/nginx.conf
+!deploy/manim/
+!deploy/manim/Dockerfile
+!scripts/
+!scripts/run_manim_dispatcher.py
 !requirements.txt
 
 frontend/node_modules/

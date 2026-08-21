@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>学习地图 · 进度清单（方案 A2 小样）</title>
+<style>
+  :root {
+    --paper: #fafafa;
+    --ink: #0a0a0a;
+    --ink-2: #3d3d3d;
+    --ink-3: #6b6b6b;
+    --ink-4: #a3a3a3;
+    --line: #e5e5e5;
+    --track: #ececec;
+    --review: #e11d48;
+    --ease: cubic-bezier(.77, 0, .175, 1);
+  }
+  [data-theme="dark"] {
+    --paper: #0a0a0a;
+    --ink: #fafafa;
+    --ink-2: #c9c9c9;
+    --ink-3: #8f8f8f;
+    --ink-4: #5c5c5c;
+    --line: #262626;
+    --track: #1e1e1e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    transition: background .5s var(--ease), color .5s var(--ease);
+  }
+  .serif { font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif; }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .page { max-width: 920px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  /* ---------- 刊头 ---------- */
+  .masthead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--ink); }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand-mark { font-weight: 700; font-size: 15px; }
+  .brand-sub { font-size: 11px; letter-spacing: .22em; color: var(--ink-3); text-transform: uppercase; }
+  .masthead-right { display: flex; align-items: center; gap: 14px; }
+  .textbook-switch { font: inherit; background: none; border: none; cursor: pointer; font-size: 13px; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 2px 0; }
+  .theme-toggle { font: inherit; background: none; border: 1px solid var(--line); border-radius: 999px; width: 30px; height: 30px; cursor: pointer; color: var(--ink-2); }
+  .theme-toggle:hover { border-color: var(--ink-4); }
+
+  /* ---------- 正在读：行动区 ---------- */
+  .now { padding: 36px 0 32px; border-bottom: 1px solid var(--line); }
+  .label { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: baseline; gap: 8px; }
+  .label .zh { letter-spacing: .34em; }
+  .now-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-top: 12px; }
+  .now h1 { font-size: 30px; font-weight: 600; }
+  .now .meta { margin-top: 10px; font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px; }
+  .now-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .btn-primary {
+    font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink);
+    border-radius: 999px; padding: 11px 22px; font-size: 14px; font-weight: 600;
+    transition: background .2s var(--ease), color .2s var(--ease);
+  }
+  .btn-primary:hover { background: transparent; color: var(--ink); }
+  .btn-outline {
+    font: inherit; display: inline-flex; align-items: center; cursor: pointer;
+    background: none; color: var(--ink-2); border: 1.5px solid var(--line);
+    border-radius: 999px; padding: 11px 18px; font-size: 13px;
+    transition: border-color .2s var(--ease), color .2s var(--ease);
+  }
+  .btn-outline:hover { border-color: var(--ink); color: var(--ink); }
+  .now-progress { margin-top: 22px; display: flex; align-items: center; gap: 14px; }
+  .now-progress .bar { flex: 1; height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; }
+  .now-progress .bar i { display: block; height: 100%; background: var(--ink); }
+  .now-progress .mono { font-size: 12px; color: var(--ink-3); flex-shrink: 0; }
+
+  /* ---------- 清单头 ---------- */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 26px 0 14px; }
+  .list-head .mono { font-size: 12px; color: var(--ink-3); }
+
+  /* ---------- 章节行：可勾掉的清单项 ---------- */
+  .toc { list-style: none; border-top: 1px solid var(--line); }
+  .toc-row { border-bottom: 1px solid var(--line); }
+  .toc-row-main {
+    width: 100%; display: grid; grid-template-columns: 26px 44px 1fr 150px 92px auto;
+    gap: 16px; align-items: center; padding: 18px 10px;
+    background: none; border: none; font: inherit; color: inherit; cursor: pointer; text-align: left;
+    transition: background .2s var(--ease);
+  }
+  .toc-row-main:hover { background: color-mix(in srgb, var(--ink) 3.5%, transparent); }
+
+  /* 状态环：像练习册上的勾选圈 */
+  .ring { width: 19px; height: 19px; border-radius: 50%; border: 1.5px solid var(--ink-4); position: relative; overflow: hidden; flex-shrink: 0; }
+  .ring > i { position: absolute; left: 0; top: 0; bottom: 0; width: var(--p, 0%); background: var(--ink); display: block; }
+  .ring.learning { border-color: var(--ink); }
+  .ring.mastered { border-color: var(--ink); }
+  .ring.mastered > i { width: 100%; }
+  .ring.review { border-color: var(--review); }
+  .ring.review > i { width: 100%; background: var(--review); clip-path: polygon(0 35%, 35% 35%, 35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%); }
+
+  .toc-num { font-size: 12.5px; color: var(--ink-4); }
+  .toc-title { font-size: 17px; font-weight: 600; }
+  .toc-title .sub { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; color: var(--ink-3); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .toc-progress .bar { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; }
+  .toc-progress .bar i { display: block; height: 100%; background: var(--ink); }
+  .toc-progress .frac { display: block; margin-top: 5px; font-size: 11px; color: var(--ink-3); }
+  .toc-status { font-size: 12px; color: var(--ink-3); text-align: right; }
+  .toc-status.review { color: var(--review); font-weight: 600; }
+  .toc-go {
+    font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+    border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 13px; white-space: nowrap;
+    transition: all .2s var(--ease);
+  }
+  .toc-row-main:hover .toc-go { border-color: var(--ink); color: var(--ink); }
+
+  /* ---------- 展开的小节 ---------- */
+  .toc-detail { max-height: 0; overflow: hidden; transition: max-height .5s ease-in-out; }
+  .toc-row.open .toc-detail { max-height: 340px; }
+  .toc-detail-inner { padding: 2px 10px 22px 96px; }
+  .sec-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 14px; align-items: baseline; padding: 9px 0; border-top: 1px dashed var(--line); font-size: 13px; }
+  .sec-num { font-size: 11.5px; color: var(--ink-4); }
+  .sec-name { color: var(--ink-2); }
+  .sec-state { font-size: 11.5px; color: var(--ink-3); }
+
+  .rise { opacity: 0; animation: rise .6s var(--ease) forwards; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; } }
+
+  @media (max-width: 720px) {
+    .page { padding: 28px 18px 72px; }
+    .now-main { flex-direction: column; align-items: stretch; }
+    .now-actions { justify-content: flex-start; }
+    .toc-row-main { grid-template-columns: 26px 1fr auto; }
+    .toc-num, .toc-progress, .toc-status { display: none; }
+    .toc-detail-inner { padding-left: 52px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead rise" style="animation-delay:.05s">
+    <div class="brand"><span class="brand-mark">学数有道</span><span class="brand-sub">LearnMath</span></div>
+    <div class="masthead-right">
+      <button class="textbook-switch">高等代数（上册）丘维声 ▾</button>
+      <button class="theme-toggle" id="themeToggle" title="切换墨/纸">◐</button>
+    </div>
+  </header>
+
+  <!-- 正在读：大按钮 + 可见进度 -->
+  <section class="now rise" style="animation-delay:.12s">
+    <p class="label"><span>Continue</span><span class="zh">接着学</span></p>
+    <div class="now-main">
+      <div>
+        <h1 class="serif">第 1 章 · 线性方程组的解法</h1>
+        <div class="meta"><span class="mono">§1.2</span><span>线性方程组的解的情况及其判别准则</span><span>·</span><span>高等代数（上册）</span></div>
+      </div>
+      <div class="now-actions">
+        <button class="btn-outline">来源提问</button>
+        <button class="btn-primary"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>继续学习</button>
+      </div>
+    </div>
+    <div class="now-progress">
+      <div class="bar"><i style="width:0.9%"></i></div>
+      <span class="mono">本章 1/112 · 全书 1/1514</span>
+    </div>
+  </section>
+
+  <div class="list-head rise" style="animation-delay:.2s">
+    <p class="label"><span>Chapters</span><span class="zh">章节清单</span></p>
+    <p class="mono">6 章 · 点行展开小节</p>
+  </div>
+
+  <ol class="toc" id="toc">
+    <li class="toc-row open rise" style="animation-delay:.26s">
+      <button class="toc-row-main">
+        <span class="ring learning"><i style="--p:45%"></i></span>
+        <span class="toc-num mono">01</span>
+        <span class="toc-title serif">线性方程组的解法<span class="sub">消元法 · 初等行变换 · 阶梯形</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0.9%"></i></span><span class="frac mono">1 / 112</span></span>
+        <span class="toc-status">学习中</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner">
+        <div class="sec-row"><span class="sec-num mono">§1.1</span><span class="sec-name">线性方程组的解法（消元法）</span><span class="sec-state">学习中</span></div>
+        <div class="sec-row"><span class="sec-num mono">§1.2</span><span class="sec-name">线性方程组的解的情况及其判别准则</span><span class="sec-state">未探索</span></div>
+        <div class="sec-row"><span class="sec-num mono">§1.3</span><span class="sec-name">数域</span><span class="sec-state">未探索</span></div>
+      </div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.32s">
+      <button class="toc-row-main">
+        <span class="ring"><i style="--p:0%"></i></span>
+        <span class="toc-num mono">02</span>
+        <span class="toc-title serif">行列式<span class="sub">n 阶行列式的定义 · 性质 · 展开</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 273</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.38s">
+      <button class="toc-row-main">
+        <span class="ring"><i style="--p:0%"></i></span>
+        <span class="toc-num mono">03</span>
+        <span class="toc-title serif">线性方程组的解集的结构<span class="sub">解空间 · 基础解系</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 443</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.44s">
+      <button class="toc-row-main">
+        <span class="ring"><i style="--p:0%"></i></span>
+        <span class="toc-num mono">04</span>
+        <span class="toc-title serif">矩阵的运算<span class="sub">加法 · 乘法 · 逆矩阵</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 283</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.5s">
+      <button class="toc-row-main">
+        <span class="ring"><i style="--p:0%"></i></span>
+        <span class="toc-num mono">05</span>
+        <span class="toc-title serif">矩阵的相抵与相似<span class="sub">相抵标准形 · 特征值</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 193</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row rise" style="animation-delay:.56s">
+      <button class="toc-row-main">
+        <span class="ring review"><i></i></span>
+        <span class="toc-num mono">06</span>
+        <span class="toc-title serif">二次型 · 矩阵的合同<span class="sub">标准形 · 正定性（示例：需巩固状态）</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:34%"></i></span><span class="frac mono">71 / 210</span></span>
+        <span class="toc-status review">需巩固</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+  </ol>
+
+  <p class="mono rise" style="animation-delay:.7s; margin-top:36px; font-size:11px; color:var(--ink-4); letter-spacing:.06em;">
+    方案 A2 · 进度清单 — 墨纸配色 / 勾选圈状态 / 每行可见进度 / 实心主按钮（第 6 章演示"需巩固"红圈）
+  </p>
+</div>
+
+<script>
+  document.querySelectorAll('.toc-row-main').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.toc-row').classList.toggle('open'));
+  });
+  const toggle = document.getElementById('themeToggle');
+  const apply = mode => document.documentElement.dataset.theme = mode;
+  apply(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  toggle.addEventListener('click', () => {
+    apply(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>

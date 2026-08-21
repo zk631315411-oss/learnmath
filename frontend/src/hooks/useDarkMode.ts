@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { loadString, saveString } from '../utils/storage';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 // 暗色偏好存储键：值存 '1'（暗）/ '0'（亮），统一走 storage 的字符串读写出口；
 // 采用字符串而非 loadJSON/saveJSON，与历史遗留的裸字符串键（如 threadId）格式一致，避免 JSON 包装差异
-const DARK_MODE_KEY = 'learnmath_dark';
-
 // 读取已存偏好：无记录返回 null（表示"跟随系统"），与"用户显式选了亮色"区分开。
 // loadString 内部已有 try/catch 兜底，读取失败同样按"无记录"降级为跟随系统
 function getSavedPreference(): boolean | null {
-  const saved = loadString(DARK_MODE_KEY, null);
+  const saved = loadString(STORAGE_KEYS.darkMode, null);
   if (saved === null) return null;
   return saved === '1';
 }
@@ -60,7 +59,7 @@ export function useDarkMode(): { isDark: boolean; toggle: () => void } {
     }
     setIsDark(prev => {
       const next = !prev;
-      saveString(DARK_MODE_KEY, next ? '1' : '0');
+      saveString(STORAGE_KEYS.darkMode, next ? '1' : '0');
       return next;
     });
   }, []);

@@ -36,10 +36,15 @@ export class ApiError extends Error {
   }
 }
 
-export function fromResponse(res: Response, body?: Record<string, any>): ApiError {
+export type ApiErrorBody = {
+  detail?: string | { message?: string; code?: string; [key: string]: unknown };
+  [key: string]: unknown;
+};
+
+export function fromResponse(res: Response, body?: ApiErrorBody): ApiError {
   const detail = body?.detail;
   const structured = detail && typeof detail === 'object' ? detail : undefined;
-  const detailMessage = structured?.message || detail;
+  const detailMessage = structured?.message || (typeof detail === 'string' ? detail : undefined);
   const detailCode = structured?.code;
   let type: ErrorType;
   let message: string;

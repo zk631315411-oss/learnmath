@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 E · 页码尺 — 学数有道</title>
+<style>
+  :root {
+    --ink: #0a0a0a; --ink-2: #3d3d3c; --ink-3: #8b8b88;
+    --paper: #fafafa; --line: #e0e0de; --card: #ffffff; --seg: #f1f1ef;
+    /* 五态色：与章内梯子视图同一语义（LEARNING_MAP_LADDER_VIEW_PLAN 2.2） */
+    --st-un: #cbd5e1; --st-ing: #fbbf24; --st-base: #6ee7b7; --st-done: #059669; --st-review: #fb7185;
+  }
+  [data-theme="dark"] {
+    --ink: #f5f5f4; --ink-2: #c9c9c6; --ink-3: #757572;
+    --paper: #0e0e0d; --line: #2c2c2a; --card: #161614; --seg: #1c1c1a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; transition: background .2s, color .2s; }
+  .serif { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .brand .mark { width: 26px; height: 26px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 13px; border-radius: 6px; }
+  .top-actions { display: flex; gap: 16px; font-size: 13px; color: var(--ink-3); align-items: center; }
+  .theme-btn { background: none; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  .ledger { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--ink-3); margin-bottom: 120px; }
+  .ledger .book { color: var(--ink); font-weight: 600; font-size: 15px; }
+
+  /* ── 页码尺：一条代表全书 1514 个知识点的尺，按章分段 ── */
+
+  /* 五态图例：与章内梯子图例同组色 */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin-bottom: 26px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .ruler-wrap { position: relative; }
+  .ruler { display: grid; grid-template-columns: 112fr 273fr 443fr 283fr 193fr 210fr; height: 36px; border: 1px solid var(--ink); border-radius: 4px; overflow: hidden; }
+  .seg { position: relative; background: var(--seg); border-right: 1px solid var(--paper); cursor: pointer; transition: filter .2s; }
+  .seg:last-child { border-right: none; }
+  .seg:hover { filter: brightness(.94); }
+  .seg .fill { position: absolute; inset: 0 auto 0 0; background: var(--st-ing); } /* 学习中章的章内进度；已掌握段整段 var(--st-done) */
+  /* 章名交错标注：奇数段在上方，偶数段在下方 */
+  .seg .tag { position: absolute; font-size: 12px; white-space: nowrap; color: var(--ink-2); }
+  .seg .tag small { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .seg .tag.up { bottom: 52px; left: 0; }
+  .seg .tag.down { top: 52px; left: 0; }
+  .seg .tag::before { content: ""; position: absolute; left: 0; width: 1px; background: var(--ink-3); }
+  .seg .tag.up::before { top: 100%; height: 14px; margin-top: 4px; }
+  .seg .tag.down::before { bottom: 100%; height: 14px; margin-bottom: 4px; }
+  .seg.hot { background: var(--paper); }
+  .seg.hot .tag { color: var(--ink); font-weight: 600; }
+
+  /* 游标 = 你读到的位置 */
+  .cursor { position: absolute; top: -8px; height: 52px; left: 0.6%; width: 2px; background: var(--ink); z-index: 3; }
+  .cursor::before { content: ""; position: absolute; top: -5px; left: -4px; width: 10px; height: 10px; background: var(--ink); transform: rotate(45deg); }
+
+  .here {
+    position: absolute; bottom: 66px; left: 0; width: 264px;
+    background: var(--card); border: 1px solid var(--ink); border-radius: 10px;
+    padding: 16px 18px; box-shadow: 0 8px 24px rgba(0,0,0,.08); z-index: 2;
+  }
+  [data-theme="dark"] .here { box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .here .kicker { font-size: 11px; letter-spacing: .16em; color: var(--ink-3); margin-bottom: 8px; }
+  .here h1 { font-size: 19px; font-weight: 700; line-height: 1.35; }
+  .here .meta { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); }
+  .here .row2 { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .here .frac { font-size: 13px; color: var(--ink-2); }
+  .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 600; border-radius: 7px; }
+  .btn-primary:hover { opacity: .82; }
+
+  .ruler-foot { margin-top: 96px; display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); }
+
+  @media (max-width: 720px) {
+    .ledger { margin-bottom: 150px; }
+    .seg .tag { font-size: 10.5px; }
+    .here { width: 230px; }
+  }
+
+  .spec { margin-top: 72px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .spec h2 { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); margin-bottom: 12px; }
+  .spec li { font-size: 13px; color: var(--ink-2); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .spec li::before { content: ""; position: absolute; left: 0; top: .78em; width: 6px; height: 1px; background: var(--ink-3); }
+
+  nav.demos { position: fixed; right: 20px; bottom: 20px; display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  nav.demos a { padding: 5px 12px; border-radius: 999px; text-decoration: none; color: var(--ink-3); }
+  nav.demos a.here2 { background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">学</span>学数有道</div>
+  <div class="top-actions"><span>阅读</span><button class="theme-btn" onclick="toggleTheme()">暗色</button><span>kz · 退出</span></div>
+</header>
+
+<main>
+  <div class="ledger tnum">
+    <span class="book">高等代数（上册）丘维声 ⌄</span>
+    <span>6 章 · 1514 个知识点 · 1 个已探索</span>
+  </div>
+
+  <div class="legend tnum">
+    <span><i style="background:var(--st-un)"></i>未探索</span>
+    <span><i style="background:var(--st-ing)"></i>学习中</span>
+    <span><i style="background:var(--st-base)"></i>基本掌握</span>
+    <span><i style="background:var(--st-done)"></i>已掌握</span>
+    <span><i style="background:var(--st-review)"></i>需巩固</span>
+  </div>
+  <div class="ruler-wrap">
+    <div class="here">
+      <p class="kicker">你在这里 · 第 1 章</p>
+      <h1 class="serif">线性方程组的解法</h1>
+      <p class="meta">1.2 解的情况及其判别准则 · 初等行变换</p>
+      <div class="row2 tnum"><span class="frac">1 / 112 已探索</span><button class="btn-primary">▶ 继续学习</button></div>
+    </div>
+
+    <div class="ruler tnum">
+      <div class="seg hot" style="grid-column:1">
+        <span class="fill" style="width:1%"></span>
+        <span class="tag down">第 1 章 · 线性方程组的解法<small>112 个知识点 · 学习中</small></span>
+      </div>
+      <div class="seg" style="grid-column:2"><span class="tag up">第 2 章 · 行列式<small>273 个知识点</small></span></div>
+      <div class="seg" style="grid-column:3"><span class="tag down">第 3 章 · 线性方程组的解集的结构<small>443 个知识点</small></span></div>
+      <div class="seg" style="grid-column:4"><span class="tag up">第 4 章 · 矩阵的运算<small>283 个知识点</small></span></div>
+      <div class="seg" style="grid-column:5"><span class="tag down">第 5 章 · 矩阵的相抵与相似<small>193 个知识点</small></span></div>
+      <div class="seg" style="grid-column:6"><span class="tag up">第 6 章 · 二次型 · 矩阵的合同<small>210 个知识点</small></span></div>
+    </div>
+    <div class="cursor"></div>
+
+    <div class="ruler-foot"><span>全书起点</span><span>1514 个知识点</span><span>全书终点</span></div>
+  </div>
+
+  <section class="spec" style="margin-top:60px">
+    <h2>方案 E · 页码尺 — 语言规则</h2>
+    <ul>
+      <li>整本书就是一条尺：六章按知识点体量分段，章与章的边界即刻度——"第 3 章有多厚"直接看得见</li>
+      <li>视觉锚点 = 游标：菱形刻针 + 竖线标出你读到的位置，上方浮卡只装小节名、进度分数、继续按钮</li>
+      <li>章名交错标注（奇上偶下），像地图注记，窄段不挤；章内进度填色用五态色（学习中 amber-400，已掌握整段 emerald-600），与章内梯子同组</li>
+      <li>点击任何一段进该章地图；将来"已掌握"段整体填墨、"需巩固"段填斜纹，规则仍是单色</li>
+    </ul>
+  </section>
+</main>
+
+<nav class="demos"><a href="a-ink-ledger.html">A</a><a href="d-route-map.html">D 路径图</a><a class="here2" href="e-page-ruler.html">E 页码尺</a><a href="f-card-drawer.html">F 档案盒</a></nav>
+
+<script>
+  const saved = localStorage.getItem('lm-demo-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('lm-demo-theme', next);
+  }
+</script>
+</body>
+</html>

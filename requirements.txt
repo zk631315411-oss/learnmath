@@ -10,3 +10,5 @@ sse-starlette>=2.0.0
 httpx>=0.28.0
 pillow>=10.2.0
 neo4j>=5.0.0
+redis>=5.0,<6
+rq>=2.0,<3

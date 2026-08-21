@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>学习地图 · 进度清单（方案 A3 小样）</title>
+<style>
+  :root {
+    --paper: #fafafa;
+    --ink: #0a0a0a;
+    --ink-2: #3d3d3d;
+    --ink-3: #6b6b6b;
+    --ink-4: #a3a3a3;
+    --line: #e5e5e5;
+    --track: #ececec;
+    --review: #e11d48;
+    --ease: cubic-bezier(.77, 0, .175, 1);
+  }
+  /* 暗色沿用旧版 slate 体系，不做纯墨反转 */
+  [data-theme="dark"] {
+    --paper: #0f172a;      /* slate-900 */
+    --ink: #f1f5f9;        /* slate-100 */
+    --ink-2: #cbd5e1;      /* slate-300 */
+    --ink-3: #94a3b8;      /* slate-400 */
+    --ink-4: #64748b;      /* slate-500 */
+    --line: #334155;       /* slate-700 */
+    --track: #1e293b;      /* slate-800 */
+    --review: #fb7185;     /* rose-400 */
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    transition: background .3s, color .3s;
+  }
+  .serif { font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "SimSun", serif; }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .page { max-width: 920px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  /* ---------- 刊头 ---------- */
+  .masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--ink); }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand-mark { font-weight: 700; font-size: 15px; }
+  .masthead-right { display: flex; align-items: center; gap: 12px; }
+  .textbook-switch { font: inherit; background: none; border: none; cursor: pointer; font-size: 13px; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 2px 0; }
+  /* 旧版暗色开关：线框图标按钮 */
+  .icon-button {
+    display: grid; place-items: center; width: 34px; height: 34px; cursor: pointer;
+    background: none; border: 1px solid var(--line); border-radius: 8px; color: var(--ink-2);
+    transition: border-color .2s, color .2s;
+  }
+  .icon-button:hover { border-color: var(--ink-4); color: var(--ink); }
+  [data-theme="dark"] .icon-sun { display: block; }
+  [data-theme="dark"] .icon-moon { display: none; }
+  .icon-sun { display: none; }
+
+  /* ---------- 正在读 ---------- */
+  .now { padding: 32px 0 28px; border-bottom: 1px solid var(--line); }
+  .now-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .now h1 { font-size: 28px; font-weight: 600; }
+  .now .meta { margin-top: 10px; font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px; }
+  .now-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .btn-primary {
+    font: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    background: var(--ink); color: var(--paper); border: 1.5px solid var(--ink);
+    border-radius: 10px; padding: 10px 20px; font-size: 14px; font-weight: 600;
+    transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .82; }
+  [data-theme="dark"] .btn-primary { background: #f1f5f9; color: #0f172a; border-color: #f1f5f9; }
+  .btn-outline {
+    font: inherit; display: inline-flex; align-items: center; cursor: pointer;
+    background: none; color: var(--ink-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 16px; font-size: 13px;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-outline:hover { border-color: var(--ink); color: var(--ink); }
+  .now-progress { margin-top: 20px; display: flex; align-items: center; gap: 14px; }
+  .now-progress .bar { flex: 1; height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; }
+  .now-progress .bar i { display: block; height: 100%; background: var(--ink); }
+  [data-theme="dark"] .now-progress .bar i { background: #94a3b8; }
+  .now-progress .mono { font-size: 12px; color: var(--ink-3); flex-shrink: 0; }
+
+  /* ---------- 清单头 ---------- */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 26px 0 12px; }
+  .list-head h2 { font-size: 14px; font-weight: 600; }
+  .list-head .mono { font-size: 12px; color: var(--ink-3); }
+
+  /* ---------- 章节行 ---------- */
+  .toc { list-style: none; border-top: 1px solid var(--line); }
+  .toc-row { border-bottom: 1px solid var(--line); }
+  .toc-row-main {
+    width: 100%; display: grid; grid-template-columns: 1fr 150px 80px auto;
+    gap: 20px; align-items: center; padding: 16px 10px;
+    background: none; border: none; font: inherit; color: inherit; cursor: pointer; text-align: left;
+    transition: background .15s;
+  }
+  .toc-row-main:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  [data-theme="dark"] .toc-row-main:hover { background: rgba(148, 163, 184, .08); }
+  .toc-ch { display: block; font-size: 11.5px; color: var(--ink-4); margin-bottom: 3px; }
+  .toc-title { font-size: 16px; font-weight: 600; }
+  .toc-progress .bar { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; }
+  .toc-progress .bar i { display: block; height: 100%; background: var(--ink); }
+  [data-theme="dark"] .toc-progress .bar i { background: #94a3b8; }
+  .toc-progress .frac { display: block; margin-top: 5px; font-size: 11px; color: var(--ink-3); }
+  .toc-status { font-size: 12px; color: var(--ink-3); text-align: right; }
+  .toc-status.review { color: var(--review); font-weight: 600; }
+  .toc-go {
+    font-size: 12.5px; font-weight: 500; color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; white-space: nowrap;
+    transition: border-color .15s, color .15s;
+  }
+  .toc-row-main:hover .toc-go { border-color: var(--ink); color: var(--ink); }
+
+  /* ---------- 展开的小节 ---------- */
+  .toc-detail { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+  .toc-row.open .toc-detail { max-height: 340px; }
+  .toc-detail-inner { padding: 0 10px 18px 10px; }
+  .sec-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 14px; align-items: baseline; padding: 9px 0; border-top: 1px dashed var(--line); font-size: 13px; }
+  .sec-num { font-size: 11.5px; color: var(--ink-4); }
+  .sec-name { color: var(--ink-2); }
+  .sec-state { font-size: 11.5px; color: var(--ink-3); }
+
+  @media (max-width: 720px) {
+    .page { padding: 28px 18px 72px; }
+    .now-main { flex-direction: column; align-items: stretch; }
+    .now-actions { justify-content: flex-start; }
+    .toc-row-main { grid-template-columns: 1fr auto; }
+    .toc-progress, .toc-status { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="brand"><span class="brand-mark">学数有道</span></div>
+    <div class="masthead-right">
+      <button class="textbook-switch">高等代数（上册）丘维声 ▾</button>
+      <button class="icon-button" id="themeToggle" title="切换到暗色模式" aria-label="切换到暗色模式">
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 正在读 -->
+  <section class="now">
+    <div class="now-main">
+      <div>
+        <h1 class="serif">第 1 章 · 线性方程组的解法</h1>
+        <div class="meta"><span>§1.2 线性方程组的解的情况及其判别准则</span><span>·</span><span>高等代数（上册）丘维声</span></div>
+      </div>
+      <div class="now-actions">
+        <button class="btn-outline">来源提问</button>
+        <button class="btn-primary"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>继续学习</button>
+      </div>
+    </div>
+    <div class="now-progress">
+      <div class="bar"><i style="width:0.9%"></i></div>
+      <span class="mono">本章 1/112 · 全书 1/1514</span>
+    </div>
+  </section>
+
+  <div class="list-head">
+    <h2>全部章节</h2>
+    <p class="mono">6 章 · 1514 个知识点 · 1 个已探索</p>
+  </div>
+
+  <ol class="toc" id="toc">
+    <li class="toc-row open">
+      <button class="toc-row-main">
+        <span><span class="toc-ch">第 1 章</span><span class="toc-title serif">线性方程组的解法</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0.9%"></i></span><span class="frac mono">1 / 112</span></span>
+        <span class="toc-status">学习中</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner">
+        <div class="sec-row"><span class="sec-num mono">§1.1</span><span class="sec-name">线性方程组的解法（消元法）</span><span class="sec-state">学习中</span></div>
+        <div class="sec-row"><span class="sec-num mono">§1.2</span><span class="sec-name">线性方程组的解的情况及其判别准则</span><span class="sec-state">未探索</span></div>
+        <div class="sec-row"><span class="sec-num mono">§1.3</span><span class="sec-name">数域</span><span class="sec-state">未探索</span></div>
+      </div></div>
+    </li>
+    <li class="toc-row">
+      <button class="toc-row-main">
+        <span><span class="toc-ch">第 2 章</span><span class="toc-title serif">行列式</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 273</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row">
+      <button class="toc-row-main">
+        <span><span class="toc-ch">第 3 章</span><span class="toc-title serif">线性方程组的解集的结构</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 443</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row">
+      <button class="toc-row-main">
+        <span><span class="toc-ch">第 4 章</span><span class="toc-title serif">矩阵的运算</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 283</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row">
+      <button class="toc-row-main">
+        <span><span class="toc-ch">第 5 章</span><span class="toc-title serif">矩阵的相抵与相似</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:0%"></i></span><span class="frac mono">0 / 193</span></span>
+        <span class="toc-status">尚未开始</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+    <li class="toc-row">
+      <button class="toc-row-main">
+        <span><span class="toc-ch">第 6 章</span><span class="toc-title serif">二次型 · 矩阵的合同</span></span>
+        <span class="toc-progress"><span class="bar"><i style="width:34%"></i></span><span class="frac mono">71 / 210</span></span>
+        <span class="toc-status review">需巩固</span>
+        <span class="toc-go">查看地图 →</span>
+      </button>
+      <div class="toc-detail"><div class="toc-detail-inner"></div></div>
+    </li>
+  </ol>
+
+</div>
+
+<script>
+  document.querySelectorAll('.toc-row-main').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.toc-row').classList.toggle('open'));
+  });
+  const toggle = document.getElementById('themeToggle');
+  const apply = mode => document.documentElement.dataset.theme = mode;
+  apply(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  toggle.addEventListener('click', () => {
+    apply(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>

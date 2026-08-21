@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 D · 路径图 — 学数有道</title>
+<style>
+  :root {
+    --ink: #0a0a0a; --ink-2: #3d3d3c; --ink-3: #8b8b88;
+    --paper: #fafafa; --line: #e0e0de; --card: #ffffff;
+    /* 五态色：与章内梯子视图同一语义（LEARNING_MAP_LADDER_VIEW_PLAN 2.2） */
+    --st-un: #cbd5e1; --st-ing: #fbbf24; --st-base: #6ee7b7; --st-done: #059669; --st-review: #fb7185;
+  }
+  [data-theme="dark"] {
+    --ink: #f5f5f4; --ink-2: #c9c9c6; --ink-3: #757572;
+    --paper: #0e0e0d; --line: #2c2c2a; --card: #161614;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; transition: background .2s, color .2s; }
+  .serif { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .brand .mark { width: 26px; height: 26px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 13px; border-radius: 6px; }
+  .top-actions { display: flex; gap: 16px; font-size: 13px; color: var(--ink-3); align-items: center; }
+  .theme-btn { background: none; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 48px 32px 96px; }
+
+
+  /* 五态图例：与章内梯子图例同组色 */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin-bottom: 26px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .ledger { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--ink-3); margin-bottom: 20px; }
+  .ledger .book { color: var(--ink); font-weight: 600; font-size: 15px; }
+
+  /* ── 路径图：站间距 = 本章知识点体量 ── */
+  .route {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 112fr) minmax(7.5rem, 273fr) minmax(7.5rem, 443fr) minmax(7.5rem, 283fr) minmax(7.5rem, 193fr) minmax(7.5rem, 210fr);
+    overflow-x: auto; padding-top: 152px; scrollbar-width: thin;
+  }
+  .stop { position: relative; padding-top: 26px; }
+  /* 轨道线 */
+  .stop::before { content: ""; position: absolute; top: 6px; left: 0; right: 0; height: 2px; background: var(--line); }
+  .stop:last-child::before { right: 0; }
+  /* 站点圆 */
+  .stop .dot {
+    position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--st-un); background: var(--paper); transition: border-color .2s;
+  }
+  /* 已走过/当前：实心墨 */
+  .stop.now .dot { background: var(--st-ing); border-color: var(--st-ing); box-shadow: 0 0 0 5px color-mix(in srgb, var(--st-ing) 22%, transparent); }
+  .stop a { text-decoration: none; color: inherit; display: block; }
+  .stop .name {
+    font-size: 14px; font-weight: 600; color: var(--ink-3); transition: color .2s;
+    line-height: 1.45; min-height: 2.9em; display: block; overflow-wrap: break-word;
+  }
+  .stop .no { font-size: 11px; letter-spacing: .12em; color: var(--ink-3); margin-bottom: 4px; display: block; }
+  .stop .cnt { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; display: block; }
+  .stop a:hover .name, .stop a:hover .no { color: var(--ink); }
+  .stop a:hover .dot { border-color: var(--ink); }
+  .stop.now .name, .stop.now .no { color: var(--ink); }
+
+  /* 当前位置卡：浮在路径上方 */
+  .here {
+    position: absolute; bottom: calc(100% + 8px); left: -4px; width: 224px;
+    background: var(--card); border: 1px solid var(--ink); border-radius: 10px;
+    padding: 13px 15px; box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  }
+  [data-theme="dark"] .here { box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .here::after {
+    content: ""; position: absolute; bottom: -7px; left: 12px; width: 12px; height: 12px;
+    background: var(--card); border-right: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
+    transform: rotate(45deg);
+  }
+  .here .kicker { font-size: 11px; letter-spacing: .16em; color: var(--ink-3); margin-bottom: 8px; }
+  .here h1 { font-size: 17px; font-weight: 700; line-height: 1.35; }
+  .here .meta { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .here .row2 { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .here .frac { font-size: 13px; color: var(--ink-2); }
+  .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 600; border-radius: 7px; }
+  .btn-primary:hover { opacity: .82; }
+
+  /* 移动降级：路径转纵向 */
+  @media (max-width: 720px) {
+    .route { display: flex; flex-direction: column; gap: 0; overflow: visible; padding-top: 0; }
+    .stop { padding: 0 0 26px 30px; }
+    .stop::before { top: 0; bottom: 0; left: 6px; right: auto; width: 2px; height: auto; }
+    .stop .dot { top: 2px; }
+    .stop .name { min-height: 0; }
+    .here { position: static; width: auto; margin: 0 0 20px 30px; }
+    .here::after { display: none; }
+    .ledger { margin-bottom: 40px; }
+  }
+
+  .spec { margin-top: 80px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .spec h2 { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); margin-bottom: 12px; }
+  .spec li { font-size: 13px; color: var(--ink-2); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .spec li::before { content: ""; position: absolute; left: 0; top: .78em; width: 6px; height: 1px; background: var(--ink-3); }
+
+  nav.demos { position: fixed; right: 20px; bottom: 20px; display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  nav.demos a { padding: 5px 12px; border-radius: 999px; text-decoration: none; color: var(--ink-3); }
+  nav.demos a.here2 { background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">学</span>学数有道</div>
+  <div class="top-actions"><span>阅读</span><button class="theme-btn" onclick="toggleTheme()">暗色</button><span>kz · 退出</span></div>
+</header>
+
+<main>
+  <div class="ledger tnum">
+    <span class="book">高等代数（上册）丘维声 ⌄</span>
+    <span>6 章 · 1514 个知识点 · 1 个已探索</span>
+  </div>
+
+  <div class="legend tnum">
+    <span><i style="background:var(--st-un)"></i>未探索</span>
+    <span><i style="background:var(--st-ing)"></i>学习中</span>
+    <span><i style="background:var(--st-base)"></i>基本掌握</span>
+    <span><i style="background:var(--st-done)"></i>已掌握</span>
+    <span><i style="background:var(--st-review)"></i>需巩固</span>
+  </div>
+  <div class="route">
+    <div class="stop now">
+      <div class="here">
+        <p class="kicker">你在这里 · 第 1 章</p>
+        <h1 class="serif">线性方程组的解法</h1>
+        <p class="meta">1.2 解的情况及其判别准则 · 初等行变换</p>
+        <div class="row2 tnum"><span class="frac">1 / 112 已探索</span><button class="btn-primary">▶ 继续学习</button></div>
+      </div>
+      <span class="dot"></span>
+      <a href="#"><span class="no">第 1 章</span><span class="name">线性方程组的解法</span><span class="cnt">112 个知识点</span></a>
+    </div>
+    <div class="stop"><span class="dot"></span><a href="#"><span class="no">第 2 章</span><span class="name">行列式</span><span class="cnt">273 个知识点</span></a></div>
+    <div class="stop"><span class="dot"></span><a href="#"><span class="no">第 3 章</span><span class="name">线性方程组的解集的结构</span><span class="cnt">443 个知识点</span></a></div>
+    <div class="stop"><span class="dot"></span><a href="#"><span class="no">第 4 章</span><span class="name">矩阵的运算</span><span class="cnt">283 个知识点</span></a></div>
+    <div class="stop"><span class="dot"></span><a href="#"><span class="no">第 5 章</span><span class="name">矩阵的相抵与相似</span><span class="cnt">193 个知识点</span></a></div>
+    <div class="stop"><span class="dot"></span><a href="#"><span class="no">第 6 章</span><span class="name">二次型 · 矩阵的合同</span><span class="cnt">210 个知识点</span></a></div>
+  </div>
+
+  <section class="spec">
+    <h2>方案 D · 路径图 — 语言规则</h2>
+    <ul>
+      <li>页面即地图：六个章节是一条轨道上的六个站，<b>站间距 = 本章知识点体量</b>（第 3 章 443 个知识点就是更远的一站）</li>
+      <li>视觉锚点 = 「你在这里」：当前站实心墨点 + 晕环，上方浮一张描墨边的位置卡，只装三件事——学到哪、进度几分之几、继续按钮</li>
+      <li>状态色与章内梯子同组五态：当前站 = amber-400 实心 + 晕环；未探索 = slate-300 空心圈；已掌握 = emerald-600、需巩固 = rose-400——两层界面一套语言</li>
+      <li>信息密度主动降低：每站只露章号、章名、知识点数三样，hover 才转浓墨，页面第一次有了"远近"</li>
+      <li>窄屏自动转纵向路径，卡片内联到流里</li>
+    </ul>
+  </section>
+</main>
+
+<nav class="demos"><a href="a-ink-ledger.html">A</a><a class="here2" href="d-route-map.html">D 路径图</a><a href="e-page-ruler.html">E 页码尺</a><a href="f-card-drawer.html">F 档案盒</a></nav>
+
+<script>
+  const saved = localStorage.getItem('lm-demo-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('lm-demo-theme', next);
+  }
+</script>
+</body>
+</html>

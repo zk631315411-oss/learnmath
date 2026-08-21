@@ -1,4 +1,4 @@
-import { ApiError, ErrorType, fromNetworkError, fromResponse, timeoutError } from './error';
+import { ApiError, ErrorType, fromNetworkError, fromResponse, timeoutError, type ApiErrorBody } from './error';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -93,6 +93,16 @@ function buildFetchConfig(config: RequestOptions): RequestInit {
   };
 }
 
+async function responseError(response: Response): Promise<ApiError> {
+  let body: ApiErrorBody | undefined;
+  try {
+    body = await response.json() as ApiErrorBody;
+  } catch {
+    // Non-JSON error bodies use the status-derived message.
+  }
+  return fromResponse(response, body);
+}
+
 export async function request<T = unknown>(config: RequestOptions): Promise<T> {
   const {
     url,
@@ -150,13 +160,7 @@ export async function request<T = unknown>(config: RequestOptions): Promise<T> {
         if (rawResponse) {
           // rawResponse 模式仍需检查 HTTP 状态码，SSE 流在 5xx 时不应静默通过
           if (!res.ok) {
-            let body: Record<string, any> | undefined;
-            try {
-              body = await res.json();
-            } catch {
-              // 响应体非 JSON 时忽略
-            }
-            const apiErr = fromResponse(res, body);
+            const apiErr = await responseError(res);
 
             if (apiErr.retryable && attempt < maxRetries) {
               lastError = apiErr;
@@ -172,13 +176,7 @@ export async function request<T = unknown>(config: RequestOptions): Promise<T> {
         }
 
         if (!res.ok) {
-          let body: Record<string, any> | undefined;
-          try {
-            body = await res.json();
-          } catch {
-            // 响应体非 JSON 时忽略
-          }
-          const apiErr = fromResponse(res, body);
+          const apiErr = await responseError(res);
 
           if (apiErr.retryable && attempt < maxRetries) {
             lastError = apiErr;

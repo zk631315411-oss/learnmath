@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import type { CropBBox, ToolActivity } from '../types';
+import type { CropBBox, ManimArtifact, ToolActivity } from '../types';
 
 export interface Marker {
   id: string;
@@ -20,6 +20,7 @@ export interface Marker {
   answer: string | null;  // null = AI 思考中
   thinking: string | null;  // AI 思维链
   tool_activities?: ToolActivity[] | string | null;
+  artifacts?: ManimArtifact[];
   follow_ups: Array<{
     question: string;
     answer: string | null;
@@ -34,13 +35,13 @@ export interface Marker {
     qa_turn_id?: string | null;
     status?: 'pending' | 'completed' | 'interrupted' | 'cancelled' | null;
     error_message?: string | null;
+    artifacts?: ManimArtifact[];
   }>;
 }
 
 interface Props {
   markers: Marker[];
   currentPage: number;
-  containerRef?: React.RefObject<HTMLDivElement | null>;
   containerHeight?: number;
   onMarkerClick: (marker: Marker) => void;
 }

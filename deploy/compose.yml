@@ -17,8 +17,79 @@ services:
       NEO4J_USER: ${NEO4J_USER:-}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
       NEO4J_DATABASE: neo4j
+      MANIM_REDIS_URL: redis://redis:6379/0
+      MANIM_SPOOL_DIR: /app/manim-spool
+      MANIM_RENDER_DIR: /app/manim-render
     volumes:
       - app-data:/app/data
+      - manim-spool:/app/manim-spool
+      - manim-render:/app/manim-render:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - default
+      - manim-queue
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.5-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - manim-queue
+    restart: unless-stopped
+
+  manim-dispatcher:
+    image: learnmath-api:${LEARNMATH_VERSION:-local}
+    command: ["python", "-m", "scripts.run_manim_dispatcher"]
+    environment:
+      MANIM_REDIS_URL: redis://redis:6379/0
+      MANIM_QUEUE: learnmath-manim
+      MANIM_SPOOL_DIR: /app/manim-spool
+      MANIM_RENDER_DIR: /app/manim-render
+    volumes:
+      - manim-spool:/app/manim-spool
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - manim-queue
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  manim-renderer:
+    image: learnmath-manim:${LEARNMATH_VERSION:-local}
+    environment:
+      MANIM_SPOOL_DIR: /var/lib/learnmath/spool
+      MANIM_RENDER_DIR: /var/lib/learnmath/render
+      MANIM_RENDER_TIMEOUT_SECONDS: 90
+      MANIM_MAX_DURATION_SECONDS: 12
+    volumes:
+      - manim-spool:/var/lib/learnmath/spool
+      - manim-render:/var/lib/learnmath/render
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:size=384m,mode=1777
+      - /home/manimuser:size=32m,uid=1000,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1.0
     restart: unless-stopped
 
   web:
@@ -34,3 +105,10 @@ services:
 
 volumes:
   app-data:
+  manim-spool:
+  manim-render:
+
+networks:
+  default:
+  manim-queue:
+    internal: true

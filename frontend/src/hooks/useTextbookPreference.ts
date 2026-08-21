@@ -1,52 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TEXTBOOKS } from '../textbooks';
 import type { TextbookId } from '../textbooks';
+import { loadString, saveString } from '../utils/storage';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 export const PRESET_PDFS = TEXTBOOKS.map(({ id, name, path }) => ({ name, path, textbookId: id }));
+function resolveInitialTextbook(): TextbookId | '' {
+  const fromUrl = new URLSearchParams(window.location.search).get('textbook') as TextbookId | null;
+  if (fromUrl && TEXTBOOKS.some(item => item.id === fromUrl)) return fromUrl;
+  const saved = loadString(STORAGE_KEYS.currentTextbook, null) as TextbookId | null;
+  if (saved && TEXTBOOKS.some(item => item.id === saved)) return saved;
+  return TEXTBOOKS[0]?.id || '';
+}
 
 export function useTextbookPreference() {
-  const [selectedPdf, setSelectedPdf] = useState<string>('');
-  const [textbookId, setTextbookId] = useState<TextbookId | ''>(() => {
-    try {
-      const saved = localStorage.getItem('current_textbook') as TextbookId | null;
-      if (saved && TEXTBOOKS.some(t => t.id === saved)) {
-        const preset = PRESET_PDFS.find(p => p.textbookId === saved);
-        if (preset) {
-          // 延迟设置 URL，先返回 ID
-          return saved;
-        }
-      }
-    } catch {}
-    return '';
-  });
+  const [textbookId, setTextbookId] = useState<TextbookId | ''>(resolveInitialTextbook);
+  const selectedPdf = useMemo(() => PRESET_PDFS.find(item => item.textbookId === textbookId)?.path || '', [textbookId]);
 
-  // 初始化：从 localStorage 恢复，无则默认第一本
-  useEffect(() => {
-    let restored = textbookId;
-    try {
-      const saved = localStorage.getItem('current_textbook') as TextbookId | null;
-      if (saved && TEXTBOOKS.some(t => t.id === saved)) restored = saved;
-    } catch {}
-    if (!restored && TEXTBOOKS.length > 0) restored = TEXTBOOKS[0].id;
-
-    if (restored) {
-      const preset = PRESET_PDFS.find(p => p.textbookId === restored);
-      if (preset) {
-        setSelectedPdf(preset.path);
-        setTextbookId(restored);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 变化时同步 localStorage
   useEffect(() => {
     if (!textbookId) return;
-    const preset = PRESET_PDFS.find(p => p.textbookId === textbookId);
-    if (preset) {
-      setSelectedPdf(preset.path);
-      localStorage.setItem('current_textbook', textbookId);
-    }
+    saveString(STORAGE_KEYS.currentTextbook, textbookId);
   }, [textbookId]);
 
   return { selectedPdf, textbookId, setTextbookId };

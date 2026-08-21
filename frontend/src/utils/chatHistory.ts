@@ -5,7 +5,7 @@
  * 对象/数组。徽标列表（useMarkers）与提问记录侧栏（useQuestionList）都要做同样的转换，
  * 故收敛到这一个函数，避免两处各复制一份、后续字段演进时改漏。
  */
-import type { CropBBox, ToolActivity } from '../types';
+import type { ChatHistoryRecord, CropBBox, ToolActivity } from '../types';
 import type { Marker } from '../components/PageMarker';
 
 // 把「JSON 字符串 / 已解析对象 / 缺失」统一成确定值：
@@ -28,9 +28,11 @@ function normalizeToolActivities(value: unknown): ToolActivity[] {
   return Array.isArray(parsed) ? (parsed as ToolActivity[]) : [];
 }
 
-export function normalizeChatHistoryRecord(record: any): Marker {
+export function normalizeChatHistoryRecord(record: ChatHistoryRecord): Marker {
   const followUpsRaw = parseJsonOrPassthrough(record.follow_ups, []);
-  const followUps: any[] = Array.isArray(followUpsRaw) ? followUpsRaw : [];
+  const followUps: Record<string, unknown>[] = Array.isArray(followUpsRaw)
+    ? followUpsRaw.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+    : [];
 
   return {
     ...record,
@@ -39,11 +41,19 @@ export function normalizeChatHistoryRecord(record: any): Marker {
     tool_activities: normalizeToolActivities(record.tool_activities),
     // 老 follow-up 没有 turn_id：归一化层补 legacy-${index} 供 UI key 使用，
     // 只读兼容，不回写旧数据；新数据的身份在发送时由客户端生成并落库
-    follow_ups: followUps.map((fu: any, index: number) => ({
+    follow_ups: followUps.map((fu, index) => ({
       ...fu,
-      turn_id: fu.turn_id || `legacy-${index}`,
-      thinking: fu.thinking || null,
+      question: typeof fu.question === 'string' ? fu.question : '',
+      answer: typeof fu.answer === 'string' ? fu.answer : null,
+      turn_id: typeof fu.turn_id === 'string' && fu.turn_id ? fu.turn_id : `legacy-${index}`,
+      thinking: typeof fu.thinking === 'string' ? fu.thinking : null,
       tool_activities: normalizeToolActivities(fu.tool_activities),
+      image: typeof fu.image === 'string' ? fu.image : null,
+      crop_bbox: parseJsonOrPassthrough(fu.crop_bbox, null) as CropBBox | null,
+      screenshot_context_id: typeof fu.screenshot_context_id === 'string' ? fu.screenshot_context_id : null,
+      qa_turn_id: typeof fu.qa_turn_id === 'string' ? fu.qa_turn_id : null,
+      status: fu.status === 'pending' || fu.status === 'completed' || fu.status === 'interrupted' || fu.status === 'cancelled' ? fu.status : null,
+      error_message: typeof fu.error_message === 'string' ? fu.error_message : null,
     })),
   };
 }

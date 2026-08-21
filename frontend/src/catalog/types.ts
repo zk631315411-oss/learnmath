@@ -38,4 +38,5 @@ export type CatalogIndex = { textbook_id: string; catalog_version: string; node_
 export type CatalogSection = { id: string; name: string; page: number | null; nodes: CatalogNode[] };
 export type CatalogChapter = CatalogChapterSummary & { sections: CatalogSection[] };
 export type CatalogEdge = { source: string; target: string; type: string };
+export type ChapterCatalogEdge = CatalogEdge & { sourceChapter?: string; targetChapter?: string };
 export type TextbookCatalog = Omit<CatalogEntry, 'chapters'> & { chapters: CatalogChapter[]; edges?: CatalogEdge[] };

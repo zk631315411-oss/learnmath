@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 F · 档案盒 — 学数有道</title>
+<style>
+  :root {
+    --ink: #191713; --ink-2: #4d493c; --ink-3: #a39d8d;
+    --paper: #f2efe7; --line: #ddd8c9; --card: #fffdf6;
+    /* 五态色：与章内梯子视图同一语义（LEARNING_MAP_LADDER_VIEW_PLAN 2.2） */
+    --st-un: #cbd5e1; --st-ing: #fbbf24; --st-base: #6ee7b7; --st-done: #059669; --st-review: #fb7185;
+  }
+  [data-theme="dark"] {
+    --ink: #ece7da; --ink-2: #b3ac99; --ink-3: #5f5a4c;
+    --paper: #171511; --line: #322f26; --card: #211e17;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; transition: background .2s, color .2s; }
+  .serif { font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .brand .mark { width: 26px; height: 26px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 13px; border-radius: 6px; }
+  .top-actions { display: flex; gap: 16px; font-size: 13px; color: var(--ink-3); align-items: center; }
+  .theme-btn { background: none; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 52px 32px 96px; }
+
+  .ledger { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--ink-3); margin-bottom: 40px; }
+  .ledger .book { color: var(--ink); font-weight: 600; font-size: 15px; }
+
+  /* ── 档案盒：当前章卡抽出，其余章只露索引行 ── */
+
+  /* 五态图例：与章内梯子图例同组色 */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); margin-bottom: 26px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .drawer { display: flex; flex-direction: column; gap: 10px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    text-decoration: none; color: inherit; display: block;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+  }
+  .card:hover { transform: translateX(6px); border-color: var(--ink-3); }
+
+  /* 索引行（未开始章）：一章一行，薄 */
+  .tab { display: grid; grid-template-columns: 3.2rem minmax(0,1fr) auto auto; gap: 14px; align-items: center; padding: 13px 18px 13px 0; }
+  .tab .dot { width: 9px; height: 9px; border-radius: 3px; background: var(--st-un); justify-self: start; }
+  .tab .no {
+    align-self: stretch; display: grid; place-items: center;
+    border-right: 1px solid var(--line); color: var(--ink-3);
+    font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif; font-size: 20px;
+  }
+  .tab .name { font-size: 14.5px; font-weight: 600; color: var(--ink-2); }
+  .tab .cnt { font-size: 11.5px; color: var(--ink-3); }
+  .tab .go { font-size: 13px; color: var(--ink-3); opacity: 0; transition: opacity .2s; }
+  .card:hover .go { opacity: 1; }
+  .card:hover .name { color: var(--ink); }
+  .card:hover .no { color: var(--ink); }
+
+  /* 当前章：抽出的卡 */
+  .open { border-color: var(--ink); box-shadow: 0 10px 28px rgba(25,23,19,.10); transform: none; }
+  [data-theme="dark"] .open { box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+  .open:hover { transform: none; }
+  .open .tab { border-bottom: 1px dashed var(--line); padding-bottom: 10px; }
+  .open .tab .no { color: var(--ink); border-right-color: var(--ink); }
+  .open .tab .name { color: var(--ink); font-size: 16px; }
+  .open .body { padding: 18px; }
+  .open .kicker { font-size: 11px; letter-spacing: .16em; color: var(--ink-3); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+  .open .kicker::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--st-ing); }
+  .open .sec { font-size: 13.5px; color: var(--ink-2); }
+  .open .row2 { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .open .frac { font-size: 13px; color: var(--ink-2); }
+  .open .frac b { font-size: 17px; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--ink); color: var(--paper); border: none; cursor: pointer; height: 38px; padding: 0 16px; font-size: 13.5px; font-weight: 600; border-radius: 8px; }
+  .btn-primary:hover { opacity: .85; }
+
+  .divider-label { margin: 8px 0 0 18px; font-size: 11px; letter-spacing: .14em; color: var(--ink-3); }
+
+  .spec { margin-top: 72px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .spec h2 { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); margin-bottom: 12px; }
+  .spec li { font-size: 13px; color: var(--ink-2); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .spec li::before { content: ""; position: absolute; left: 0; top: .78em; width: 6px; height: 1px; background: var(--ink-3); }
+
+  nav.demos { position: fixed; right: 20px; bottom: 20px; display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+  nav.demos a { padding: 5px 12px; border-radius: 999px; text-decoration: none; color: var(--ink-3); }
+  nav.demos a.here2 { background: var(--ink); color: var(--paper); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">学</span>学数有道</div>
+  <div class="top-actions"><span>阅读</span><button class="theme-btn" onclick="toggleTheme()">暗色</button><span>kz · 退出</span></div>
+</header>
+
+<main>
+  <div class="ledger tnum">
+    <span class="book">高等代数（上册）丘维声 ⌄</span>
+    <span>6 章 · 1514 个知识点 · 1 个已探索</span>
+  </div>
+
+  <div class="legend tnum">
+    <span><i style="background:var(--st-un)"></i>未探索</span>
+    <span><i style="background:var(--st-ing)"></i>学习中</span>
+    <span><i style="background:var(--st-base)"></i>基本掌握</span>
+    <span><i style="background:var(--st-done)"></i>已掌握</span>
+    <span><i style="background:var(--st-review)"></i>需巩固</span>
+  </div>
+  <div class="drawer">
+    <!-- 抽出的当前章卡 -->
+    <div class="card open">
+      <div class="tab tnum">
+        <span class="no">壹</span>
+        <span class="name serif">线性方程组的解法</span>
+        <span class="cnt">学习中</span><span class="go"></span>
+      </div>
+      <div class="body">
+        <p class="kicker">读到</p>
+        <p class="sec">1.2 解的情况及其判别准则 · 初等行变换</p>
+        <div class="row2 tnum">
+          <span class="frac"><b>1</b> / 112 已探索</span>
+          <button class="btn-primary">▶ 继续学习</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="divider-label">尚未开始</p>
+
+    <a class="card tnum" href="#"><div class="tab"><span class="no">贰</span><span class="name">行列式</span><span class="cnt"><i class="dot" style="display:inline-block; margin-right:6px; vertical-align:1px"></i>273 个知识点</span><span class="go">→</span></div></a>
+    <a class="card tnum" href="#"><div class="tab"><span class="no">叁</span><span class="name">线性方程组的解集的结构</span><span class="cnt"><i class="dot" style="display:inline-block; margin-right:6px; vertical-align:1px"></i>443 个知识点</span><span class="go">→</span></div></a>
+    <a class="card tnum" href="#"><div class="tab"><span class="no">肆</span><span class="name">矩阵的运算</span><span class="cnt"><i class="dot" style="display:inline-block; margin-right:6px; vertical-align:1px"></i>283 个知识点</span><span class="go">→</span></div></a>
+    <a class="card tnum" href="#"><div class="tab"><span class="no">伍</span><span class="name">矩阵的相抵与相似</span><span class="cnt"><i class="dot" style="display:inline-block; margin-right:6px; vertical-align:1px"></i>193 个知识点</span><span class="go">→</span></div></a>
+    <a class="card tnum" href="#"><div class="tab"><span class="no">陆</span><span class="name">二次型 · 矩阵的合同</span><span class="cnt"><i class="dot" style="display:inline-block; margin-right:6px; vertical-align:1px"></i>210 个知识点</span><span class="go">→</span></div></a>
+  </div>
+
+  <section class="spec">
+    <h2>方案 F · 档案盒 — 语言规则</h2>
+    <ul>
+      <li>一叠索引卡：正在学的章"抽出来"——大卡展开，装着读到哪、进度、继续按钮；其余章收缩成一行薄索引</li>
+      <li>视觉锚点 = 形态对比本身：一张厚卡对五行薄行，不用颜色就分出了"现在"和"以后"</li>
+      <li>宋体大写章数（壹贰叁…）做索引行的行首格，像档案卡的编号栏；hover 整卡向右平移 6px，像从盒里抽出一截</li>
+      <li>「尚未开始」分组标签取代逐行状态文字；状态色点与章内梯子同组五态（当前卡 kicker 前是 amber-400，未探索行是 slate-300 小方点）</li>
+      <li>将来章变多时，"已掌握 / 需巩固"各成一组，卡片永远只在"正在学"的那一章展开</li>
+    </ul>
+  </section>
+</main>
+
+<nav class="demos"><a href="a-ink-ledger.html">A</a><a href="d-route-map.html">D 路径图</a><a href="e-page-ruler.html">E 页码尺</a><a class="here2" href="f-card-drawer.html">F 档案盒</a></nav>
+
+<script>
+  const saved = localStorage.getItem('lm-demo-theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? '' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('lm-demo-theme', next);
+  }
+</script>
+</body>
+</html>

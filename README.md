@@ -1,13 +1,15 @@
-# LearnMath 后端：错题→反问→诊断→推荐的极简基础底座
+# 学数有道（LearnMath）
 
-本目录是 LearnMath 的后端，从 `D:\ai-math`（只读原材料库）极简复刻而来。
-ai-math 是一个功能完整但体量庞大的教学系统；LearnMath 当前只实现阶段 1 的
-“KG 定位 → 引导教学 → 继续验证”闭环，学习画像、练习、考试和干预等暂不迁移。
+LearnMath 是以教材知识图谱为核心的 AI 教学 Agent 项目，从 `D:\ai-math`（只读原材料库）
+精简演进而来。当前已完成阶段 1“KG 定位 → 引导教学 → 继续验证”和阶段 2 学习地图的
+核心工程；阶段 2 的证据有效性仍需继续验收，学习画像、个性化练习和考试机制尚未实现。
+
+项目现状、文档分类和推荐阅读顺序见 [文档索引](docs/README.md)。
 
 ## 为什么精简
 
 - **只保留最小闭环**：统一多模态 Agent + Neo4j 只读 KG 工具 + 原始问答历史。
-- **基础设施有界**：保留 Neo4j 和 SQLite，暂不引入 Redis、S3、Worker 等服务。
+- **基础设施有界**：Neo4j 与 SQLite 承载业务数据；Manim 动画使用内部 Redis、可信 Dispatcher 和断网 Renderer，不引入对象存储。
 - **现实版优先**：教学逻辑由 Prompt 软约束，显式状态机、掌握度和学习画像留作未来演进。
 
 ## 当前包含的模块
@@ -55,6 +57,7 @@ shared/
 | `thinking` | `{text}` |
 | `tool_call` / `tool_result` | KG 工具参数、状态与可展示结果 |
 | `content` | `{text}` |
+| `artifact` | Manim 动画制品的排队/媒体状态（不含生成源码） |
 | `done` | `{full_text, thinking, sources, tool_activities, qa_turn_id}`（截图追加 `screenshot_context_id`） |
 | `error` | `{error}` |
 | `heartbeat` | `{text: ""}` |
@@ -90,7 +93,9 @@ SQLite 保存应用数据（默认 `data/learning.db`），Neo4j 保存教材知
 NULL 老数据表示全教材可见，不回填）、`screenshot_context_cache`（截图上下文缓存）、
 `evidence_turns`（阶段 2 自评证据账本：请求内 one-shot 证据分叉上报的节点掌握状态，
 含 user_id / chat_id / qa_turn_id / node_id / textbook_id / scaffolding_level / outcome /
-source / model_version，按 user_id+node_id 建索引；删除提问记录不级联删除证据）。
+source / model_version，按 user_id+node_id 建索引；删除提问记录不级联删除证据），以及
+`manim_artifacts`（动画源码、异步状态和媒体路径；跟随聊天迁移与删除）。模型生成源码不会返回前端，
+Renderer 不挂载 SQLite、不接收 LLM/JWT/Neo4j 密钥，并通过无网络容器执行。
 
 ### 为什么现在开始记录证据（阶段 2 变动说明）
 
@@ -101,7 +106,7 @@ source / model_version，按 user_id+node_id 建索引；删除提问记录不�
 direct_taught / unresolved），后端校验 node_id 合法（必须来自本轮/本线程 resolved
 结果且前缀匹配绑定教材）后落库。之所以用「主 Agent 自评单入口」而不是「KG resolved
 自动落库」，是因为 resolved 是模型的检索解释、不代表学生的客观行为（设计与评审理由见
-`docs/PHASE2_LEARNING_MAP_PLAN.md` §1.4 决策 4）。
+`docs/08-deprecated/PHASE2_LEARNING_MAP_PLAN.md` §1.4 决策 4；该文件仅用于历史追溯）。
 
 ## 无 LLM key 时的行为
 

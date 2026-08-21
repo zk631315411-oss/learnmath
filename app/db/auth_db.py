@@ -52,11 +52,15 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
 
 
 def get_user_by_device_id(device_id: str) -> Optional[dict]:
-    """根据设备ID查找用户（用于匿名访问）"""
+    """根据设备 ID 查找匿名用户（正式账号不参与匿名恢复）。"""
     conn = get_conn()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users WHERE device_id = ? ORDER BY created_at DESC LIMIT 1", (device_id,))
+    cursor.execute(
+        "SELECT * FROM users WHERE device_id = ? AND is_anonymous = 1 "
+        "ORDER BY created_at DESC LIMIT 1",
+        (device_id,),
+    )
     row = cursor.fetchone()
     conn.close()
 
