@@ -4,8 +4,15 @@ let manifestPromise: Promise<CatalogManifest> | null = null;
 const indexCache = new Map<string, Promise<CatalogIndex>>();
 const catalogCache = new Map<string, Promise<TextbookCatalog>>();
 
+// 每次页面加载使用唯一缓存戳，避免浏览器/进程恢复时拿到旧 manifest。
+// 生产构建可替换为构建哈希。
+const CACHE_BUSTER = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ? crypto.randomUUID()
+  : `${Date.now()}-${Math.random()}`;
+
 async function loadJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { credentials: 'same-origin' });
+  const separator = path.includes('?') ? '&' : '?';
+  const response = await fetch(`${path}${separator}_cb=${CACHE_BUSTER}`, { credentials: 'same-origin' });
   if (!response.ok) throw new Error(`目录加载失败 (${response.status})`);
   return response.json() as Promise<T>;
 }

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from functools import lru_cache
 from typing import Any
 
 from app.config import config
@@ -12,7 +11,6 @@ from app.config import config
 CATALOG_MANIFEST_PATH = config.BASE_DIR / "shared" / "generated" / "learning_catalog_manifest.json"
 
 
-@lru_cache(maxsize=1)
 def load_catalog_manifest() -> dict[str, Any]:
     if not CATALOG_MANIFEST_PATH.exists():
         raise RuntimeError("learning catalog has not been generated")
