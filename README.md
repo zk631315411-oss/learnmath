@@ -62,6 +62,8 @@ shared/
 | `error` | `{error}` |
 | `heartbeat` | `{text: ""}` |
 
+Manim 当前以教学示意为定位：二维函数、几何、向量、参数曲线和复杂二维函数近似已接入；处处连续但处处不可导的函数只能按有限项、有限采样绘制。三维 `ThreeDScene`、真实相机旋转、OpenGL/GPU 和外部资源暂未开放，原因与后续优化入口见 [Manim 能力边界与演进方向](docs/07-decisions/MANIM_SCOPE_AND_SECURITY.md)。
+
 ## 如何启动
 
 ### Windows 一键部署
