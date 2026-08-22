@@ -43,7 +43,7 @@ function ThinkingBlock({ content, active }: { content: string; active: boolean }
   }, [active]);
 
   return (
-    <div className="mb-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+    <div className="mb-3 border-b border-[var(--lm-border)] pb-3">
       <button
         type="button"
         onClick={() => setExpanded(value => !value)}
@@ -139,7 +139,7 @@ function ChatPanelInner({
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[var(--lm-surface)]">
       {!compact && (
-        <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 dark:border-slate-700 dark:bg-slate-800">
+        <div className="px-4 py-3 border-b border-[var(--lm-border)] bg-[var(--lm-surface)] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
             <h3 className="font-semibold text-slate-800 text-sm dark:text-slate-100">AI 智能问答</h3>
@@ -213,7 +213,7 @@ function ChatPanelInner({
               setShowScrollToBottom(false);
               requestAnimationFrame(() => scrollToBottom('smooth'));
             }}
-            className="sticky bottom-3 ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+            className="sticky bottom-3 ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-[var(--lm-border)] bg-[var(--lm-surface)] text-slate-500 shadow-md transition-colors hover:bg-[var(--lm-bg)] hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
             aria-label="回到底部"
             title="回到底部"
           >
@@ -223,7 +223,7 @@ function ChatPanelInner({
       </div>
 
       {pendingImages && pendingImages.length > 0 && (
-        <div className="px-4 py-3 border-t border-slate-200 bg-indigo-50/60 dark:border-slate-700 dark:bg-indigo-950/40">
+        <div className="px-4 py-3 border-t border-[var(--lm-border)] bg-[var(--lm-bg)] dark:bg-indigo-950/40">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-indigo-600 font-medium dark:text-indigo-300">{pendingImages.some(item => item.source === 'photo') ? '图片已添加' : '截图已捕获'}（{pendingImages.length}/{MAX_PENDING_IMAGES}）</p>
             <button type="button" onClick={onClearPendingImages}
@@ -260,7 +260,7 @@ function ChatPanelInner({
       )}
 
       <form onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}
-        className="p-3 sm:p-4 border-t border-slate-200 bg-white shrink-0 dark:border-slate-700 dark:bg-slate-800">
+        className="p-3 sm:p-4 border-t border-[var(--lm-border)] bg-[var(--lm-surface)] shrink-0">
         <div className="flex gap-2 items-end">
           <ChatPlusMenu disabled={isLoading} onBeforeSelect={() => formulaComposerRef.current?.captureInsertionBookmark()} onSelectFile={file => onOpenPhoto?.(file)} />
           <div className="min-w-0 flex-1">
@@ -278,7 +278,7 @@ function ChatPanelInner({
           ) : (
             <button type="submit" disabled={!input.trim() && !(pendingImages && pendingImages.length > 0)}
               aria-label="发送" title="发送"
-              className="px-4 sm:px-5 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 whitespace-nowrap">
+              className="px-4 sm:px-5 py-3 bg-[var(--lm-brand)] text-white rounded-xl font-medium hover:bg-[var(--lm-brand-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 whitespace-nowrap">
               <Send className="w-4 h-4" />
             </button>
           )}

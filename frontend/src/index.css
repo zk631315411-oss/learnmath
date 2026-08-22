@@ -18,15 +18,15 @@
   --lm-slate-800: 41 37 32;
   --lm-slate-900: 28 25 19;
   --lm-slate-950: 18 16 12;
-  --lm-bg: #f2efe7;
-  --lm-surface: #fffdf8;
+  --lm-bg: #ece7da;
+  --lm-surface: #f5f1e8;
   --lm-canvas: #e3ddcf;
-  --lm-border: #e3ddcf;
-  --lm-text: #55503f;
-  --lm-text-strong: #1c1913;
-  --lm-text-muted: #8b8571;
-  --lm-brand: #4f46e5;
-  --lm-brand-strong: #4338ca;
+  --lm-border: #d9d3c4;
+  --lm-text: #4a4339;
+  --lm-text-strong: #2a2620;
+  --lm-text-muted: #9a9080;
+  --lm-brand: #a0522d;
+  --lm-brand-strong: #8b4513;
   --lm-danger: #e11d48;
   --lm-success: #059669;
   --lm-radius-sm: 4px;
@@ -84,15 +84,20 @@
 
 @layer components {
   .icon-button {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-35 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200;
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--lm-text-muted)] transition-colors hover:bg-[var(--lm-bg)] hover:text-[var(--lm-text)] disabled:cursor-not-allowed disabled:opacity-35;
   }
 
   .toolbar-button {
-    @apply inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
+    @apply inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[var(--lm-text)] transition-colors hover:bg-[var(--lm-bg)] hover:text-[var(--lm-text-strong)] disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .toolbar-button-primary {
-    @apply bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400;
+    @apply border bg-transparent;
+    border-color: var(--lm-brand);
+    color: var(--lm-brand);
+  }
+  .toolbar-button-primary:hover {
+    background-color: color-mix(in srgb, var(--lm-brand) 10%, transparent);
   }
 
   .serif-zh {
@@ -286,25 +291,25 @@ body {
   align-items: flex-end;
   gap: 6px;
   min-height: 52px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--lm-border);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--lm-bg);
   padding: 5px 6px 5px 10px;
 }
-.formula-editor-shell:focus-within { border-color: #2563eb; box-shadow: 0 0 0 2px rgb(37 99 235 / 16%); }
-.formula-prosemirror { min-height: 40px; max-height: 132px; overflow-y: auto; padding: 6px 0; outline: none; font-size: 14px; line-height: 1.55; color: #1e293b; }
+.formula-editor-shell:focus-within { border-color: #b45309; box-shadow: 0 0 0 2px rgb(180 83 9 / 16%); }
+.formula-prosemirror { min-height: 40px; max-height: 132px; overflow-y: auto; padding: 6px 0; outline: none; font-size: 14px; line-height: 1.55; color: var(--lm-text-strong); }
 .formula-prosemirror.is-compact { min-height: 28px; max-height: 92px; padding: 3px 0; }
 .formula-prosemirror p { margin: 0; min-height: 1.55em; }
 .formula-prosemirror p + p { margin-top: 4px; }
 .formula-prosemirror .tiptap-mathematics-render { max-width: 100%; cursor: pointer; border-radius: 4px; transition: background-color 120ms; }
-.formula-prosemirror .tiptap-mathematics-render:hover { background: #dbeafe; }
+.formula-prosemirror .tiptap-mathematics-render:hover { background: rgb(180 83 9 / 12%); }
 .formula-prosemirror div.tiptap-mathematics-render { overflow-x: auto; padding: 5px 2px; }
-.formula-placeholder { position: absolute; top: 6px; left: 0; pointer-events: none; color: #94a3b8; font-size: 14px; }
-.formula-trigger { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border-radius: 6px; color: #2563eb; background: #eff6ff; }
-.formula-trigger:hover { background: #dbeafe; }
+.formula-placeholder { position: absolute; top: 6px; left: 0; pointer-events: none; color: var(--lm-text-muted); font-size: 14px; }
+.formula-trigger { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border-radius: 6px; color: #b45309; background: transparent; }
+.formula-trigger:hover { background: rgb(180 83 9 / 10%); }
 .formula-trigger:disabled { opacity: .4; cursor: not-allowed; }
-.formula-undo-redo { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 6px; color: #64748b; }
-.formula-undo-redo:hover:not(:disabled) { background: #f1f5f9; color: #1e293b; }
+.formula-undo-redo { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 6px; color: var(--lm-text-muted); }
+.formula-undo-redo:hover:not(:disabled) { background: var(--lm-canvas); color: var(--lm-text-strong); }
 .formula-undo-redo:disabled { opacity: .35; cursor: not-allowed; }
 
 .formula-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgb(15 23 42 / 48%); }

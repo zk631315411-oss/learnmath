@@ -15,9 +15,8 @@ export default function AuthControls({ user, onLoginClick, onRegisterClick, onLo
     return (
       <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
         <span className="text-xs text-slate-500 hidden sm:inline dark:text-slate-400">游客</span>
-        <button onClick={onLoginClick} className="text-xs text-indigo-600 hover:underline dark:text-indigo-300">登录</button>
-        <span className="text-slate-300 hidden sm:inline dark:text-slate-600">|</span>
-        <button onClick={onRegisterClick} className="text-xs text-slate-500 hover:underline hidden sm:inline">注册</button>
+        <button onClick={onLoginClick} className="rounded-lg border border-[var(--lm-brand)] bg-transparent px-2.5 py-1 text-xs font-medium text-[var(--lm-brand)] transition-colors hover:bg-[var(--lm-brand)]/10">登录</button>
+        <button onClick={onRegisterClick} className="rounded-lg border border-[var(--lm-border)] bg-transparent px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-[var(--lm-bg)] hidden sm:inline dark:text-slate-400">注册</button>
       </div>
     );
   }
@@ -25,15 +24,14 @@ export default function AuthControls({ user, onLoginClick, onRegisterClick, onLo
     return (
       <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
         <span className="text-sm font-medium text-slate-700 hidden sm:inline dark:text-slate-200">{user.username}</span>
-        <button onClick={onLogout} className="text-xs text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300">退出</button>
+        <button onClick={onLogout} className="rounded-lg border border-[var(--lm-border)] bg-transparent px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-[var(--lm-bg)] dark:text-slate-400 dark:hover:text-slate-300">退出</button>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-slate-700">
-      <button onClick={onLoginClick} className="text-sm text-indigo-600 hover:underline dark:text-indigo-300">登录</button>
-      <span className="text-slate-300 hidden sm:inline dark:text-slate-600">|</span>
-      <button onClick={onRegisterClick} className="text-sm text-slate-400 hover:underline hidden sm:inline dark:text-slate-400">注册</button>
+    <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+      <button onClick={onLoginClick} className="rounded-lg border border-[var(--lm-brand)] bg-transparent px-2.5 py-1 text-sm font-medium text-[var(--lm-brand)] transition-colors hover:bg-[var(--lm-brand)]/10">登录</button>
+      <button onClick={onRegisterClick} className="rounded-lg border border-[var(--lm-border)] bg-transparent px-2.5 py-1 text-sm font-medium text-slate-400 transition-colors hover:bg-[var(--lm-bg)] hidden sm:inline dark:text-slate-400">注册</button>
     </div>
   );
 }
