@@ -7,7 +7,7 @@ import EmptyGuideCard from './components/EmptyGuideCard';
 import AuthModal from './components/AuthModal';
 import AuthControls from './components/AuthControls';
 import LearningSidebar from './components/LearningSidebar';
-import type { SidebarTab } from './components/LearningSidebar';
+
 import PDFToolbar from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
@@ -65,7 +65,7 @@ export default function App() {
   const [overlaySurface, setOverlaySurface] = useState<OverlaySurface>('none');
   const sheetStage: SheetStage = overlaySurface === 'sheet-half' ? 'half' : overlaySurface === 'sheet-full' ? 'full' : 'collapsed';
   const drawerOpen = overlaySurface === 'drawer';
-  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('questions');
+
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
   const [desktopChatCollapsed, setDesktopChatCollapsed] = useState(() => loadJSON(STORAGE_KEYS.desktopChatCollapsed, false));
   const [threadRequestKey, setThreadRequestKey] = useState(0);
@@ -254,17 +254,14 @@ export default function App() {
   };
 
   const learningSidebar = (onClose?: () => void) => <LearningSidebar
-    tab={sidebarTab} onTabChange={setSidebarTab} onClose={onClose}
+    onClose={onClose}
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
-    chapters={mapHome.chapters} chapterMap={selectedMapChapter ? mapHome.nodesByChapter[selectedMapChapter] || null : null} mapLoading={mapHome.loading} mapUnavailable={Boolean(mapHome.errors.__page)}
-    textbookSelected={Boolean(textbookId)} onRefreshMap={() => { void mapHome.refresh(); }} onOpenChapter={openMapChapter} onBack={() => navigatePage('map')} onOpenChat={handleMapChatSelect}
   />;
 
-  const openDrawer = (tab: SidebarTab) => {
+  const openDrawer = () => {
     if (interactionLocked) return;
     capture.cancel();
     capture.clearDraft();
-    setSidebarTab(tab);
     setOverlaySurface(isDesktop ? 'drawer' : 'sheet-full');
   };
 
@@ -333,18 +330,15 @@ export default function App() {
     setCurrentPage(page);
   }, [interactionLocked, overlaySurface, setCurrentPage]);
 
-  const selectClass = "text-sm rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
+  const selectClass = "text-sm rounded-lg border border-[var(--lm-border)] bg-[var(--lm-surface)] px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors dark:text-slate-200";
 
   return (
     <ErrorBoundary>
       <div className="flex h-screen flex-col bg-[var(--lm-bg)] dark:bg-slate-950">
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-200 dark:bg-indigo-500 dark:shadow-none">
-              学
-            </div>
-            <span className="hidden text-lg font-bold text-slate-800 dark:text-slate-100 sm:inline">学数有道</span>
+          <div className="flex items-center">
+            <span className="text-lg font-bold text-slate-800 dark:text-slate-100">学数有道</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
