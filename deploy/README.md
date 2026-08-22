@@ -8,6 +8,8 @@ The LearnMath application package contains five services:
 - `manim-dispatcher`: trusted Redis-to-file-spool bridge with no model or database secrets;
 - `manim-renderer`: network-disabled, resource-limited Manim renderer and the only writer of video artifacts.
 
+Renderer 镜像内置 `fonts-noto-cjk`，不依赖宿主机字体。当前交付包支持二维教学动画和复杂二维函数的有限近似；三维场景暂未开放。能力边界、限制原因和三维放开前的验收条件见项目文档 `docs/07-decisions/MANIM_SCOPE_AND_SECURITY.md`。
+
 ## Build the application package
 
 Build the release package with:
