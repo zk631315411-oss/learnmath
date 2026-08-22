@@ -75,12 +75,6 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
     setSelectedId(nodeId);
   };
 
-  const openSection = (section: string) => {
-    setCurrentSection(section);
-    setSelectedId(null);
-    setScreen('ladder');
-  };
-
   // 岛→梯子回链：切到节点所在节并高亮（题型自动展开显示）
   const locateInLadder = (node: LearningMapNode) => {
     if (isProblemType(node.type) && !showProblems) setShowProblems(true);
@@ -109,7 +103,7 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
     </div>
 
     <div className="min-h-0 flex-1 overflow-y-auto">
-      {screen === 'overview' && <ChapterOverview data={data} edges={edges} onOpenSection={openSection} onOpenIslands={() => setScreen('islands')} />}
+      {screen === 'overview' && <ChapterOverview data={data} edges={edges} onOpenIslands={() => setScreen('islands')} onOpenChat={onOpenChat} onContinueNode={onContinueNode} />}
       {screen === 'ladder' && sectionGroup && <>
         <div className="max-h-[62vh] overflow-y-auto border-b border-[var(--lm-border)] bg-[var(--lm-surface)]">
           <SectionLadder section={sectionGroup} edges={sectionEdges} showProblems={showProblems} selectedId={selectedId} onSelect={toggleSelect} />

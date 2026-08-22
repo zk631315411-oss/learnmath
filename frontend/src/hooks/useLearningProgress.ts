@@ -55,8 +55,12 @@ export function useLearningProgress(
     // authReady prevents that transient 401 from becoming a map warning.
     if (!authReady || !token || !textbookId || !catalogVersion) return;
     setLoading(true); setError(null);
+    const requestedTextbookId = textbookId;
+    const requestedCatalogVersion = catalogVersion;
     try {
       const next = await getLearningProgress(textbookId, token);
+      // 如果请求期间 textbookId 或 catalogVersion 已变，丢弃过期响应，避免旧请求覆盖新结果。
+      if (textbookId !== requestedTextbookId || catalogVersion !== requestedCatalogVersion) return;
       if (next.catalog_version !== catalogVersion) {
         setError('学习目录版本不一致，请刷新页面');
         return;
@@ -64,9 +68,14 @@ export function useLearningProgress(
       const current = readCache(storeKey);
       if (!current || next.revision > current.revision) writeCache(storeKey, next);
       else setSnapshot(current);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : '进度加载失败'); }
-    finally { setLoading(false); }
-  }, [authReady, storeKey, textbookId, token]);
+    } catch (cause) {
+      // 同样忽略过期请求抛出的错误，避免掩盖正确结果。
+      if (textbookId !== requestedTextbookId || catalogVersion !== requestedCatalogVersion) return;
+      const message = cause instanceof Error ? cause.message : '进度加载失败';
+      console.error('[learning-progress] failed:', { textbookId, catalogVersion, message, cause });
+      setError(message);
+    } finally { setLoading(false); }
+  }, [authReady, storeKey, textbookId, token, catalogVersion]);
 
   useEffect(() => {
     if (!authReady) {
@@ -75,7 +84,11 @@ export function useLearningProgress(
     }
   }, [authReady]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    if (!catalogVersion) return;
+    setError(null);
+    void refresh();
+  }, [refresh, catalogVersion]);
   const nodes: ProgressMap = snapshot?.nodes || {};
   return { snapshot, nodes, revision: snapshot?.revision || 0, loading, error, refresh };
 }

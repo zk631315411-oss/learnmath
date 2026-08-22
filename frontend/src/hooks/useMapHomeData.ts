@@ -23,7 +23,13 @@ export function useMapHomeData(
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [catalogRetry, setCatalogRetry] = useState(0);
-  const progress = useLearningProgress(token, textbookId, entry?.catalog_version || '', cacheScope, authReady);
+  const progress = useLearningProgress(
+    token,
+    textbookId,
+    entry?.textbook_id === textbookId ? entry.catalog_version : '',
+    cacheScope,
+    authReady,
+  );
 
   useEffect(() => {
     let active = true;
