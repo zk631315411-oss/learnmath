@@ -124,7 +124,7 @@ async function mockApp(page: Page) {
     }),
     edges,
   });
-  await page.route('**/map-catalog/manifest.json', route => route.fulfill({
+  await page.route('**/map-catalog/manifest.json*', route => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({
       schema_version: 1,
@@ -138,11 +138,17 @@ async function mockApp(page: Page) {
       node_index: { gaodai_shang: nodeRecords() },
     }),
   }));
-  await page.route('**/map-catalog/*.index.json', route => route.fulfill({
+  await page.route('**/map-catalog/*.index.json*', route => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ textbook_id: 'gaodai_shang', catalog_version: 'gaodai_shang-review', node_index: nodeRecords() }),
   }));
-  await page.route('**/map-catalog/gaodai_shang.json', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(catalogFor()) }));
+  await page.route('**/map-catalog/*.json*', route => {
+    const url = route.request().url().replace(/\?.*$/, '');
+    if (url.endsWith('/map-catalog/manifest.json')) return route.fallback();
+    if (url.endsWith('/map-catalog/gaodai_shang.index.json')) return route.fallback();
+    if (url.endsWith('/map-catalog/gaodai_shang.json')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(catalogFor()) });
+    return route.continue();
+  });
   await page.route('**/api/learning-progress?*', route => {
     const nodes: Record<string, unknown> = {};
     Object.values(nodesByChapter).forEach((response: any) => (response.sections || []).forEach((section: any) => (section.nodes || []).forEach((node: any) => {
@@ -183,15 +189,15 @@ test.describe('视觉审查截图', () => {
     await page.reload();
     await page.getByText('学习地图', { exact: true }).first().waitFor();
 
-    // 3. 章总览首屏 · 亮色（点第3章的「查看地图 →」）
-    await page.locator('main li').filter({ hasText: '线性空间' }).first().getByRole('button', { name: '查看地图 →' }).click();
+    // 3. 章总览首屏 · 亮色（点第3章的「地图」）
+    await page.locator('main li').filter({ hasText: /^第 3 章/ }).getByTestId('chapter-map-button').first().click();
     await page.getByTestId('chapter-ladder-view').waitFor();
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'chapter-overview-light.png') });
 
-    // 4. 节梯子 · 亮色（点 3.1 节行）
-    await page.getByTestId('overview-section-3.1 线性空间的定义与性质').click();
-    await page.getByTestId('ladder-section-3.1 线性空间的定义与性质').waitFor();
+    // 4. 节梯子 · 亮色（点 3.1 节行，就地展开）
+    await page.getByTestId(/^overview-section-3\.1 /).first().click();
+    await page.getByTestId(/^ladder-section-3\.1 /).first().waitFor();
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'ladder-desktop-light.png') });
 
@@ -202,7 +208,6 @@ test.describe('视觉审查截图', () => {
     await page.getByRole('button', { name: '关闭详情' }).click();
 
     // 6. 岛屿总览 · 亮色（入口在章总览底部的文字链接）
-    await page.getByRole('button', { name: '返回总览' }).click();
     await page.getByTestId('open-islands').click();
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'islands-desktop-light.png') });
@@ -212,8 +217,8 @@ test.describe('视觉审查截图', () => {
     await page.evaluate(() => localStorage.setItem('learnmath_dark', '1'));
     await page.reload();
     await page.getByTestId('chapter-ladder-view').waitFor();
-    await page.getByTestId('overview-section-3.1 线性空间的定义与性质').click();
-    await page.getByTestId('ladder-section-3.1 线性空间的定义与性质').waitFor();
+    await page.getByTestId(/^overview-section-3\.1 /).first().click();
+    await page.getByTestId(/^ladder-section-3\.1 /).first().waitFor();
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'ladder-desktop-dark.png') });
     await page.evaluate(() => localStorage.setItem('learnmath_dark', '0'));
@@ -222,7 +227,7 @@ test.describe('视觉审查截图', () => {
     await page.reload();
     await page.getByTestId('chapter-ladder-view').waitFor();
     await page.getByRole('button', { name: '列表', exact: true }).click();
-    await page.getByRole('button', { name: /3\.1 线性空间的定义与性质/ }).click();
+    await page.getByRole('button', { name: /3\.1 / }).first().click();
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'chapter-list-light.png') });
   });
@@ -237,7 +242,8 @@ test.describe('视觉审查截图', () => {
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'maphome-mobile-light.png') });
 
-    await page.getByRole('button', { name: /线性空间/ }).first().click();
+    await page.locator('main li').filter({ hasText: /^第 3 章/ }).getByTestId('chapter-map-button').first().click();
+    await page.getByTestId('chapter-ladder-view').waitFor();
     await settle(page);
     await page.screenshot({ path: resolve(artifactDir, 'chapter-mobile-light.png') });
   });

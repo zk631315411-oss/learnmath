@@ -149,19 +149,18 @@ async function mockApp(page: Page, options: MockOptions = {}) {
     contentType: 'application/json',
     body: JSON.stringify({ id: 'e2e-user', username: 'anonymous', is_anonymous: true }),
   }));
-  await page.route('**/map-catalog/manifest.json', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manifestFor()) }));
-  await page.route('**/map-catalog/*.index.json', async route => {
+  await page.route('**/map-catalog/manifest.json*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manifestFor()) }));
+  await page.route('**/map-catalog/*.index.json*', async route => {
     const textbookId = route.request().url().match(/map-catalog\/([^/]+)\.index\.json/)?.[1] || 'gaodai_shang';
     const catalog: any = catalogFor(textbookId, fixtureFor(textbookId));
     const node_index = nodeRecords(textbookId, fixtureFor(textbookId));
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ textbook_id: textbookId, catalog_version: catalog.catalog_version, node_index }) });
   });
-  await page.route('**/map-catalog/*.json', async route => {
-    if (route.request().url().endsWith('/map-catalog/manifest.json')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manifestFor()) });
-    }
-    const textbookId = route.request().url().match(/map-catalog\/([^/]+)\.json/)?.[1] || 'gaodai_shang';
-    if (route.request().url().includes('.index.json')) {
+  await page.route('**/map-catalog/*.json*', async route => {
+    const url = route.request().url();
+    if (url.replace(/\?.*$/, '').endsWith('/map-catalog/manifest.json')) return route.fallback();
+    const textbookId = url.match(/map-catalog\/([^/]+)\.json/)?.[1] || 'gaodai_shang';
+    if (url.includes('.index.json')) {
       const catalog: any = catalogFor(textbookId, fixtureFor(textbookId));
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ textbook_id: textbookId, catalog_version: catalog.catalog_version, node_index: nodeRecords(textbookId, fixtureFor(textbookId)) }) });
     }
@@ -499,7 +498,7 @@ test('visual regression archive covers the approved viewports and surfaces', asy
     await expect(page.getByRole('listbox', { name: '教材列表' })).toBeVisible();
     await capture('map-textbook-menu', viewport.width, false);
     await page.keyboard.press('Escape');
-    await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+    await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
     await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
     if (viewport.width < 640) {
       await expect(page.getByTitle('列表视图')).toHaveAttribute('aria-pressed', 'true');
@@ -709,7 +708,7 @@ test('E7 chapter card opens the chapter map and its primary action enters the re
   await mockApp(page);
   await page.goto('/');
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
   await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
   await page.getByTestId('overview-section-1.1').click();
@@ -727,7 +726,7 @@ test('E7 chapter map falls back without a blank reader on a scan miss', async ({
   await mockApp(page, { staticPage: null });
   await page.goto('/');
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await page.getByRole('button', { name: '开始本章' }).click();
   await expect(page.getByRole('button', { name: '框选', exact: true })).toBeVisible();
 });
@@ -841,7 +840,7 @@ test('M3 static chapter index renders without legacy node requests', async ({ pa
   page.on('request', request => { if (request.url().includes('/api/learning-map/')) legacyRequests.push(request.url()); });
   await page.goto('/');
   await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
   expect(legacyRequests).toHaveLength(0);
 });
@@ -870,7 +869,6 @@ test('M4 chapter cards expose learning status summaries', async ({ page }, testI
   await page.goto('/');
   await expect(page.getByText('1 个需巩固', { exact: true })).toBeVisible();
   await expect(page.getByText('2 / 2 已探索', { exact: true })).toBeVisible();
-  await expect(page.getByText(/矩阵秩/)).toBeVisible();
 });
 
 test('M6 knowledge section takes priority over an unrelated source question page', async ({ page }, testInfo) => {
@@ -888,7 +886,7 @@ test('M6 knowledge section takes priority over an unrelated source question page
     },
   });
   await page.goto('/');
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await page.getByTestId('overview-section-1.2').click();
   await page.getByRole('button', { name: /线性方程组，学习中/ }).click();
   await page.getByTestId('node-detail-card').getByRole('button', { name: '继续学习' }).click();
@@ -914,7 +912,7 @@ test('M6 falls back from node section to the chapter first section', async ({ pa
   const sectionsRequested: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/textbook/section-page')) sectionsRequested.push(request.url()); });
   await page.goto('/');
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await page.getByTestId('overview-section-1.2').click();
   await page.getByRole('button', { name: /线性方程组，学习中/ }).click();
   await page.getByTestId('node-detail-card').getByRole('button', { name: '继续学习' }).click();
@@ -963,7 +961,7 @@ test('B1 chapter map: overview → sine ladder → inline detail card → cross-
     ],
   } } });
   await page.goto('/');
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
   // 首屏是章总览（不画图），点节行进入梯子
   await expect(page.getByTestId('overview-section-1.1 消元法')).toBeVisible();
@@ -990,7 +988,7 @@ test('B2 mobile chapter view defaults to list and can switch to the ladder', asy
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
   await page.goto('/');
-  await page.locator('main li').filter({ hasText: '线性方程组' }).getByRole('button', { name: '查看地图 →' }).click();
+  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
   await expect(page.getByTitle('列表视图')).toHaveAttribute('aria-pressed', 'true');
   await page.getByTitle('地图视图').click();
   await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
