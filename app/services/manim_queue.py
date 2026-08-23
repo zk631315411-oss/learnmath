@@ -11,7 +11,12 @@ from pathlib import Path
 from urllib.parse import quote
 
 from app.config import config
-from app.db.manim_artifact_db import count_active_artifacts, get_artifact, update_artifact
+from app.db.manim_artifact_db import (
+    count_active_artifacts,
+    get_artifact,
+    list_active_artifacts,
+    update_artifact,
+)
 
 
 def enqueue_artifact(artifact_id: str) -> str:
@@ -128,6 +133,38 @@ def reconcile_artifact(artifact: dict) -> dict:
     except Exception:
         return artifact
     return artifact
+
+
+# 后台对账间隔（秒）。渲染结果由无网络的 renderer 写入文件 spool，
+# 必须有人周期性把 results/ 回写到 SQLite，否则状态会滞留 queued/running。
+RECONCILE_INTERVAL_SECONDS = 2.0
+
+
+async def reconcile_active_artifacts_loop(stop_event) -> None:
+    """Periodically flush file-spool render results into SQLite and drive repair.
+
+    The renderer cannot reach the database (network-disabled), so without this
+    loop an artifact's status only advances when a client happens to poll it.
+    It also drives the one-shot LLM repair for repair_pending artifacts, which
+    is otherwise only triggered when the frontend polls the artifact endpoint.
+    """
+    import asyncio
+    import logging
+
+    logger = logging.getLogger("learnmath.manim.reconcile")
+    while not stop_event.is_set():
+        try:
+            for artifact in list_active_artifacts():
+                updated = reconcile_artifact(artifact)
+                if updated.get("status") == "repair_pending":
+                    from app.services.manim_repair import repair_artifact_once
+                    await asyncio.to_thread(repair_artifact_once, artifact["id"])
+        except Exception:  # 单次对账失败不应终止后台循环
+            logger.exception("manim reconcile pass failed")
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=RECONCILE_INTERVAL_SECONDS)
+        except asyncio.TimeoutError:
+            pass
 
 
 def clear_artifact_files(artifact_id: str, *, permanent: bool = False) -> None:

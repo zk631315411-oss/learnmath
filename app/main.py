@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +8,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import config
 from app.db.connection import init_db
 from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook, manim
+from app.services.manim_queue import reconcile_active_artifacts_loop
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # 后台把无网络 renderer 写入文件 spool 的渲染结果周期性回写到 SQLite，
+    # 否则 artifact 状态只会在前端轮询时才推进，可能滞留 queued/running。
+    stop_event = asyncio.Event()
+    reconcile_task = asyncio.create_task(reconcile_active_artifacts_loop(stop_event))
+    try:
+        yield
+    finally:
+        stop_event.set()
+        await asyncio.gather(reconcile_task, return_exceptions=True)
+
 
 # 确保数据目录存在并初始化数据库（幂等，重复启动无副作用）
 config.ensure_dirs()
@@ -28,6 +45,7 @@ app = FastAPI(
     title="LearnMath API",
     description="LearnMath 后端：错题→反问→诊断→推荐的极简基础底座",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS：开发阶段放开跨域，前端独立端口可直连

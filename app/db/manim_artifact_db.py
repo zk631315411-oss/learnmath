@@ -65,6 +65,18 @@ def list_artifacts_for_chat(chat_id: str, user_id: str) -> list[dict[str, Any]]:
         conn.close()
 
 
+def list_active_artifacts() -> list[dict[str, Any]]:
+    """List artifacts still in-flight, for the background reconcile loop."""
+    init_db()
+    conn = get_conn()
+    try:
+        return [dict(row) for row in conn.execute(
+            "SELECT * FROM manim_artifacts WHERE status IN ('queued','running','repair_pending','repairing')",
+        ).fetchall()]
+    finally:
+        conn.close()
+
+
 def update_artifact(artifact_id: str, *, status: str | None = None, attempt: int | None = None,
                     repair_count: int | None = None, rq_job_id: str | None = None,
                     video_path: str | None = None, poster_path: str | None = None,

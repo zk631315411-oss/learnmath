@@ -64,8 +64,15 @@ def render_manim_artifact(
         if movie.stat().st_size > config.MANIM_MAX_OUTPUT_BYTES:
             raise RenderFailure("output_too_large", "动画文件超过大小限制")
         duration = _video_duration(movie)
-        if duration is None or duration > float(duration_seconds) + 0.25:
-            raise RenderFailure("duration_exceeded", "动画时长超过限制")
+        if duration is None:
+            raise RenderFailure("duration_unreadable", "无法读取动画时长")
+        # 模型声明的 duration_seconds 只是预估值，常与实际渲染不符；真正要守住的是
+        # 系统硬上限 MANIM_MAX_DURATION_SECONDS。超出自报值但在硬上限内的视频仍可交付。
+        if duration > config.MANIM_MAX_DURATION_SECONDS + 0.25:
+            raise RenderFailure(
+                "duration_exceeded",
+                f"动画实际时长 {duration:.1f} 秒，超过上限 {config.MANIM_MAX_DURATION_SECONDS:.0f} 秒",
+            )
 
         target_dir = config.MANIM_RENDER_DIR / artifact_id
         target_dir.mkdir(parents=True, exist_ok=True)
