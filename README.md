@@ -76,13 +76,17 @@ Install-LearnMath.bat
 
 安装脚本会首次询问模型 API Key 和 Neo4j Aura 凭据，启动容器，等待完整健康检查后自动打开浏览器。用户不需要安装 Python、Node.js 或本地 Neo4j。两个安装包的制作方式和 Docker Desktop 授权注意事项见 `deploy/README.md`。
 
+安装完成后，日常使用双击 `Start-LearnMath.bat` 启动、`Stop-LearnMath.bat` 停止。启动会拉起全部五个服务（web、api、redis、manim-dispatcher、manim-renderer），Manim 动画链路随之就绪。对外访问地址为 `http://127.0.0.1:<LEARNMATH_PORT>`，端口在 `deploy/runtime.env` 的 `LEARNMATH_PORT` 中配置（安装时自动挑选空闲端口），改完后重新启动生效。
+
+在 Claude Code 中也可以用指令 `/start`、`/stop` 启动和停止这套 Docker 服务（见 `.claude/commands/`）。
+
 ### 开发模式
 
 ```bat
 start.bat
 ```
 
-后端默认跑在 `http://localhost:8001`，前端跑在 `http://localhost:5173`。使用独立的 8001 端口可避免误连仍在 8000 运行的 `ai-math` 服务；如需改端口，启动前设置 `LEARNMATH_API_PORT`。
+后端默认跑在 `http://localhost:8001`，前端跑在 `http://localhost:5173`。使用独立的 8001 端口可避免误连仍在 8000 运行的 `ai-math` 服务；如需改后端端口，启动前设置 `LEARNMATH_API_PORT`（`set LEARNMATH_API_PORT=8002 && start.bat`）。
 首次运行请先创建 venv 并安装依赖：`python -m venv venv && venv\Scripts\pip install -r requirements.txt`，
 再把 `.env.example` 复制为 `.env` 并填入真实的 `JWT_SECRET` 与 `QA_LLM_API_KEY`。
 
