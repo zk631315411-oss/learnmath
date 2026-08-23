@@ -72,6 +72,11 @@ export async function patchChatHistory(chatId: string, data: Record<string, unkn
   await patch(`/chat/history/${chatId}`, data);
 }
 
+// 学生自定义对话标题；传空字符串清除自定义，回到沿用 question 原文
+export async function updateChatTitle(chatId: string, title: string): Promise<void> {
+  await patchChatHistory(chatId, { title });
+}
+
 // === 追问 turn API（Batch 1：按 chat_id + turn_id 的服务端原子追加/更新） ===
 
 export type GenerationStatus = 'pending' | 'completed' | 'interrupted' | 'cancelled';
@@ -175,6 +180,15 @@ export function getChapterMap(textbookId: string, token: string): Promise<Chapte
 
 export function getNodeMap(textbookId: string, chapter: string, token: string): Promise<NodeMapResponse> {
   return get(`/learning-map/nodes?textbook_id=${encodeURIComponent(textbookId)}&chapter=${encodeURIComponent(chapter)}`, token, { maxRetries: 0 });
+}
+
+export interface PageSectionsResponse {
+  textbook_id: string;
+  page_sections: Record<string, string>;
+}
+
+export function getPageSections(textbookId: string, token: string): Promise<PageSectionsResponse> {
+  return get(`/learning-map/page-sections?textbook_id=${encodeURIComponent(textbookId)}`, token, { maxRetries: 0 });
 }
 
 export interface SectionPageResponse {

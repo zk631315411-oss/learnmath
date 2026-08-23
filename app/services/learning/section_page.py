@@ -106,3 +106,56 @@ def resolve_section_page(textbook_id: str, section: str, timeout_seconds: float 
 def clear_section_page_cache() -> None:
     with _cache_lock:
         _cache.clear()
+
+
+# 仅匹配顶级小节号（如 "1.2"、"10.3"），章标题（"第1章"）和三级小节（"1.1.1"）不算
+_SECTION_HEADING_RE = re.compile(r"^(\d+\.\d+)(?:[^\d.]|$)")
+
+_page_section_cache: dict[str, dict[int, str]] = {}
+_page_section_lock = Lock()
+
+
+def _build_page_sections(textbook_id: str) -> dict[int, str]:
+    """Build page_number -> "1.2" mapping from PDF bookmarks.
+
+    Scanned textbooks have no text layer, so bookmarks (get_toc) are the only
+    reliable section source. Each section heading owns pages from its start page
+    up to (but excluding) the next section heading's start page.
+    """
+    if fitz is None:
+        return {}
+    path = textbook_pdf_path(textbook_id)
+    if not path.exists():
+        return {}
+    try:
+        document = fitz.open(path)
+    except Exception:
+        return {}
+    try:
+        # Collect (start_page, section) for top-level section bookmarks only.
+        starts: list[tuple[int, str]] = []
+        for _level, title, page_number in document.get_toc(simple=True):
+            match = _SECTION_HEADING_RE.match(str(title).strip())
+            if match:
+                starts.append((int(page_number), match.group(1)))
+        starts.sort()
+        mapping: dict[int, str] = {}
+        for index, (start_page, section) in enumerate(starts):
+            end_page = starts[index + 1][0] if index + 1 < len(starts) else document.page_count + 1
+            for page in range(start_page, min(end_page, document.page_count + 1)):
+                mapping[page] = section
+        return mapping
+    finally:
+        document.close()
+
+
+def page_sections(textbook_id: str) -> dict[int, str]:
+    """Return cached page_number -> section mapping for a textbook."""
+    with _page_section_lock:
+        cached = _page_section_cache.get(textbook_id)
+        if cached is not None:
+            return cached
+    mapping = _build_page_sections(textbook_id)
+    with _page_section_lock:
+        _page_section_cache[textbook_id] = mapping
+    return mapping

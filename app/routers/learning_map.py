@@ -12,6 +12,7 @@ from app.db import kg_v44
 from app.db.chat_history_db import get_chat_history
 from app.db.evidence_db import list_evidence_for_user
 from app.services.learning.projection import is_blocked, project_status
+from app.services.learning.section_page import page_sections
 
 router = APIRouter(prefix="/api/learning-map", tags=["学习地图"])
 
@@ -48,6 +49,14 @@ def chapters(textbook_id: str, authorization: Optional[str] = Header(None)):
             "exploration_progress": {"explored": explored, "total": total},
         })
     return {"textbook_id": textbook_id, "chapters": result}
+
+
+@router.get("/page-sections")
+def page_section_map(textbook_id: str, authorization: Optional[str] = Header(None)):
+    """页码 -> 顶级小节号（如 "1.2"）映射，供提问记录等按页定位到小节。"""
+    require_user_id(authorization, decoder=decode_token)
+    mapping = _kg_call(page_sections, textbook_id)
+    return {"textbook_id": textbook_id, "page_sections": {str(page): section for page, section in mapping.items()}}
 
 
 @router.get("/nodes")
