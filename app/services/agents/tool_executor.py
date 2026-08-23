@@ -71,7 +71,9 @@ def prepare_tool_call(tool_call: Any, tools: list[ToolDef]) -> PreparedToolCall 
     call_id = str(getattr(tool_call, "id", ""))
     tool = _find_tool(name, tools)
     if tool is None or tool.execute is None:
-        return _error(call_id, name, "unknown_tool", "请求的工具不可用", False, started)
+        available = [t.name for t in tools if t.execute is not None]
+        hint = f"请求的工具不可用。可用工具：{', '.join(available)}" if available else "请求的工具不可用"
+        return _error(call_id, name, "unknown_tool", hint, False, started)
     try:
         raw = json.loads(tool_call.function.arguments)
         if not isinstance(raw, dict):
