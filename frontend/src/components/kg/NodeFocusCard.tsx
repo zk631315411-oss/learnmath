@@ -42,18 +42,20 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
   const stemIndex = stem.findIndex(item => item.node_id === node.node_id);
   const stemNode = isStem(node);
 
-  /** 与 node 有边相连的邻居节点，edgeTypes 限定边类型，targetType 限定邻居类型 */
-  const neighbors = (edgeTypes?: Set<string>, targetType?: string) => {
+  /** 与指定节点有边相连的邻居节点，edgeTypes 限定边类型，targetType 限定邻居类型 */
+  const neighborsOf = (fromId: string, edgeTypes?: Set<string>, targetType?: string) => {
     const ids = new Set<string>();
     edges.forEach(edge => {
       if (edgeTypes && !edgeTypes.has(edge.type)) return;
-      if (edge.source === node.node_id) ids.add(edge.target);
-      if (edge.target === node.node_id) ids.add(edge.source);
+      if (edge.source === fromId) ids.add(edge.target);
+      if (edge.target === fromId) ids.add(edge.source);
     });
     return allNodes.filter(item =>
       ids.has(item.node_id) && (!targetType || item.type?.toLowerCase() === targetType),
     );
   };
+  const neighbors = (edgeTypes?: Set<string>, targetType?: string) =>
+    neighborsOf(node.node_id, edgeTypes, targetType);
 
   /* ① 前置（≤2） */
   let prereqBlock: ReactNode = null;
@@ -64,11 +66,9 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
     const list = withEdge.length ? withEdge.slice(-2) : before.slice(-1);
     const approx = !withEdge.length && list.length > 0;
     prereqBlock = <>
-      <h3 className="nfc-h">
-        要先会 · 前置{approx && <span className="ml-1 text-[11.5px] font-normal text-[var(--lm-text-muted)]">（按讲授顺序在前）</span>}
-      </h3>
+      <h3 className="nfc-h">要先会</h3>
       {list.length > 0 ? <ul>{list.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} />)}</ul>
-        : <p className="text-[13px] text-[var(--lm-text-muted)]">本节起点，无前置</p>}
+        : <p className="text-[13px] text-[var(--lm-text-muted)]">本节起点</p>}
     </>;
   }
 
@@ -78,40 +78,56 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
     const directMethods = neighbors(DIRECT_EDGE_TYPES, 'method').sort(byOrder);
     if (directMethods.length > 0) {
       methodBlock = <>
-        <h3 className="nfc-h">方法 · 直接相关</h3>
-        <ul>{directMethods.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} />)}</ul>
+        <h3 className="nfc-h">方法</h3>
+        <ul>{directMethods.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} direct />)}</ul>
       </>;
     }
   }
 
-  /* ③ 用它练 · 题型（直连优先，无边就近推荐；默认 ≤3 折叠） */
+  /* ③ 用它练 · 题型（直连排前+小圆点，其余本节相关排后；默认露 ≤3 不加序号，展开加淡序号） */
   let problemBlock: ReactNode = null;
   if (stemNode) {
     const directProblems = neighbors(DIRECT_EDGE_TYPES, 'problemclass').sort(byOrder);
-    const allProblems = allNodes
-      .filter(item => item.type?.toLowerCase() === 'problemclass')
+    const directIds = new Set(directProblems.map(item => item.node_id));
+    const others = allNodes
+      .filter(item => item.type?.toLowerCase() === 'problemclass' && !directIds.has(item.node_id))
       .sort((a, b) => Math.abs((a.order ?? 0) - (node.order ?? 0)) - Math.abs((b.order ?? 0) - (node.order ?? 0)));
-    const list = directProblems.length ? directProblems : allProblems;
-    const direct = directProblems.length > 0;
+    const list = [...directProblems, ...others];
     if (list.length > 0) {
       const shown = expandProblems ? list : list.slice(0, 3);
       const hidden = list.length - shown.length;
       problemBlock = <>
-        <h3 className="nfc-h">
-          用它练 · 题型{!direct && <span className="ml-1 text-[11.5px] font-normal text-[var(--lm-text-muted)]">（无边直连，就近推荐）</span>}
-        </h3>
-        <ul>{shown.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} />)}</ul>
+        <h3 className="nfc-h">用它练</h3>
+        <ul>{shown.map((item, idx) => (
+          <JumpItem key={item.node_id} item={item} onJump={onJump}
+            index={expandProblems ? idx + 1 : undefined} direct={directIds.has(item.node_id)} />
+        ))}</ul>
         {hidden > 0 && <button type="button" className="nfc-more" onClick={() => setExpandProblems(true)}>查看全部 {list.length} 个 →</button>}
       </>;
     }
   }
 
-  /* 非主干（方法/题型）：显示关联知识点 */
+  /* 非主干（方法/题型）：关联知识点——两跳穿透（题型-USES->方法-GETS/USES->概念） */
   let hostsBlock: ReactNode = null;
   if (!stemNode) {
-    const hosts = neighbors().filter(isStem).sort(byOrder);
+    const seen = new Map<string, LearningMapNode>();
+    let indirect = false;
+    const firstHop = neighbors();
+    firstHop.forEach(item => {
+      if (isStem(item)) seen.set(item.node_id, item);
+    });
+    firstHop.forEach(item => {
+      if (isStem(item)) return;
+      neighborsOf(item.node_id).forEach(second => {
+        if (isStem(second) && second.node_id !== node.node_id) {
+          if (!seen.has(second.node_id)) indirect = true;
+          seen.set(second.node_id, second);
+        }
+      });
+    });
+    const hosts = [...seen.values()].sort(byOrder);
     hostsBlock = <>
-      <h3 className="nfc-h">关联知识点</h3>
+      <h3 className="nfc-h">关联知识点{indirect && <span className="ml-1 text-[11px] font-normal text-[var(--lm-text-muted)]">（含间接）</span>}</h3>
       {hosts.length > 0
         ? <ul>{hosts.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} prefix={`${typeMeta(item.type).label} · `} />)}</ul>
         : <p className="text-[13px] text-[var(--lm-text-muted)]">本节内无边相连</p>}
@@ -126,7 +142,7 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
     <h2 className="serif-zh pr-8 text-[17px] font-semibold text-slate-900 dark:text-slate-50">{stripMath(node.name)}</h2>
     <div className="mb-3 mt-1.5 text-xs text-[var(--lm-text-muted)]">
       <span className="mr-1.5 inline-block rounded-md px-1.5 py-0.5 text-xs text-white" style={{ background: meta.color }}>{meta.label}</span>
-      状态：{STATUS_LABEL[node.status]}
+      {STATUS_LABEL[node.status]}
     </div>
     {prereqBlock}
     {methodBlock}
@@ -139,16 +155,26 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
   </div>;
 }
 
-function JumpItem({ item, onJump, prefix }: { item: LearningMapNode; onJump: (nodeId: string) => void; prefix?: string }) {
+function JumpItem({ item, onJump, prefix, index, direct }: {
+  item: LearningMapNode;
+  onJump: (nodeId: string) => void;
+  prefix?: string;
+  /** 展开态传入 1 起序号；折叠态不传（无序号） */
+  index?: number;
+  /** 与当前概念有直连边：名字前加品牌色小圆点 */
+  direct?: boolean;
+}) {
   const cls = ITEM_CLASS[item.type?.toLowerCase() ?? 'concept'] ?? 'c';
   return <li>
     <button type="button" onClick={() => onJump(item.node_id)}
-      className="group flex w-full items-center gap-1.5 rounded px-0 py-0.5 text-left text-[13px] text-slate-700 dark:text-slate-200">
-      <span className={`nfc-dot nfc-dot-${cls}`} aria-hidden="true" />
-      <span className="min-w-0 flex-1 truncate transition group-hover:text-[var(--lm-brand)] group-hover:underline">
+      className="group flex w-full items-start gap-1.5 rounded px-0 py-0.5 text-left text-[13px] text-slate-700 dark:text-slate-200">
+      {index !== undefined
+        ? <span className="mt-px w-4 flex-none text-right text-[11px] leading-[18px] text-[var(--lm-text-muted)]" aria-hidden="true">{index}.</span>
+        : <span className={`nfc-dot nfc-dot-${cls} mt-1.5`} aria-hidden="true" />}
+      <span className="min-w-0 flex-1 break-words leading-snug transition group-hover:text-[var(--lm-brand)] group-hover:underline">
+        {direct && <span className="mr-1 inline-block h-[5px] w-[5px] rounded-full align-[2px]" style={{ background: 'var(--lm-brand)' }} aria-label="直连" title="与本概念直连" />}
         {prefix}{stripMath(item.name)}
       </span>
-      <span className="shrink-0 text-[11px] text-[var(--lm-text-muted)]">→</span>
     </button>
   </li>;
 }

@@ -64,9 +64,11 @@ export function useWorkspaceNav({
   const initial = useRef(parseWorkspaceLocation(window.location.search));
   const [view, setView] = useState<WorkspaceView>(initial.current.view);
   const [selectedMapChapter, setSelectedMapChapter] = useState<string | null>(initial.current.chapter);
+  const [chapterExpandNonce, setChapterExpandNonce] = useState(0);
   const [startupReady, setStartupReady] = useState(false);
   const [threadRestore, setThreadRestore] = useState<{ id: string | null; nonce: number } | null>(null);
   const startupKeyRef = useRef('');
+  const suppressReplaceUntilRef = useRef(0);
   const callbacksRef = useRef({ onTextbookRequest, onPageRequest });
   callbacksRef.current = { onTextbookRequest, onPageRequest };
 
@@ -77,7 +79,10 @@ export function useWorkspaceNav({
     }
     if (location.page && targetTextbook) callbacksRef.current.onPageRequest(targetTextbook, location.page);
     setView(location.view);
-    setSelectedMapChapter(location.view === 'map' ? location.chapter : null);
+    // 仅在有 chapter 参数时改章节选中，避免「去学这个」不 push 章节导致回退后章节状态被清空。
+    if (location.chapter || location.view !== 'map') setSelectedMapChapter(location.chapter);
+    // popstate 恢复地图视图时发一次展开信号：MapHome 章节展开是本地 state，回退需重新展开。
+    if (restoreThread && location.view === 'map') setChapterExpandNonce(nonce => nonce + 1);
     if (restoreThread) setThreadRestore(current => ({ id: location.threadId, nonce: (current?.nonce || 0) + 1 }));
   }, [textbookId]);
 
@@ -120,7 +125,11 @@ export function useWorkspaceNav({
       threadId: nextView === 'reader' ? (options.threadId === undefined ? activeThreadId : options.threadId) : null,
     };
     const url = buildWorkspaceUrl(next, window.location.pathname);
+    // 「回地图」的 push 不静默紧随其后的 replace：回退恢复章节后 MapHome 会重新取数，
+    // 需要 replace 把 URL 与恢复出的章节/页码对齐，梯子才能随回退重新展开。
+    const skipReplace = !options.replace && nextView === 'reader' && url !== `${window.location.pathname}${window.location.search}`;
     window.history[options.replace ? 'replaceState' : 'pushState']({ learnmath: true, ...next }, '', url);
+    if (skipReplace) suppressReplaceUntilRef.current = Date.now() + 300;
     setView(nextView);
     setSelectedMapChapter(next.chapter);
   }, [activeThreadId, currentPage, textbookId]);
@@ -138,6 +147,9 @@ export function useWorkspaceNav({
     };
     const url = buildWorkspaceUrl(next, window.location.pathname);
     if (url !== `${window.location.pathname}${window.location.search}`) {
+      // 刚 pushState 完紧跟的同步（如切视图引发的 page 变化）跳过本轮 replace，
+      // 否则会改写刚推入的历史条目，把浏览器回退的落点搅乱。
+      if (Date.now() < suppressReplaceUntilRef.current) return;
       window.history.replaceState({ learnmath: true, ...next }, '', url);
     } else if (!window.history.state?.learnmath || current.explicit === false) {
       window.history.replaceState({ learnmath: true, ...next }, '', url);
@@ -152,6 +164,7 @@ export function useWorkspaceNav({
   return {
     view,
     selectedMapChapter,
+    chapterExpandNonce,
     startupReady,
     threadRestore,
     navigate,

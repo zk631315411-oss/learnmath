@@ -9,6 +9,11 @@ import SectionLadder from './kg/SectionLadder';
 import NodeFocusCard from './kg/NodeFocusCard';
 import { sectionStatusSummary, stripMath, typeMeta } from './kg/shared';
 
+// 浏览器回退恢复梯子：回退前展开的章节与小节写入模块级单例（MapHome 随视图切换会 remount，
+// hook state/ref 全部重置，只能挂在组件外存活）。应用只有一个地图实例，无需多 key。
+let lastExpandedMapChapter: string | null = null;
+let lastExpandedMapSection: { chapter: string; section: string } | null = null;
+
 /**
  * 节就地展开区（对齐 demo v3）：左侧纯概念梯子 + 右侧聚焦详情卡；
  * 节尾平铺「本节方法·题型」pill（蓝=方法 橙=题型，不上主干），点击同样出详情卡。
@@ -39,11 +44,11 @@ function InlineLadder({ chapter, section, edges, onContinueNode }: {
       <div className="w-full shrink-0 p-3 lg:sticky lg:top-0 lg:w-[300px]">
         {selected
           ? <NodeFocusCard node={selected} allNodes={section.nodes} edges={edges} onJump={handleJump} onStudy={handleStudy} onClose={() => setSelectedId(null)} />
-          : <div className="rounded-xl border border-[var(--lm-border)] bg-[var(--lm-surface)] px-4 py-10 text-center text-[13px] text-[var(--lm-text-muted)]">点击左侧主干节点（圆点或名称文字）<br />看它的前置 / 题型 / 方法</div>}
+          : <div className="px-4 py-10 text-center text-[13px] text-[var(--lm-text-muted)]">点击左侧主干节点（圆点或名称文字）<br />看它的前置 / 题型 / 方法</div>}
       </div>
     </div>
     {(methods.length > 0 || problems.length > 0) && <div className="border-t border-[var(--lm-border)] px-3 py-3">
-      <p className="mb-2 text-xs text-[var(--lm-text-muted)]">本节方法 · 题型（不上主干，跨概念复用）：方法 {methods.length} · 题型 {problems.length}</p>
+      <p className="mb-2 text-xs text-[var(--lm-text-muted)]">本节方法 · 题型：方法 {methods.length} · 题型 {problems.length}</p>
       <div className="flex flex-wrap gap-2">
         {methods.map(node => <PillTag key={node.node_id} node={node} kind="m" selected={selectedId === node.node_id} onSelect={handleJump} />)}
         {problems.map(node => <PillTag key={node.node_id} node={node} kind="p" selected={selectedId === node.node_id} onSelect={handleJump} />)}
@@ -78,6 +83,8 @@ interface Props {
   textbooks: TextbookOption[];
   onTextbookChange: (textbookId: string) => void;
   onEnsureChapterData?: (chapter: string) => void;
+  /** 变化时重新展开当前展开的章节并拉取小节数据（用于浏览器回退恢复梯子）。 */
+  chapterExpandNonce?: number;
 }
 
 const statusLabel: Record<LearningStatus, string> = {
@@ -92,6 +99,7 @@ export default function MapHome({
   textbookName, chapters, nodesByChapter, edgesByChapter, errors, loading,
   onContinue, onContinueNode, onRetry,
   onStartReading, textbookId, textbooks, onTextbookChange, onEnsureChapterData,
+  chapterExpandNonce,
 }: Props) {
   const [textbookMenuOpen, setTextbookMenuOpen] = useState(false);
   const [explicitExpanded, setExplicitExpanded] = useState<string | null>(null);
@@ -113,6 +121,27 @@ export default function MapHome({
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [textbookMenuOpen]);
+
+  // 用户展开/收拢章节与小节时同步到模块级单例，供浏览器回退后恢复梯子。
+  useEffect(() => {
+    if (explicitExpanded) lastExpandedMapChapter = explicitExpanded;
+  }, [explicitExpanded]);
+  useEffect(() => {
+    if (expandedSection) lastExpandedMapSection = expandedSection;
+  }, [expandedSection]);
+
+  // 浏览器回退到地图页时，重新展开回退前正在看的章节与小节并触发小节数据拉取，梯子才能恢复。
+  const handledExpandNonceRef = useRef(0);
+  useEffect(() => {
+    if (!chapterExpandNonce || chapterExpandNonce === handledExpandNonceRef.current) return;
+    handledExpandNonceRef.current = chapterExpandNonce;
+    const chapter = lastExpandedMapChapter;
+    if (!chapter) return;
+    setExplicitExpanded(chapter);
+    if (lastExpandedMapSection?.chapter === chapter) setExpandedSection(lastExpandedMapSection);
+    void onEnsureChapterData?.(chapter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapterExpandNonce]);
 
   // 继续学习只推荐「可行动」的节点：需巩固 > 学习中 > 未探索（同级按教材序）。
   // 全部掌握时不推荐具体节点，hero 退化为「从第 N 章开始」+ 打开教材。

@@ -373,6 +373,7 @@ export default function App() {
               onContinueNode={(chapter, node) => void openChapter(chapter, node)}
               onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
+              chapterExpandNonce={navigation.chapterExpandNonce}
               textbookId={textbookId}
               textbooks={PRESET_PDFS.map(pdf => ({ textbookId: pdf.textbookId, name: pdf.name }))}
               onTextbookChange={value => setTextbookId(value as TextbookId)}
