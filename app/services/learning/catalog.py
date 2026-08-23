@@ -30,3 +30,31 @@ def catalog_version(textbook_id: str) -> str:
     if not entry:
         raise ValueError("unknown textbook")
     return str(entry.get("catalog_version") or "")
+
+
+@lru_cache(maxsize=None)
+def catalog_node_ids(textbook_id: str) -> frozenset[str]:
+    """Return the generated, version-bound node scope for one textbook."""
+
+    if not get_catalog_entry(textbook_id):
+        return frozenset()
+    rows = load_catalog_manifest().get("node_index", {}).get(textbook_id, [])
+    return frozenset(
+        str(row.get("node_id"))
+        for row in rows
+        if isinstance(row, dict) and row.get("node_id")
+    )
+
+
+def get_catalog_node(textbook_id: str, node_id: str) -> dict[str, Any] | None:
+    clean_node = str(node_id or "").strip()
+    if clean_node not in catalog_node_ids(textbook_id):
+        return None
+    return next(
+        (
+            row
+            for row in load_catalog_manifest().get("node_index", {}).get(textbook_id, [])
+            if isinstance(row, dict) and row.get("node_id") == clean_node
+        ),
+        None,
+    )

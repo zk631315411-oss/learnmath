@@ -199,7 +199,9 @@ class UnifiedQARoutingTests(unittest.IsolatedAsyncioTestCase):
             ))]
 
         self.assertEqual(captured["scope"], ("gaodai_shang", 88))
-        self.assertEqual((captured["rounds"], captured["calls"]), (7, 4))
+        # max_model_rounds=7；max_total_calls=8（KG 3 + index 2 含修正重试 + detail 1
+        # + manim 1 + 重试余量 1，见 answer_service ToolRuntimeConfig 注释）。
+        self.assertEqual((captured["rounds"], captured["calls"]), (7, 8))
         self.assertEqual(events[-1]["event"], "done")
 
     async def test_multimodal_tool_call_failure_is_an_explicit_error(self):

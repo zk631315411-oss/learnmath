@@ -14,8 +14,13 @@ from unittest.mock import patch
 from app.config import config
 from app.db.connection import init_db
 from app.db.evidence_db import list_evidence_for_user
-from app.services.qa.answer_service import answer_turn_with_tools
+from app.services.qa.answer_service import (
+    _filter_evidence_fork_messages,
+    answer_turn_with_tools,
+)
 from app.services.qa.contracts import QATurnInput
+from app.services.agents.tool_def import ToolDef
+from app.services.agents.tool_runtime import RuntimeEvent, ToolRuntime
 
 
 def _chunk(*, content="", reasoning="", tool_calls=None):
@@ -116,6 +121,28 @@ class _EvidenceForkLLM:
 
 
 class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
+    def test_memory_tools_are_removed_from_evidence_fork_messages(self):
+        messages = [
+            {
+                "role": "assistant",
+                "reasoning_content": "private reasoning",
+                "tool_calls": [
+                    {"id": "m1", "function": {"name": "retrieve_learning_memory_index", "arguments": "{}"}},
+                    {"id": "old", "function": {"name": "retrieve_learner_model_context", "arguments": "{}"}},
+                    {"id": "k1", "function": {"name": "retrieve_kg_context", "arguments": "{}"}},
+                ],
+            },
+            {"role": "tool", "tool_call_id": "m1", "content": "memory"},
+            {"role": "tool", "tool_call_id": "old", "content": "old memory"},
+            {"role": "tool", "tool_call_id": "k1", "content": "kg"},
+            {"role": "assistant", "content": "本轮最终教师回答"},
+        ]
+        filtered = _filter_evidence_fork_messages(messages)
+        self.assertNotIn("m1", json.dumps(filtered, ensure_ascii=False))
+        self.assertNotIn("private reasoning", json.dumps(filtered, ensure_ascii=False))
+        self.assertNotIn("本轮最终教师回答", json.dumps(filtered, ensure_ascii=False))
+        self.assertIn("retrieve_kg_context", json.dumps(filtered, ensure_ascii=False))
+
     async def test_report_flow_persists_rows_and_hides_internal_tool(self):
         resolved = {
             "status": "resolved", "kg_basis_available": True,
@@ -161,6 +188,69 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(row["user_id"], "u1")
                 self.assertEqual(row["textbook_id"], "gaodai_shang")
 
+    async def test_memory_status_is_sanitized_and_kept_in_done_activity(self):
+        async def fake_run(_self, _messages, _context):
+            yield RuntimeEvent("tool_call", {
+                "tool_call_id": "memory-call",
+                "name": "retrieve_learning_memory_index",
+                "display_name": "读取学习记忆索引",
+                "arguments": {"node_ids": ["gaodai_shang:private-node"]},
+                "round": 1,
+            })
+            yield RuntimeEvent("tool_result", {
+                "tool_call_id": "memory-call",
+                "name": "retrieve_learning_memory_index",
+                "status": "success",
+                "result": {"status": "ok", "nodes": [{"alpha": 8.0}]},
+                "duration_ms": 9,
+            })
+            yield RuntimeEvent("content_delta", {"text": "可见回答"})
+
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(config, "DB_PATH", str(Path(tmp) / "learning.db")),
+            patch.object(config, "LEARNER_MODEL_ENABLED", True),
+            patch("app.services.qa.answer_service.llm_service.is_available", return_value=True),
+            patch("app.services.agents.tools.get_qa_tool_defs", return_value=[ToolDef(
+                name="retrieve_kg_context",
+                description="查询知识图谱",
+                execute=lambda **_kwargs: {},
+            )]),
+            patch.object(ToolRuntime, "run", fake_run),
+            patch("app.services.qa.answer_service.run_one_shot_tool", return_value=SimpleNamespace(
+                outcome=None,
+                error_code="test_skip",
+                error_message="skip evidence fork",
+            )),
+        ):
+            init_db()
+            events = [event async for event in answer_turn_with_tools(QATurnInput(
+                user_id="u1",
+                question="q",
+                textbook_id="gaodai_shang",
+            ))]
+
+        done = json.loads(next(event["data"] for event in events if event["event"] == "done"))
+        activities = done["tool_activities"]
+        self.assertEqual(len(activities), 1)
+        self.assertEqual(activities[0]["tool"], "learning_memory_status")
+        self.assertEqual(activities[0]["result"], {
+            "memory_status": "success",
+        })
+        self.assertEqual(activities[0]["arguments"], {})
+        self.assertNotIn("retrieve_learning_memory_index", json.dumps(activities, ensure_ascii=False))
+        self.assertNotIn("alpha", json.dumps(activities, ensure_ascii=False))
+
+    async def test_memory_status_maps_partial_and_failure(self):
+        from app.services.qa.answer_service import _memory_status_from_result
+
+        self.assertEqual(_memory_status_from_result({
+            "status": "success", "result": {"status": "partial"},
+        }), "partial")
+        self.assertEqual(_memory_status_from_result({
+            "status": "error", "result": {},
+        }), "error")
+
     async def test_three_kg_calls_still_leave_budget_for_report(self):
         resolved = {"status": "resolved", "selected_node": {"node_id": "gaodai_shang:目标", "name": "目标"}, "relationships": {}}
         with tempfile.TemporaryDirectory() as tmp:
@@ -200,6 +290,28 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake.fork_calls, 1)
         self.assertNotIn("可见回答", json.dumps(fake.fork_messages, ensure_ascii=False))
         self.assertEqual(sum(event["event"] == "content" for event in events), 1)
+
+    async def test_learner_model_enabled_does_not_change_evidence_or_sse(self):
+        resolved = {
+            "status": "resolved",
+            "selected_node": {"node_id": "gaodai_shang:目标", "name": "目标"},
+            "relationships": {},
+        }
+        fake = _EvidenceForkLLM()
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(config, "DB_PATH", str(Path(tmp) / "learning.db")), \
+                 patch.object(config, "LEARNER_MODEL_ENABLED", True):
+                init_db()
+                with patch("app.services.qa.answer_service.llm_service", fake), \
+                     patch("app.services.agents.tools.retrieve_kg_context.retrieve_kg_context", return_value=resolved):
+                    events = [event async for event in answer_turn_with_tools(
+                        QATurnInput(user_id="u1", question="q", textbook_id="gaodai_shang")
+                    )]
+                rows = list_evidence_for_user("u1")
+                done = next(event for event in events if event["event"] == "done")
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(done)
+        self.assertFalse(any(event["event"] == "error" for event in events))
 
 
 if __name__ == "__main__":

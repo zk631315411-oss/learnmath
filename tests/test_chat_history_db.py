@@ -10,7 +10,7 @@ from app.auth.jwt_handler import create_access_token
 from app.config import config
 from app.db.chat_history_db import get_chat_history, migrate_user_id, save_chat_history, update_chat_answer
 from app.db.evidence_db import insert_evidence_rows, list_evidence_for_user
-from app.db.connection import init_db
+from app.db.connection import get_conn, init_db
 from app.main import app
 
 
@@ -77,6 +77,145 @@ class ChatHistoryTests(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(len(list_evidence_for_user("registered")), 1)
+
+    def test_migrate_deduplicates_client_turn_without_silent_drop(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(config, "DB_PATH", str(Path(temp_dir) / "learning.db")):
+                init_db()
+                insert_evidence_rows([
+                    {
+                        "id": "target-e",
+                        "user_id": "registered",
+                        "node_id": "book:n",
+                        "textbook_id": "book",
+                        "client_turn_id": "same-turn",
+                        "outcome": "assisted",
+                    },
+                    {
+                        "id": "source-conflict",
+                        "user_id": "anonymous",
+                        "node_id": "book:n",
+                        "textbook_id": "book",
+                        "client_turn_id": "same-turn",
+                        "outcome": "independent",
+                    },
+                    {
+                        "id": "source-new",
+                        "user_id": "anonymous",
+                        "node_id": "book:m",
+                        "textbook_id": "book",
+                        "client_turn_id": "new-turn",
+                        "outcome": "independent",
+                    },
+                ])
+                migrate_user_id("anonymous", "registered")
+                target = list_evidence_for_user("registered")
+                source = list_evidence_for_user("anonymous")
+                self.assertEqual({row["id"] for row in target}, {"target-e", "source-new"})
+                self.assertEqual([row["id"] for row in source], ["source-conflict"])
+                conn = get_conn()
+                try:
+                    skipped = conn.execute(
+                        "SELECT evidence_id, reason FROM evidence_migration_skips"
+                    ).fetchall()
+                    self.assertEqual(len(skipped), 1)
+                    self.assertEqual(skipped[0][0], "source-conflict")
+                finally:
+                    conn.close()
+
+    def test_migration_revision_increments_only_target_for_new_evidence_and_keeps_runs(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(config, "DB_PATH", str(Path(temp_dir) / "learning.db")):
+                init_db()
+                insert_evidence_rows([{
+                    "id": "source-e",
+                    "user_id": "anonymous",
+                    "node_id": "book:n",
+                    "textbook_id": "book",
+                    "outcome": "independent",
+                }])
+                conn = get_conn()
+                try:
+                    conn.execute(
+                        "UPDATE learning_progress_revisions SET revision=9 WHERE user_id='anonymous' AND textbook_id='book'"
+                    )
+                    conn.execute(
+                        "INSERT INTO learner_model_runs(id,user_id,textbook_id,catalog_version,adapter_version,model_version,input_revision,status,started_at) "
+                        "VALUES ('run-source','anonymous','book','v','a','m',9,'succeeded','now')"
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+                migrate_user_id("anonymous", "registered")
+                conn = get_conn()
+                try:
+                    revision = conn.execute(
+                        "SELECT revision FROM learning_progress_revisions WHERE user_id='registered' AND textbook_id='book'"
+                    ).fetchone()[0]
+                    run_user = conn.execute(
+                        "SELECT user_id FROM learner_model_runs WHERE id='run-source'"
+                    ).fetchone()[0]
+                finally:
+                    conn.close()
+        self.assertEqual(revision, 1)
+        self.assertEqual(run_user, "anonymous")
+
+    def test_enabled_model_replays_formal_user_after_evidence_migration(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(config, "DB_PATH", str(Path(temp_dir) / "learning.db")), \
+                 patch.object(config, "LEARNER_MODEL_ENABLED", True), \
+                 patch("app.db.learner_model_db.replay_user_textbook") as replay:
+                init_db()
+                insert_evidence_rows([{
+                    "id": "source-e",
+                    "user_id": "anonymous",
+                    "node_id": "gaodai_shang:n",
+                    "textbook_id": "gaodai_shang",
+                    "outcome": "independent",
+                }])
+                migrate_user_id("anonymous", "registered")
+        replay.assert_called_once_with("registered", "gaodai_shang")
+
+    def test_migration_marks_both_identity_snapshots_stale(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(config, "DB_PATH", str(Path(temp_dir) / "learning.db")):
+                init_db()
+                insert_evidence_rows([{
+                    "id": "source-e", "user_id": "anonymous",
+                    "node_id": "gaodai_shang:n", "textbook_id": "gaodai_shang",
+                    "outcome": "independent",
+                }])
+                conn = get_conn()
+                try:
+                    conn.execute(
+                        "INSERT INTO learner_node_estimates "
+                        "(user_id,textbook_id,node_id,catalog_version,adapter_version,model_version,"
+                        "input_revision,alpha,beta,raw_mean,variance,recency,estimate,uncertainty,"
+                        "learner_state,computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        ("anonymous", "gaodai_shang", "gaodai_shang:n", "v", "a", "m", 1,
+                         1, 1, .5, 1/12, 0, .5, 1, "unknown", "now"),
+                    )
+                    conn.execute(
+                        "INSERT INTO learner_node_estimates "
+                        "(user_id,textbook_id,node_id,catalog_version,adapter_version,model_version,"
+                        "input_revision,alpha,beta,raw_mean,variance,recency,estimate,uncertainty,"
+                        "learner_state,computed_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        ("registered", "gaodai_shang", "gaodai_shang:n", "v", "a", "m", 1,
+                         1, 1, .5, 1/12, 0, .5, 1, "unknown", "now"),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+                migrate_user_id("anonymous", "registered")
+                conn = get_conn()
+                try:
+                    rows = conn.execute(
+                        "SELECT user_id,stale FROM learner_node_estimates "
+                        "WHERE user_id IN ('anonymous','registered') ORDER BY user_id"
+                    ).fetchall()
+                finally:
+                    conn.close()
+        self.assertEqual([(row[0], row[1]) for row in rows], [("anonymous", 1), ("registered", 1)])
 
 
 if __name__ == "__main__":

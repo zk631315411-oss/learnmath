@@ -57,6 +57,11 @@ class LLMService:
         """支持流式 Function Calling，Agent 可转发思考与答案增量。"""
         if not self._client:
             raise RuntimeError("LLM 服务未初始化")
+        extra: dict = {}
+        # Thinking-mode models (e.g. qwen3.7-max) reject a forced tool_choice
+        # object; the evidence fork's one-shot call must run with thinking off.
+        if not stream and isinstance(tool_choice, dict):
+            extra["extra_body"] = {"enable_thinking": False}
         return self._client.chat.completions.create(
             model=config.QA_LLM_MODEL,
             messages=messages,
@@ -65,6 +70,7 @@ class LLMService:
             stream=stream,
             **({"stream_options": {"include_usage": True}} if stream else {}),
             temperature=temperature,
+            **extra,
         )
 
 

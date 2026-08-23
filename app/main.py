@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.db.connection import init_db
-from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook, manim
+from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook, manim, learner_model
 from app.services.manim_queue import reconcile_active_artifacts_loop
 
 
@@ -22,7 +22,6 @@ async def lifespan(_app: FastAPI):
     finally:
         stop_event.set()
         await asyncio.gather(reconcile_task, return_exceptions=True)
-
 
 # 确保数据目录存在并初始化数据库（幂等，重复启动无副作用）
 config.ensure_dirs()
@@ -65,6 +64,7 @@ app.include_router(learning_map.router)
 app.include_router(learning_progress.router)
 app.include_router(textbook.router)
 app.include_router(manim.router)
+app.include_router(learner_model.router)
 
 
 @app.get("/")

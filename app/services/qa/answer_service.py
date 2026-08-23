@@ -20,6 +20,7 @@ from typing import AsyncIterator
 
 from fastapi.concurrency import run_in_threadpool
 
+from app.config import config
 from app.services.agents.one_shot_tool import run_one_shot_tool
 from app.services.agents.tools.report_turn_outcome import build_report_turn_outcome_tool
 from app.services.llm_service import llm_service
@@ -57,6 +58,15 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
     # trace id so follow-ups can be counted independently.
     turn_id = str(uuid.uuid4())
     started_at = time.perf_counter()
+    memory_scope = None
+    memory_scope_token = None
+    if config.LEARNER_MODEL_ENABLED:
+        from app.services.learning.learning_memory_scope import begin_memory_scope
+        memory_scope, memory_scope_token = begin_memory_scope(
+            turn_input.user_id,
+            turn_input.textbook_id,
+            qa_turn_id=turn_id,
+        )
 
     try:
         # ---- 截图上下文 ----
@@ -100,10 +110,22 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             ToolRuntime, ToolRuntimeConfig, ToolRuntimeContext,
         )
 
-        tool_defs: list[ToolDef] = get_qa_tool_defs(
-            textbook_id=turn_input.textbook_id,
-            page_number=turn_input.page_number,
-        )
+        # Mutable for the lifetime of this turn: the learner-model tool may
+        # only read nodes that the KG tool has already resolved in this same
+        # answer context.
+        turn_resolved_node_ids: set[str] = set()
+        turn_resolved_node_ids_in_order: list[str] = []
+
+        tool_kwargs = {
+            "textbook_id": turn_input.textbook_id,
+            "page_number": turn_input.page_number,
+        }
+        # Keep the old call signature while the feature is disabled; this is
+        # useful for downstream integrations that provide their own tool list.
+        if config.LEARNER_MODEL_ENABLED:
+            tool_kwargs["user_id"] = turn_input.user_id
+            tool_kwargs["allowed_node_ids"] = turn_resolved_node_ids
+        tool_defs: list[ToolDef] = get_qa_tool_defs(**tool_kwargs)
         if not tool_defs:
             yield sse_error("KG 工具未配置，无法启动统一教学 Agent；未执行无工具直答")
             return
@@ -145,8 +167,8 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             artifact_handler=_accept_manim_artifact,
             config=ToolRuntimeConfig(
                 max_model_rounds=7,
-                # retrieve_kg_context itself is bounded to three calls.
-                max_total_calls=4,
+                # KG 3 + index 2 (含 1 次修正重试) + detail 1 + manim 1 + retry margin 1 = 8.
+                max_total_calls=8,
                 max_consecutive_failure_rounds=2,
             ),
         )
@@ -159,12 +181,11 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         full_answer = ""
         full_thinking = ""
         tool_activities: dict[str, dict] = {}
+        memory_status_activity_id: str | None = None
         evidence_log = logging.getLogger("learnmath.evidence")
 
-        # 自评证据回路的本轮/线程 resolved 节点集合：
-        # 本轮从 retrieve_kg_context 的 tool_result 累积；线程历史从已存 chat_history 恢复。
-        turn_resolved_node_ids: set[str] = set()
-        turn_resolved_node_ids_in_order: list[str] = []
+        # 自评证据回路的线程 resolved 节点集合：本轮集合已在工具装配前创建，
+        # 供 learner-model 工具做同轮 KG 绑定；线程历史从已存 chat_history 恢复。
         # 线程历史只在主回答完成后、判断 evidence eligibility 时读取一次。
         thread_resolved_node_ids: set[str] | None = None
         thread_resolved_node_ids_recent_first: list[str] = []
@@ -184,6 +205,18 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             if event_type == "tool_call":
                 call_id = str(data.get("tool_call_id") or "")
                 tool_name = str(data.get("name") or "")
+                if tool_name in _INTERNAL_MEMORY_TOOLS:
+                    # Keep the model payload private while exposing one
+                    # sanitized, persisted status activity for the student.
+                    if memory_status_activity_id is None:
+                        memory_status_activity_id = f"learning-memory-{turn_id}"
+                    activity = _memory_status_activity(
+                        memory_status_activity_id,
+                        "running",
+                    )
+                    tool_activities[memory_status_activity_id] = activity
+                    yield sse_tool_call(activity)
+                    continue
                 public_arguments = dict(data.get("arguments") or {})
                 if tool_name == "render_manim_animation":
                     public_arguments.pop("scene_code", None)
@@ -221,6 +254,19 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                         "learnmath.evidence: resolved 结果出现 user=%s turn=%s",
                         turn_input.user_id, turn_id,
                     )
+
+                if tool_name in _INTERNAL_MEMORY_TOOLS:
+                    if memory_status_activity_id is None:
+                        memory_status_activity_id = f"learning-memory-{turn_id}"
+                    memory_status = _memory_status_from_result(data)
+                    activity = _memory_status_activity(
+                        memory_status_activity_id,
+                        memory_status,
+                        duration_ms=data.get("duration_ms"),
+                    )
+                    tool_activities[memory_status_activity_id] = activity
+                    yield sse_tool_result(activity)
+                    continue
 
                 activity = tool_activities.setdefault(call_id, {
                     "id": call_id,
@@ -297,7 +343,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             # visible assistant answer. This keeps the rating anchored to the
             # student's latest message and all help received before it.
             fork_messages = [
-                *(runtime_messages or initial_messages),
+                *_filter_evidence_fork_messages(runtime_messages or initial_messages),
                 {
                     "role": "system",
                     "content": (
@@ -305,8 +351,12 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                         "不在本次评价范围内。本轮可用的 selected_node.node_id 仅有："
                         f"{json.dumps(allowed_node_ids, ensure_ascii=False)}。"
                         "检查此前完整对话：学生未借助老师提示且自行正确作答报 independent；"
-                        "此前得到提示或拆步后正确答出报 assisted；老师此前直接讲解后学生才"
-                        "明确表示理解报 direct_taught；没有学生闭合信号报 unresolved。"
+                        "此前得到提示或拆步后正确答出报 assisted；老师应学生要求完整讲解了"
+                        "知识点（直接给答案/完整解法）而学生没有后续独立作答的报 direct_taught"
+                        "——direct_taught 只表示「讲授发生过、需要复习」，不要求学生说「我懂了」，"
+                        "学生离开或未回应不等于教学没发生；连讲授都没发生、没有任何闭合信号的"
+                        "才报 unresolved。scaffolding_level=4（完整讲解）且学生未独立作答时"
+                        "对应 direct_taught，不得报 assisted 或 unresolved。"
                         "只调用 report_turn_outcome，不要输出学生可见内容。"
                     ),
                 },
@@ -351,6 +401,8 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                                 turn_input.textbook_id,
                                 node_ids=persisted_node_ids,
                             )
+                            # Estimates are computed from evidence at read
+                            # time; no post-answer replay or delta needed.
                 else:
                     evidence_log.warning(
                         "learnmath.evidence: evidence fork failed user=%s turn=%s code=%s detail=%s",
@@ -404,7 +456,99 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             )
         else:
             yield sse_error(f"回答生成失败：{exc}")
+    finally:
+        if memory_scope is not None and memory_scope_token is not None:
+            from app.services.learning.learning_memory_scope import reset_memory_scope
+            reset_memory_scope(memory_scope_token, memory_scope)
 
 
 async def _accept_manim_artifact(artifact: dict, _outcome) -> dict | None:
     return artifact if artifact.get("id") else None
+
+
+_INTERNAL_MEMORY_TOOLS = {
+    "retrieve_learning_memory_index",
+    "retrieve_learning_memory_detail",
+    # Historical sessions may still contain this name.  It must stay hidden
+    # during replay without being registered as a live tool.
+    "retrieve_learner_model_context",
+}
+
+
+def _memory_status_from_result(data: dict) -> str:
+    """Map private memory tool outcomes to the four public UI states."""
+
+    if str(data.get("status") or "") != "success":
+        return "error"
+    result = data.get("result") or {}
+    status = str(result.get("status") or "")
+    if status == "partial":
+        return "partial"
+    if status == "ok":
+        return "success"
+    return "error"
+
+
+def _memory_status_activity(
+    activity_id: str,
+    status: str,
+    *,
+    duration_ms: int | None = None,
+) -> dict:
+    """Build a safe activity with no private arguments or model fields."""
+
+    safe_status = status if status in {"running", "success", "partial", "error"} else "error"
+    activity = {
+        "id": activity_id,
+        "tool": "learning_memory_status",
+        "label": "学习记录",
+        "status": "running" if safe_status == "running" else "success" if safe_status in {"success", "partial"} else "error",
+        "arguments": {},
+        "result": {"memory_status": safe_status},
+    }
+    if duration_ms is not None:
+        activity["duration_ms"] = duration_ms
+    return activity
+
+
+def _filter_evidence_fork_messages(messages: list[dict]) -> list[dict]:
+    """Remove memory decisions and private reasoning from the evidence fork."""
+
+    filtered: list[dict] = []
+    hidden_call_ids: set[str] = set()
+    for source in messages:
+        if not isinstance(source, dict):
+            continue
+        message = dict(source)
+        message.pop("reasoning_content", None)
+        message.pop("thinking", None)
+        role = str(message.get("role") or "")
+        if role == "assistant" and message.get("tool_calls"):
+            kept_calls = []
+            for call in message.get("tool_calls") or []:
+                if not isinstance(call, dict):
+                    continue
+                function = call.get("function") or {}
+                name = str(function.get("name") or "")
+                if name in _INTERNAL_MEMORY_TOOLS:
+                    hidden_call_ids.add(str(call.get("id") or ""))
+                    continue
+                kept_calls.append(call)
+            if kept_calls:
+                message["tool_calls"] = kept_calls
+            else:
+                message.pop("tool_calls", None)
+            # Tool-call round content is not part of the student's observed
+            # response; keep only non-memory tool calls for the fork.
+            message.pop("content", None)
+        elif role == "assistant":
+            # A completed assistant response must never become evidence-fork
+            # input. Historical assistant messages are represented in the
+            # user history text, not as raw assistant messages here.
+            continue
+        if role == "tool" and str(message.get("tool_call_id") or "") in hidden_call_ids:
+            continue
+        if role == "tool" and str(message.get("name") or "") in _INTERNAL_MEMORY_TOOLS:
+            continue
+        filtered.append(message)
+    return filtered

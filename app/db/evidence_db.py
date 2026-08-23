@@ -79,6 +79,8 @@ def insert_evidence_rows(rows: list[dict[str, Any]]) -> EvidenceInsertResult:
                 """,
                 (user_id, textbook_id),
             )
+            # Estimates are recomputed from this ledger at read time; there is
+            # no persisted snapshot to invalidate any more.
         conn.commit()
         revisions = EvidenceInsertResult()
         revisions.inserted_count = inserted_count
@@ -114,6 +116,80 @@ def list_evidence_for_user_node(user_id: str, node_id: str) -> list[dict[str, An
             (user_id, node_id),
         )
         return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def list_evidence_for_user_textbook_node(
+    user_id: str,
+    textbook_id: str,
+    node_id: str,
+) -> list[dict[str, Any]]:
+    """按租户、教材和节点读取 evidence，避免跨教材同名节点串线。"""
+
+    conn = get_conn()
+    try:
+        cursor = conn.execute(
+            """
+            SELECT * FROM evidence_turns
+            WHERE user_id=? AND textbook_id=? AND node_id=?
+            ORDER BY created_at ASC, id ASC
+            """,
+            (user_id, textbook_id, node_id),
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def list_evidence_for_user_textbook_nodes(
+    user_id: str,
+    textbook_id: str,
+    node_ids: list[str],
+) -> list[dict[str, Any]]:
+    """按租户、教材和有限节点集合读取 evidence。"""
+
+    clean_ids = list(dict.fromkeys(str(value).strip() for value in node_ids if str(value).strip()))
+    if not clean_ids:
+        return []
+    placeholders = ",".join("?" for _ in clean_ids)
+    conn = get_conn()
+    try:
+        cursor = conn.execute(
+            f"""
+            SELECT * FROM evidence_turns
+            WHERE user_id=? AND textbook_id=? AND node_id IN ({placeholders})
+            ORDER BY created_at ASC, id ASC
+            """,
+            [user_id, textbook_id, *clean_ids],
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def list_evidence_by_ids(
+    user_id: str,
+    textbook_id: str,
+    evidence_ids: list[str],
+) -> list[dict[str, Any]]:
+    """按 evidence 主键点查，并再次绑定 user_id/textbook_id。"""
+
+    clean_ids = list(dict.fromkeys(str(value).strip() for value in evidence_ids if str(value).strip()))
+    if not clean_ids:
+        return []
+    placeholders = ",".join("?" for _ in clean_ids)
+    conn = get_conn()
+    try:
+        cursor = conn.execute(
+            f"""
+            SELECT * FROM evidence_turns
+            WHERE user_id=? AND textbook_id=? AND id IN ({placeholders})
+            """,
+            [user_id, textbook_id, *clean_ids],
+        )
+        rows = {str(row["id"]): dict(row) for row in cursor.fetchall()}
+        return [rows[evidence_id] for evidence_id in clean_ids if evidence_id in rows]
     finally:
         conn.close()
 

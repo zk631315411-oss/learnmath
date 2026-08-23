@@ -186,6 +186,10 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_evidence_user_textbook_created
         ON evidence_turns(user_id, textbook_id, created_at, id)
     """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_evidence_user_textbook_node_created
+        ON evidence_turns(user_id, textbook_id, node_id, created_at, id)
+    """)
     # 同一逻辑 turn（client_turn_id）重试不得重复写同一节点证据（部分唯一索引，
     # 仅约束有 client_turn_id 的新数据，NULL 历史行不参与）。
     cursor.execute("""
@@ -201,6 +205,95 @@ def init_db():
           updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
           PRIMARY KEY (user_id, textbook_id)
         )
+    """)
+
+    # Phase 3 learner model: a derived, versioned snapshot over the immutable
+    # evidence_turns ledger.  No table here is a second evidence source.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS learner_node_estimates (
+          user_id TEXT NOT NULL,
+          textbook_id TEXT NOT NULL,
+          node_id TEXT NOT NULL,
+          catalog_version TEXT NOT NULL,
+          adapter_version TEXT NOT NULL,
+          model_version TEXT NOT NULL,
+          input_revision INTEGER NOT NULL DEFAULT 0,
+          alpha REAL NOT NULL,
+          beta REAL NOT NULL,
+          raw_mean REAL NOT NULL,
+          variance REAL NOT NULL,
+          recency REAL NOT NULL,
+          estimate REAL NOT NULL,
+          uncertainty REAL NOT NULL,
+          learner_state TEXT NOT NULL,
+          evidence_count INTEGER NOT NULL DEFAULT 0,
+          closed_evidence_count INTEGER NOT NULL DEFAULT 0,
+          independent_count INTEGER NOT NULL DEFAULT 0,
+          assisted_count INTEGER NOT NULL DEFAULT 0,
+          raw_independent_count INTEGER NOT NULL DEFAULT 0,
+          raw_assisted_count INTEGER NOT NULL DEFAULT 0,
+          direct_taught_count INTEGER NOT NULL DEFAULT 0,
+          unresolved_count INTEGER NOT NULL DEFAULT 0,
+          last_outcome TEXT,
+          last_observed_at TEXT,
+          last_closed_at TEXT,
+          decay_risk REAL NOT NULL DEFAULT 1.0,
+          prerequisite_risk REAL,
+          supporting_evidence_refs TEXT NOT NULL DEFAULT '[]',
+          contradicting_evidence_refs TEXT NOT NULL DEFAULT '[]',
+          computed_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          stale INTEGER NOT NULL DEFAULT 0,
+          PRIMARY KEY (user_id, textbook_id, node_id, model_version)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_learner_estimates_user_book
+        ON learner_node_estimates(user_id, textbook_id, stale, computed_at)
+    """)
+    learner_estimate_columns = {
+        row[1] for row in cursor.execute("PRAGMA table_info(learner_node_estimates)").fetchall()
+    }
+    if "last_outcome" not in learner_estimate_columns:
+        cursor.execute("ALTER TABLE learner_node_estimates ADD COLUMN last_outcome TEXT")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS learner_model_runs (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          textbook_id TEXT NOT NULL,
+          catalog_version TEXT NOT NULL,
+          adapter_version TEXT NOT NULL,
+          model_version TEXT NOT NULL,
+          input_revision INTEGER NOT NULL,
+          input_count INTEGER NOT NULL DEFAULT 0,
+          affected_node_count INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL,
+          parameters_json TEXT NOT NULL DEFAULT '{}',
+          started_at TEXT NOT NULL,
+          finished_at TEXT,
+          duration_ms INTEGER,
+          error_reason TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_learner_runs_user_book
+        ON learner_model_runs(user_id, textbook_id, created_at)
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS evidence_migration_skips (
+          id TEXT PRIMARY KEY,
+          old_user_id TEXT NOT NULL,
+          new_user_id TEXT NOT NULL,
+          evidence_id TEXT NOT NULL,
+          client_turn_id TEXT,
+          node_id TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        )
+    """)
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_evidence_migration_skips_users
+        ON evidence_migration_skips(old_user_id, new_user_id, created_at)
     """)
 
     cursor.execute("""

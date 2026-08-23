@@ -1,9 +1,13 @@
 """chat_history 表 CRUD — 阶段 1 精简版：只保留增删改查与匿名→登录迁移。"""
 import json
+import logging
 import uuid
 from typing import List, Optional
 
 from app.db.connection import get_conn
+
+
+logger = logging.getLogger("learnmath.migration")
 
 
 def _uid():
@@ -277,53 +281,125 @@ def delete_chat_history(chat_id: str, user_id: str | None = None) -> bool:
 
 
 def migrate_user_id(old_user_id: str, new_user_id: str) -> int:
-    """在同一事务中迁移聊天记录和 evidence，返回聊天记录迁移条数。"""
+    """在同一事务中迁移聊天记录和可安全迁入的 evidence。
+
+    ``evidence_turns`` has a partial unique key on
+    ``(user_id, client_turn_id, node_id)``.  Anonymous and registered users
+    can therefore contain the same logical turn.  We explicitly retain the
+    registered row, leave the conflicting source row intact, and record an
+    audit row instead of relying on SQLite's ``UPDATE`` error/ignore behavior.
+    The return value remains the historical chat-row count for API
+    compatibility.
+    """
     conn = get_conn()
     try:
         try:
-            affected_textbooks = [
-                str(row[0])
+            if old_user_id == new_user_id:
+                return 0
+            old_rows = conn.execute(
+                "SELECT * FROM evidence_turns WHERE user_id=? ORDER BY created_at ASC, id ASC",
+                (old_user_id,),
+            ).fetchall()
+            target_keys = {
+                (str(row["client_turn_id"]), str(row["node_id"]))
                 for row in conn.execute(
-                    "SELECT DISTINCT textbook_id FROM evidence_turns WHERE user_id=? AND textbook_id IS NOT NULL AND textbook_id<>''",
-                    (old_user_id,),
+                    "SELECT client_turn_id,node_id FROM evidence_turns WHERE user_id=? AND client_turn_id IS NOT NULL",
+                    (new_user_id,),
                 ).fetchall()
-            ]
+            }
+            affected_textbooks: set[str] = set()
+            migrated_evidence = 0
+            skipped_evidence = 0
+            for row in old_rows:
+                client_turn_id = row["client_turn_id"]
+                node_id = str(row["node_id"] or "")
+                key = (str(client_turn_id), node_id) if client_turn_id is not None else None
+                if key is not None and key in target_keys:
+                    skipped_evidence += 1
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO evidence_migration_skips
+                          (id,old_user_id,new_user_id,evidence_id,client_turn_id,node_id,reason)
+                        VALUES (?,?,?,?,?,?,?)
+                        """,
+                        (
+                            f"{old_user_id}:{new_user_id}:{row['id']}",
+                            old_user_id, new_user_id, str(row["id"]),
+                            str(client_turn_id), node_id, "target_unique_key_exists",
+                        ),
+                    )
+                    continue
+                conn.execute(
+                    "UPDATE evidence_turns SET user_id=? WHERE id=? AND user_id=?",
+                    (new_user_id, row["id"], old_user_id),
+                )
+                migrated_evidence += 1
+                if key is not None:
+                    target_keys.add(key)
+                textbook_id = str(row["textbook_id"] or "").strip()
+                if textbook_id:
+                    affected_textbooks.add(textbook_id)
+
             cursor = conn.execute(
                 "UPDATE chat_history SET user_id=? WHERE user_id=?",
                 (new_user_id, old_user_id)
             )
             count = cursor.rowcount
             conn.execute(
-                "UPDATE evidence_turns SET user_id=? WHERE user_id=?",
-                (new_user_id, old_user_id)
-            )
-            conn.execute(
                 "UPDATE manim_artifacts SET user_id=?, updated_at=CURRENT_TIMESTAMP WHERE user_id=?",
                 (new_user_id, old_user_id),
             )
-            for textbook_id in affected_textbooks:
-                revisions = [
-                    int(row[0])
-                    for row in conn.execute(
-                        "SELECT revision FROM learning_progress_revisions WHERE textbook_id=? AND user_id IN (?, ?)",
-                        (textbook_id, old_user_id, new_user_id),
-                    ).fetchall()
-                ]
-                next_revision = max(revisions, default=0) + 1
+            # Keep historical learner-model runs attached to the anonymous
+            # identity as migration audit evidence.  The registered identity
+            # receives a new run after its merged evidence is replayed.
+            if migrated_evidence or skipped_evidence:
                 conn.execute(
-                    """
-                    INSERT INTO learning_progress_revisions (user_id, textbook_id, revision, updated_at)
-                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                    ON CONFLICT(user_id, textbook_id) DO UPDATE SET
-                        revision=excluded.revision,
-                        updated_at=CURRENT_TIMESTAMP
-                    """,
-                    (new_user_id, textbook_id, next_revision),
+                    "UPDATE learner_node_estimates SET stale=1 WHERE user_id IN (?, ?)",
+                    (old_user_id, new_user_id),
                 )
+            for textbook_id in sorted(affected_textbooks):
+                if migrated_evidence:
+                    target_revision_row = conn.execute(
+                        "SELECT revision FROM learning_progress_revisions WHERE user_id=? AND textbook_id=?",
+                        (new_user_id, textbook_id),
+                    ).fetchone()
+                    next_revision = int(target_revision_row[0]) + 1 if target_revision_row else 1
+                    conn.execute(
+                        """
+                        INSERT INTO learning_progress_revisions (user_id, textbook_id, revision, updated_at)
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(user_id, textbook_id) DO UPDATE SET
+                            revision=excluded.revision,
+                            updated_at=CURRENT_TIMESTAMP
+                        """,
+                        (new_user_id, textbook_id, next_revision),
+                    )
             conn.commit()
+            if skipped_evidence:
+                logger.warning(
+                    "learner migration retained %d conflicting evidence rows old=%s new=%s",
+                    skipped_evidence, old_user_id, new_user_id,
+                )
         except Exception:
             conn.rollback()
             raise
     finally:
         conn.close()
+    # The evidence merge is the source-of-truth transaction.  Rebuild derived
+    # snapshots only after it commits, and never make account migration fail
+    # because a model/catalog replay is unavailable.
+    if (migrated_evidence or skipped_evidence) and affected_textbooks:
+        from app.config import config
+
+        if config.LEARNER_MODEL_ENABLED:
+            from app.db.learner_model_db import replay_user_textbook
+
+            for textbook_id in sorted(affected_textbooks):
+                try:
+                    replay_user_textbook(new_user_id, textbook_id)
+                except Exception:
+                    logger.exception(
+                        "learner migration replay failed old=%s new=%s textbook=%s",
+                        old_user_id, new_user_id, textbook_id,
+                    )
     return count

@@ -7,7 +7,9 @@ from app.config import config
 from app.db.connection import init_db
 from app.db.evidence_db import (
     insert_evidence_rows,
+    list_evidence_by_ids,
     list_evidence_for_user,
+    list_evidence_for_user_textbook_node,
     list_evidence_for_user_node,
 )
 
@@ -104,6 +106,36 @@ class EvidenceDbTests(unittest.TestCase):
         tied = [row["id"] for row in rows if row["created_at"] == stamp]
         self.assertEqual(tied, ["a", "b"])
         self.assertTrue(all(row["created_at"] for row in rows))
+
+    def test_tenant_bound_node_and_id_queries(self):
+        insert_evidence_rows([
+            {
+                "id": "e1", "user_id": "u1", "node_id": "book:n",
+                "textbook_id": "book", "outcome": "assisted",
+            },
+            {
+                "id": "e2", "user_id": "u1", "node_id": "other:n",
+                "textbook_id": "other", "outcome": "assisted",
+            },
+            {
+                "id": "e3", "user_id": "u2", "node_id": "book:n",
+                "textbook_id": "book", "outcome": "assisted",
+            },
+        ])
+        rows = list_evidence_for_user_textbook_node("u1", "book", "book:n")
+        self.assertEqual([row["id"] for row in rows], ["e1"])
+        self.assertEqual(
+            [row["id"] for row in list_evidence_by_ids("u1", "book", ["e1", "e2", "e3"])],
+            ["e1"],
+        )
+
+    def test_phase3_composite_index_exists(self):
+        conn = __import__("app.db.connection", fromlist=["get_conn"]).get_conn()
+        try:
+            indexes = {row[1] for row in conn.execute("PRAGMA index_list(evidence_turns)").fetchall()}
+        finally:
+            conn.close()
+        self.assertIn("idx_evidence_user_textbook_node_created", indexes)
 
 
 if __name__ == "__main__":

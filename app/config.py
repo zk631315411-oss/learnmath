@@ -83,6 +83,17 @@ class Config:
     # JWT 签名密钥，生产环境必须通过环境变量注入强随机值
     JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
 
+    # Phase 3: the learner model is opt-in until the P0 evidence gate is
+    # manually accepted.  Keep the public API available as a neutral envelope
+    # while this flag is false.
+    LEARNER_MODEL_ENABLED: bool = os.getenv("LEARNER_MODEL_ENABLED", "false").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+    LEARNER_MODEL_DEBUG: bool = os.getenv("LEARNER_MODEL_DEBUG", "false").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+    APP_ENV: str = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "development")).strip().lower()
+
     # Neo4j Aura（与 ai-math 共用同一个实例）
     NEO4J_URI: str = os.getenv("NEO4J_URI", "")
     NEO4J_USER: str = os.getenv("NEO4J_USER", "")

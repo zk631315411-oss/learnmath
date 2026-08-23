@@ -45,7 +45,9 @@ class ReportTurnOutcomeInput(BaseModel):
         description=(
             "本轮收尾时对线程教学目标的掌握判断："
             "independent=学生独立答出；assisted=提示/脚手架后答出；"
-            "direct_taught=直接讲解后才懂；unresolved=本轮尚无闭合信号（正常状态，非漏报）。"
+            "direct_taught=老师应学生要求完整讲解过（只表示讲授发生、需要复习，"
+            "不要求学生表示理解）；unresolved=连讲授都没发生、本轮无闭合信号"
+            "（正常状态，非漏报）。"
         ),
     )
 
@@ -75,9 +77,11 @@ def build_report_turn_outcome_tool() -> ToolDef:
             " status=resolved 的 selected_node.node_id（不可编造）。"
             "本次只能调用一次；一次可携带 1–3 个共享同一结果的节点，不同结果的节点"
             "不要强行放在同一次上报中。student_outcome 四选一：independent=独立答出、"
-            "assisted=提示后答出、direct_taught=直接讲解后懂、unresolved=本轮尚无闭合信号"
+            "assisted=提示后答出、direct_taught=老师应学生要求完整讲解过（讲授即需要复习，"
+            "无需学生表示理解）、unresolved=连讲授都没发生、本轮无闭合信号"
             "（说懂了/正确复述/提出进阶新问题等闭合信号出现时不要报 unresolved）。"
-            "scaffolding_level 填本线程用到的最大脚手架级数（0–4）。"
+            "scaffolding_level 填本线程用到的最大脚手架级数（0–4）；level=4 且学生未"
+            "独立作答时应对应 direct_taught。"
         ),
         input_model=ReportTurnOutcomeInput,
         execute=execute,
