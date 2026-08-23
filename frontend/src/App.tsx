@@ -386,13 +386,14 @@ export default function App() {
               selectedChapterError={selectedMapChapter ? mapHome.errors[selectedMapChapter] : undefined}
               onBackToChapters={() => navigatePage('map')}
               onStartChapter={() => { if (selectedMapChapter) void openChapter(selectedMapChapter); }}
-              onContinueNode={node => { if (selectedMapChapter) void openChapter(selectedMapChapter, node); }}
+              onContinueNode={(chapter, node) => void openChapter(chapter, node)}
               onOpenChat={handleMapChatSelect}
               onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
               textbookId={textbookId}
               textbooks={PRESET_PDFS.map(pdf => ({ textbookId: pdf.textbookId, name: pdf.name }))}
               onTextbookChange={value => setTextbookId(value as TextbookId)}
+              onEnsureChapterData={chapter => mapHome.openChapter(chapter)}
             />
           ) : isDesktop ? (
             <>

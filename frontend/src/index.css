@@ -158,6 +158,21 @@
     stroke-linejoin: round;
   }
 
+  /* 侧枝标签 pill 底板（替代镂空描边）与压线翻转引线 */
+  .kg-pill {
+    fill: var(--lm-surface);
+    stroke: var(--lm-border);
+    stroke-width: 1;
+    opacity: 0.92;
+  }
+
+  .kg-lead {
+    stroke: var(--lm-edge);
+    stroke-width: 1.1;
+    stroke-dasharray: 2 3;
+    opacity: 0.8;
+  }
+
   .kg-focus-edge {
     fill: none;
     stroke: var(--lm-edge);

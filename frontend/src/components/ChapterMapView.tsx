@@ -8,7 +8,7 @@ import ChapterLadderView from './ChapterLadderView';
 import InlineMathText from './InlineMathText';
 
 const statusLabel: Record<LearningStatus, string> = {
-  unexplored: '未探索', learning: '学习中', basically_mastered: '基本掌握', mastered: '已掌握', needs_review: '需要巩固',
+  unexplored: '未探索', learning: '学习中', basically_mastered: '基本学过', mastered: '已学过', needs_review: '需要巩固',
 };
 const statusVariable: Record<LearningStatus, string> = {
   unexplored: 'var(--lm-status-unexplored)', learning: 'var(--lm-status-learning)', basically_mastered: 'var(--lm-status-basic)', mastered: 'var(--lm-status-mastered)', needs_review: 'var(--lm-status-review)',
@@ -46,15 +46,16 @@ function ChapterList({ data, showAll, onOpenChat, onContinueNode }: {
   </div>;
 }
 
-export default function ChapterMapView({ data, edges = [], onBack, onOpenChat, onStartReading, onContinueNode }: {
+export default function ChapterMapView({ data, edges, onBack, onOpenChat, onStartReading, onContinueNode, initialSection }: {
   data: NodeMapResponse;
   edges?: ChapterCatalogEdge[];
   onBack: () => void;
   onOpenChat: (chatId: string) => void;
   onStartReading?: () => void;
   onContinueNode?: (node: LearningMapNode) => void;
+  initialSection?: string | null;
 }) {
-  const [mode, setMode] = useState<'list' | 'map'>(() => window.matchMedia('(min-width: 640px)').matches ? 'map' : 'list');
+  const [mode, setMode] = useState<'list' | 'map'>('map');
   const [showAll, setShowAll] = useState(false);
   const title = splitChapterTitle(data.chapter);
 
@@ -69,6 +70,6 @@ export default function ChapterMapView({ data, edges = [], onBack, onOpenChat, o
       {mode === 'list' && <label className="flex shrink-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><input type="checkbox" checked={showAll} onChange={event => setShowAll(event.target.checked)} />显示全部</label>}
       {onStartReading && <button type="button" onClick={onStartReading} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-700"><BookOpen className="h-3.5 w-3.5" />开始本章</button>}
     </header>
-    <div className="min-h-0 flex-1 overflow-hidden">{mode === 'map' ? <ChapterLadderView data={data} edges={edges} onOpenChat={onOpenChat} onContinueNode={onContinueNode} /> : <ChapterList data={data} showAll={showAll} onOpenChat={onOpenChat} onContinueNode={onContinueNode} />}</div>
+    <div className="min-h-0 flex-1 overflow-hidden">{mode === 'map' ? <ChapterLadderView data={data} edges={edges || []} onOpenChat={onOpenChat} onContinueNode={onContinueNode} initialSection={initialSection} /> : <ChapterList data={data} showAll={showAll} onOpenChat={onOpenChat} onContinueNode={onContinueNode} />}</div>
   </div>;
 }

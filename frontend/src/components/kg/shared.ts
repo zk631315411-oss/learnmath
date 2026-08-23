@@ -1,10 +1,10 @@
-import type { LearningStatus } from '../../services/api';
+import type { LearningMapNode, LearningStatus } from '../../services/api';
 
 export const STATUS_LABEL: Record<LearningStatus, string> = {
   unexplored: '未探索',
   learning: '学习中',
-  basically_mastered: '基本掌握',
-  mastered: '已掌握',
+  basically_mastered: '基本学过',
+  mastered: '已学过',
   needs_review: '需要巩固',
 };
 
@@ -26,11 +26,27 @@ export const TYPE_META: Record<string, TypeMeta> = {
   formula: { tag: '公', label: '公式', color: 'var(--lm-type-formula)' },
   method: { tag: '方', label: '方法', color: 'var(--lm-type-method)' },
   problemclass: { tag: '题', label: '题型', color: 'var(--lm-type-problem)' },
+  knowledgegroup: { tag: '组', label: '知识组', color: '#8b5cf6' },
+  outcome: { tag: '果', label: '结果', color: '#f59e0b' },
+  rulecase: { tag: '例', label: '情形', color: '#ec4899' },
+  conditionexpression: { tag: '条', label: '条件', color: '#64748b' },
 };
 
 export const typeMeta = (type?: string): TypeMeta => TYPE_META[type?.toLowerCase() || 'concept'] || TYPE_META.concept;
 
 export const isProblemType = (type?: string) => type?.toLowerCase() === 'problemclass';
+
+/** 小节状态摘要：需巩固 > 学习中 > 未探索 > 已探索计数 > 全部学过 */
+export function sectionStatusSummary(nodes: LearningMapNode[]): string {
+  const explored = nodes.filter(n => n.status !== 'unexplored').length;
+  const review = nodes.filter(n => n.status === 'needs_review').length;
+  const learning = nodes.some(n => n.status === 'learning');
+  if (review) return `${review} 个需巩固`;
+  if (learning) return '学习中';
+  if (explored === 0) return '未探索';
+  if (explored === nodes.length) return nodes.length ? '已学过' : '已探索';
+  return `${explored}/${nodes.length} 已探索`;
+}
 
 /** 关系词（REL_CN）：出边读作「本节点 {词} 目标」，入边读作「来源 {词} 本节点」 */
 export const REL_CN: Record<string, string> = {

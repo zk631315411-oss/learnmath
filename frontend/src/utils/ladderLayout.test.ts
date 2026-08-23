@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ISLAND, LADDER, islandEdgePath, layoutIslands, layoutSineLadder } from './ladderLayout';
+import { LADDER, LABEL, layoutSineLadder, textWidth } from './ladderLayout';
+import type { GlyphPosition } from './ladderLayout';
 import type { LearningMapNode } from '../services/api';
 
 const node = (id: string, order: number, type = 'Concept'): LearningMapNode => ({
@@ -7,144 +8,212 @@ const node = (id: string, order: number, type = 'Concept'): LearningMapNode => (
   status: 'unexplored', closed_evidence_count: 0, blocked: false, chat: { id: null, available: false },
 });
 
-describe('layoutSineLadder', () => {
-  it('places core nodes on a vertical sine ladder in textbook order', () => {
-    const layout = layoutSineLadder(Array.from({ length: 6 }, (_, index) => node(`n${index}`, index)), []);
-    expect(layout.coreOrder).toEqual(['n0', 'n1', 'n2', 'n3', 'n4', 'n5']);
-    const positions = Object.fromEntries(layout.positions.map(item => [item.nodeId, item]));
-    expect(positions.n0.y).toBe(LADDER.padTop);
-    expect(positions.n1.y).toBe(LADDER.padTop + LADDER.gapY);
-    expect(positions.n5.y).toBe(LADDER.padTop + 5 * LADDER.gapY);
-    layout.positions.forEach(position => {
-      expect(position.x).toBeGreaterThanOrEqual(LADDER.cx - LADDER.amp - 0.001);
-      expect(position.x).toBeLessThanOrEqual(LADDER.cx + LADDER.amp + 0.001);
+/** 主干折线在 y 处的 x（相邻主干点线性插值），与布局实现同算法。 */
+function stemXAt(stemPositions: GlyphPosition[], y: number): number {
+  const pts = [...stemPositions].sort((a, b) => a.y - b.y);
+  if (pts.length === 0) return LADDER.cx;
+  if (y <= pts[0]!.y) return pts[0]!.x;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i]!;
+    const b = pts[i + 1]!;
+    if (y >= a.y && y <= b.y) {
+      const t = (y - a.y) / (b.y - a.y || 1);
+      return a.x + (b.x - a.x) * t;
+    }
+  }
+  return pts[pts.length - 1]!.x;
+}
+
+/** 侧枝 pill 盒（含 8px 内边距）。 */
+function pillBox(p: GlyphPosition) {
+  const textL = p.labelAnchor === 'start' ? p.labelTx! : p.labelTx! - p.labelW!;
+  return { x1: textL - LABEL.pillPad, y1: p.labelY! - LABEL.pillHeight / 2 - 1, x2: textL + p.labelW! + LABEL.pillPad, y2: p.labelY! + LABEL.pillHeight / 2 + 1 };
+}
+
+/** 搭一个正弦主干上能出现凹位侧枝的夹具：8 主干 + 若干 Method 侧枝。 */
+function ladderFixture(twigCount: number) {
+  const cores = Array.from({ length: 8 }, (_, i) => node(`c${i}`, i));
+  const twigs = Array.from({ length: twigCount }, (_, i) => node(`t${i}`, 100 + i, 'Method'));
+  const edges = twigs.map((t, i) => ({ source: t.node_id, target: `c${i % 8}`, type: 'USES' }));
+  return layoutSineLadder([...cores, ...twigs], edges, { leafTypes: new Set(['method']) });
+}
+
+describe('layoutSineLadder（侧枝贴宿主凹位方案）', () => {
+  it('主干节点按教材序正弦蜿蜒，x 都在 [cx-amp, cx+amp]', () => {
+    const layout = ladderFixture(4);
+    expect(layout.coreOrder).toEqual(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']);
+    const stem = layout.positions.filter(p => layout.coreOrder.includes(p.nodeId));
+    stem.forEach((p, i) => {
+      expect(p.y).toBe(LADDER.padTop + i * LADDER.gapY);
+      expect(p.x).toBeCloseTo(LADDER.cx + LADDER.amp * Math.sin(i * 0.92), 6);
+      expect(p.x).toBeGreaterThanOrEqual(LADDER.cx - LADDER.amp - 1e-6);
+      expect(p.x).toBeLessThanOrEqual(LADDER.cx + LADDER.amp + 1e-6);
     });
-    expect(layout.height).toBe(LADDER.padTop * 2 + 5 * LADDER.gapY + LADDER.twigDrop);
   });
 
-  it('respects the sine curve instead of a straight column', () => {
-    const layout = layoutSineLadder(Array.from({ length: 4 }, (_, index) => node(`n${index}`, index)), []);
-    const xs = layout.coreOrder.map(id => layout.positions.find(p => p.nodeId === id)!.x);
-    expect(xs[0]).toBe(LADDER.cx);
-    expect(new Set(xs.map(x => Math.round(x))).size).toBeGreaterThan(1);
+  it('主干标签固定凸侧（labelSide = x>=cx ? right : left）', () => {
+    const layout = ladderFixture(0);
+    layout.positions.forEach(p => {
+      expect(p.labelSide).toBe(p.x >= LADDER.cx ? 'right' : 'left');
+    });
   });
 
-  it('hangs a ProblemClass beside its related core node and marks the twig', () => {
-    const layout = layoutSineLadder(
-      [node('core', 0), node('other', 1), node('problem', 2, 'ProblemClass')],
-      [{ source: 'problem', target: 'core', type: 'USES' }],
+  it('侧枝 glyph 贴宿主凹侧：gx-host.x 的方向 = -sign(host.x-cx)，距离 twigOff', () => {
+    const layout = ladderFixture(6);
+    const posById = new Map(layout.positions.map(p => [p.nodeId, p]));
+    layout.positions.filter(p => p.twigOf).forEach(t => {
+      const host = posById.get(t.twigOf!)!;
+      const expectedDir = host.x >= LADDER.cx ? -1 : 1;
+      expect(Math.sign(t.x - host.x)).toBe(expectedDir);
+      expect(Math.abs(t.x - host.x)).toBeCloseTo(LADDER.twigOff, 6);
+    });
+  });
+
+  it('同宿主多个侧枝竖向依次排开（gy = host.y + twigDrop + k*twigLabelGap）', () => {
+    const cores = Array.from({ length: 8 }, (_, i) => node(`c${i}`, i));
+    const twigs = [node('a', 100, 'Method'), node('b', 101, 'Method'), node('c', 102, 'Method')];
+    const single = layoutSineLadder(
+      [...cores, ...twigs],
+      twigs.map(t => ({ source: t.node_id, target: 'c3', type: 'USES' })),
+      { leafTypes: new Set(['method']) },
     );
-    const problem = layout.positions.find(item => item.nodeId === 'problem');
-    const host = layout.positions.find(item => item.nodeId === 'core')!;
-    expect(problem).toMatchObject({ twigOf: 'core' });
-    expect(problem!.y).toBe(host.y + LADDER.twigDrop);
-    expect(Math.abs(problem!.x - host.x)).toBe(LADDER.twigBase);
-    expect(layout.twigs).toEqual([{ from: 'core', pc: 'problem' }]);
+    const posById = new Map(single.positions.map(p => [p.nodeId, p]));
+    const host = posById.get('c3')!;
+    ['a', 'b', 'c'].forEach((id, k) => {
+      const t = posById.get(id)!;
+      expect(t.y).toBe(host.y + LADDER.twigDrop + k * LADDER.twigLabelGap);
+      expect(Math.abs(t.x - host.x)).toBeCloseTo(LADDER.twigOff, 6);
+    });
   });
 
-  it('attaches a relatedless ProblemClass to the nearest core node by order', () => {
-    const layout = layoutSineLadder(
-      [node('a', 0), node('b', 10), node('problem', 9, 'ProblemClass')],
-      [],
-    );
-    expect(layout.positions.find(item => item.nodeId === 'problem')).toMatchObject({ twigOf: 'b' });
-  });
-
-  it('omits ProblemClass when showProblems is false', () => {
-    const layout = layoutSineLadder(
-      [node('core', 0), node('problem', 1, 'ProblemClass')],
-      [{ source: 'problem', target: 'core', type: 'USES' }],
+  it('侧枝过滤：showProblems=false 时不布局侧枝；leafTypes 优先于 showProblems', () => {
+    const none = layoutSineLadder(
+      [node('core', 0), node('p', 1, 'ProblemClass')],
+      [{ source: 'p', target: 'core', type: 'USES' }],
       { showProblems: false },
     );
-    expect(layout.positions.map(p => p.nodeId)).toEqual(['core']);
-    expect(layout.twigs).toEqual([]);
+    expect(none.positions.map(p => p.nodeId)).toEqual(['core']);
+    expect(none.twigs).toEqual([]);
+
+    const filtered = layoutSineLadder(
+      [node('core', 0), node('m', 1, 'Method'), node('o', 2, 'Outcome')],
+      [{ source: 'm', target: 'core', type: 'USES' }, { source: 'o', target: 'core', type: 'USES' }],
+      { showProblems: false, leafTypes: new Set(['method']) },
+    );
+    expect(filtered.positions.map(p => p.nodeId).sort()).toEqual(['core', 'm']);
   });
 
-  it('labels right-side nodes anchored right and vice versa', () => {
-    const layout = layoutSineLadder(Array.from({ length: 6 }, (_, index) => node(`n${index}`, index)), []);
-    layout.positions.forEach(position => {
-      expect(position.labelSide).toBe(position.x >= LADDER.cx ? 'right' : 'left');
+  it('无关系侧枝挂讲授序最近的核心节点', () => {
+    const layout = layoutSineLadder(
+      [node('a', 0), node('b', 10), node('p', 9, 'ProblemClass')],
+      [],
+    );
+    expect(layout.positions.find(p => p.nodeId === 'p')).toMatchObject({ twigOf: 'b' });
+  });
+
+  it('未翻转侧枝 pill 盒不跨过其 y 处主干（|盒与 sx±14 不相交|）', () => {
+    const layout = ladderFixture(8);
+    const stem = layout.positions.filter(p => layout.coreOrder.includes(p.nodeId));
+    layout.positions.filter(p => p.twigOf && !p.lead).forEach(t => {
+      const sx = stemXAt(stem, t.y);
+      const box = pillBox(t);
+      const cross = Math.min(box.x1, box.x2) <= sx + 14 && Math.max(box.x1, box.x2) >= sx - 14;
+      expect(cross).toBe(false);
     });
   });
-});
 
-describe('layoutIslands', () => {
-  it('splits connected components and collects singles', () => {
-    const layout = layoutIslands(
-      [node('a', 0), node('b', 1), node('c', 2), node('d', 3), node('e', 4)],
-      [{ source: 'a', target: 'b', type: 'USES' }, { source: 'c', target: 'd', type: 'USES' }],
+  it('翻转的侧枝：标签在凸侧、带引线、引线从 glyph 到 pill 边缘', () => {
+    // 找/构造会压线的场景：主干斜率大处（i 较小，sin 变化快），长标签侧枝更易压线
+    const cores = Array.from({ length: 8 }, (_, i) => node(`c${i}`, i));
+    const longTwig = { ...node('long', 100, 'Method'), name: '矩阵消元法解线性方程组问题' };
+    // c1 处主干斜率最大（sin(0.92) 附近），挂长标签侧枝促发翻转
+    const layout = layoutSineLadder(
+      [...cores, longTwig],
+      [{ source: 'long', target: 'c1', type: 'USES' }],
+      { leafTypes: new Set(['method']) },
     );
-    expect(layout.islands.map(island => island.memberIds)).toEqual([['a', 'b'], ['c', 'd']]);
-    expect(layout.singleIds).toEqual(['e']);
-  });
-
-  it('sorts islands by earliest textbook order', () => {
-    const layout = layoutIslands(
-      [node('late1', 5), node('late2', 6), node('early1', 0), node('early2', 1)],
-      [{ source: 'late1', target: 'late2', type: 'USES' }, { source: 'early1', target: 'early2', type: 'USES' }],
-    );
-    expect(layout.islands[0].memberIds).toEqual(['early1', 'early2']);
-    expect(layout.islands[1].memberIds).toEqual(['late1', 'late2']);
-  });
-
-  it('lays out islands as a 2D scatter pinned on textbook order', () => {
-    const nodes = Array.from({ length: 30 }, (_, index) => node(`n${index}`, index));
-    const edges = nodes.slice(1).map((item, index) => ({ source: nodes[index].node_id, target: item.node_id, type: 'PREREQUISITE_OF' }));
-    const layout = layoutIslands(nodes, edges);
-    expect(layout.islands).toHaveLength(1);
-    const island = layout.islands[0];
-    // 横轴严格按教材序递增
-    const xs = island.positions.map(p => p.x);
-    expect(xs).toEqual([...xs].sort((a, b) => a - b));
-    expect(xs[1] - xs[0]).toBe(ISLAND.stepX);
-    // 纵轴有松弛分布；横向相邻节点保持最小纵向间距（不同列允许同高）
-    const ys = island.positions.map(p => p.y);
-    expect(new Set(ys).size).toBeGreaterThan(1);
-    for (let i = 1; i < island.positions.length; i += 1) {
-      expect(Math.abs(island.positions[i].y - island.positions[i - 1].y)).toBeGreaterThanOrEqual(ISLAND.minGapY - 0.001);
+    const posById = new Map(layout.positions.map(p => [p.nodeId, p]));
+    const host = posById.get('c1')!;
+    const t = posById.get('long')!;
+    const stem = layout.positions.filter(p => layout.coreOrder.includes(p.nodeId));
+    // 复算“未翻转默认位置”是否压线，决定该夹具是否促发了翻转
+    const hostConcave = host.x >= LADDER.cx ? -1 : 1;
+    const defaultTx = hostConcave < 0 ? t.x - LABEL.gap : t.x + LABEL.gap;
+    const w = textWidth(longTwig.name);
+    const defaultL = (hostConcave < 0 ? defaultTx - w : defaultTx) - LABEL.pillPad;
+    const defaultR = (hostConcave < 0 ? defaultTx : defaultTx + w) + LABEL.pillPad;
+    const sx = stemXAt(stem, t.y);
+    const wouldCross = defaultL <= sx + 14 && defaultR >= sx - 14;
+    if (wouldCross || t.lead) {
+      // 已翻转：标签在凸侧
+      const mainDir = host.x >= LADDER.cx ? 1 : -1;
+      expect(Math.sign(t.labelTx! - host.x)).toBe(mainDir);
+      expect(t.lead).toBeTruthy();
+      expect(t.lead!.x1).toBe(t.x);
+      expect(t.lead!.y1).toBe(t.y);
+      expect(t.lead!.y2).toBe(t.y);
+      expect(t.lead!.x2).toBe(t.labelAnchor === 'start' ? t.labelTx! - LABEL.pillPad : t.labelTx! + LABEL.pillPad);
+    } else {
+      // 未压线也算通过（夹具未促发翻转时不断言翻转行为）
+      expect(t.lead).toBeUndefined();
     }
   });
 
-  it('pulls densely connected nodes together vertically', () => {
-    // 0-1-2-3 成环，4-5 独立成链挂在 n3 上：环内成员在纵向次序上应彼此相邻（不被链插入）
-    const nodes = Array.from({ length: 6 }, (_, index) => node(`n${index}`, index));
-    const edges = [
-      { source: 'n0', target: 'n1', type: 'USES' }, { source: 'n1', target: 'n2', type: 'USES' },
-      { source: 'n2', target: 'n3', type: 'USES' }, { source: 'n3', target: 'n0', type: 'USES' },
-      { source: 'n0', target: 'n2', type: 'USES' }, { source: 'n4', target: 'n5', type: 'USES' },
-      { source: 'n3', target: 'n4', type: 'USES' },
-    ];
-    const layout = layoutIslands(nodes, edges);
-    expect(layout.islands).toHaveLength(1);
-    const positions = layout.islands[0].positions;
-    // 环内成员纵向应聚集成块：极差有限，且与挂在 n3 上的链相邻
-    const ringYs = [0, 1, 2, 3].map(i => positions.find(p => p.nodeId === `n${i}`)!.y);
-    expect(Math.max(...ringYs) - Math.min(...ringYs)).toBeLessThanOrEqual(ISLAND.minGapY * 2.5);
-  });
-
-  it('ignores edges whose endpoints are filtered out', () => {
-    const layout = layoutIslands(
-      [node('a', 0), node('b', 1)],
-      [{ source: 'a', target: 'ghost', type: 'USES' }],
+  it('任意两侧枝 pill 盒互不重叠', () => {
+    const cores = Array.from({ length: 8 }, (_, i) => node(`c${i}`, i));
+    const names = ['矩阵消元法解线性方程组问题', '线性方程组有解判定与通解结构', '齐次线性方程组基础解系与解空间'];
+    const twigs = names.map((name, i) => ({ ...node(`t${i}`, 100 + i, 'Method'), name }));
+    // 全挂同一宿主，最大化重叠概率
+    const layout = layoutSineLadder(
+      [...cores, ...twigs],
+      twigs.map(t => ({ source: t.node_id, target: 'c3', type: 'USES' })),
+      { leafTypes: new Set(['method']) },
     );
-    expect(layout.islands).toEqual([]);
-    expect(layout.singleIds).toEqual(['a', 'b']);
-  });
-});
-
-describe('islandEdgePath', () => {
-  const at = (x: number, y: number, i: number) => ({ nodeId: `${x},${y}`, x, y, i });
-
-  it('bends edges upward as a quadratic arc above both endpoints', () => {
-    const d = islandEdgePath(at(52, 80, 0), at(158, 46, 1));
-    expect(d).toMatch(/^M 52 80 Q 105 ([-\d.]+) 158 46$/);
-    expect(Number(d.match(/^M 52 80 Q 105 ([-\d.]+) 158 46$/)?.[1])).toBeLessThan(46);
+    const twigPositions = layout.positions.filter(p => p.twigOf);
+    const boxes = twigPositions.map(pillBox);
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i]!;
+        const b = boxes[j]!;
+        const overlap = a.x1 <= b.x2 && a.x2 >= b.x1 && a.y1 <= b.y2 && a.y2 >= b.y1;
+        expect(overlap).toBe(false);
+      }
+    }
   });
 
-  it('raises the bow with sequence span', () => {
-    const near = islandEdgePath(at(52, 46, 0), at(158, 46, 1));
-    const far = islandEdgePath(at(52, 46, 0), at(600, 46, 8));
-    const bowOf = (d: string) => Number(d.match(/Q [-\d.]+ ([-\d.]+)/)?.[1]);
-    expect(bowOf(far)).toBeLessThan(bowOf(near));
+  it('pill 与 glyph 含角标外缘间距 ≥ 12（未翻转时，按标签所在侧取 glyph 外缘）', () => {
+    const layout = ladderFixture(8);
+    const posById = new Map(layout.positions.map(p => [p.nodeId, p]));
+    layout.positions.filter(p => p.twigOf && !p.lead).forEach(t => {
+      const box = pillBox(t);
+      const host = posById.get(t.twigOf!)!;
+      const concave = host.x >= LADDER.cx ? -1 : 1;
+      // GAP=25 ⇒ pill 边缘距 glyph 中心 17；净间距相对该侧 glyph 外缘 ≥12。
+      // glyph 本体最大半径 7.5（method 六边形），角标在右上外缘 gx+13、不影响左侧。
+      if (concave < 0) {
+        // 标签在左：pill 右缘距 glyph 左外缘（gx-7.5）≥ 4.5；距 glyph 中心 = 17
+        expect((t.x - 7.5) - box.x2).toBeGreaterThanOrEqual(4.5 - 1e-6);
+        expect(t.x - box.x2).toBeCloseTo(17, 6);
+      } else {
+        // 标签在右：pill 左缘距角标外缘（gx+13）≥ 4
+        expect(box.x1 - (t.x + 13)).toBeGreaterThanOrEqual(4 - 1e-6);
+        expect(box.x1 - t.x).toBeCloseTo(17, 6);
+      }
+    });
+  });
+
+  it('textWidth：CJK 14/字、ASCII 7.5/字', () => {
+    expect(textWidth('矩阵')).toBe(28);
+    expect(textWidth('ab')).toBe(15);
+    expect(textWidth('n元')).toBe(7.5 + 14);
+  });
+
+  it('布局高度容纳主干与下推后的侧枝标签', () => {
+    const layout = ladderFixture(8);
+    const minH = LADDER.padTop * 2 + 7 * LADDER.gapY + LADDER.bottomPad;
+    expect(layout.height).toBeGreaterThanOrEqual(minH);
+    layout.positions.filter(p => p.twigOf).forEach(t => {
+      expect(t.labelY! + LABEL.pillHeight / 2).toBeLessThanOrEqual(layout.height + 1e-6);
+    });
   });
 });

@@ -4,7 +4,7 @@ import type { ChapterMapItem, LearningStatus, NodeMapResponse } from '../service
 import ChapterMapView from './ChapterMapView';
 
 const segments: Array<{ key: LearningStatus; color: string; label: string }> = [
-  { key: 'mastered', color: 'bg-emerald-600', label: '已掌握' }, { key: 'basically_mastered', color: 'bg-emerald-300', label: '基本掌握' },
+  { key: 'mastered', color: 'bg-emerald-600', label: '已学过' }, { key: 'basically_mastered', color: 'bg-emerald-300', label: '基本学过' },
   { key: 'learning', color: 'bg-amber-400', label: '学习中' }, { key: 'needs_review', color: 'bg-rose-400', label: '需要巩固' }, { key: 'unexplored', color: 'bg-slate-300', label: '未探索' },
 ];
 
