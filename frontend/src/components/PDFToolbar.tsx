@@ -109,8 +109,9 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
           <Scissors className="h-4 w-4" /><span className="hidden sm:inline">框选</span>
         </button>
         {onToggleChat && (
-          <button type="button" onClick={onToggleChat} className="icon-button hidden lg:inline-flex" title={chatCollapsed ? '展开问答区' : '收起问答区'} aria-label={chatCollapsed ? '展开问答区' : '收起问答区'}>
+          <button type="button" onClick={onToggleChat} className="toolbar-button hidden lg:inline-flex" title={chatCollapsed ? '展开问答区' : '收起问答区'} aria-label={chatCollapsed ? '展开问答区' : '收起问答区'}>
             {chatCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+            <span className="hidden md:inline">{chatCollapsed ? '展开问答' : '收起问答'}</span>
           </button>
         )}
       </div>}
