@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { BookOpen, LoaderCircle, Map as MapIcon, X } from 'lucide-react';
+import { LoaderCircle, X } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
@@ -111,7 +111,7 @@ export default function App() {
     },
     onPageRequest: setTextbookPage,
   });
-  const { view, selectedMapChapter, startupReady } = navigation;
+  const { view, startupReady } = navigation;
   const navigatePage = navigation.navigate;
 
   useEffect(() => ensureStorageSchema(), []);
@@ -246,13 +246,8 @@ export default function App() {
   };
 
   const retryMap = () => {
-    if (selectedMapChapter) void mapHome.openChapter(selectedMapChapter);
-    else { mapHome.retryCatalog(); void mapHome.refresh(); }
-  };
-
-  const openMapChapter = async (chapter: string) => {
-    await mapHome.openChapter(chapter);
-    navigatePage('map', chapter);
+    mapHome.retryCatalog();
+    void mapHome.refresh();
   };
 
   const learningSidebar = (onClose?: () => void) => <LearningSidebar
@@ -351,11 +346,6 @@ export default function App() {
               <option value="">选择教材...</option>{PRESET_PDFS.map((pdf) => <option key={pdf.path} value={pdf.textbookId}>{pdf.name}</option>)}
             </select>}
 
-            {textbookId && <button type="button" disabled={interactionLocked} onClick={() => { if (!interactionLocked) navigatePage(view === 'map' ? 'reader' : 'map'); }} className="toolbar-button" title={view === 'map' ? '开始阅读' : '返回学习地图'}>
-              {view === 'map' ? <BookOpen className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
-              <span className="hidden sm:inline">{view === 'map' ? '阅读' : '地图'}</span>
-            </button>}
-
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
 
             {migrationStatus !== 'idle' && <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status">
@@ -380,14 +370,7 @@ export default function App() {
               errors={mapHome.errors}
               loading={mapHome.loading || !startupReady}
               onContinue={openChapter}
-              onOpenChapter={openMapChapter}
-              selectedChapter={selectedMapChapter}
-              selectedChapterMap={selectedMapChapter ? mapHome.nodesByChapter[selectedMapChapter] || null : null}
-              selectedChapterError={selectedMapChapter ? mapHome.errors[selectedMapChapter] : undefined}
-              onBackToChapters={() => navigatePage('map')}
-              onStartChapter={() => { if (selectedMapChapter) void openChapter(selectedMapChapter); }}
               onContinueNode={(chapter, node) => void openChapter(chapter, node)}
-              onOpenChat={handleMapChatSelect}
               onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
               textbookId={textbookId}

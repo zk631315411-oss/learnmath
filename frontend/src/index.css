@@ -151,6 +151,57 @@
     opacity: 0.55;
   }
 
+  /* 纯概念梯子：整节点（glyph+标签）是一个命中区，hover 出 halo，选中后非相关变淡 */
+  .kg-node {
+    cursor: pointer;
+    transition: opacity 0.18s;
+  }
+
+  .kg-node:hover .kg-halo {
+    opacity: 0.55;
+  }
+
+  .kg-node.kg-dim {
+    opacity: 0.16;
+  }
+
+  .kg-node.kg-dim:hover {
+    opacity: 0.6;
+  }
+
+  /* 聚焦详情卡：小标题节奏 + 类型色小方块 + 题型折叠按钮 */
+  .nfc-h {
+    margin: 14px 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lm-text);
+  }
+
+  .nfc-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    flex: none;
+    display: inline-block;
+  }
+
+  .nfc-dot-c { background: var(--lm-type-concept); }
+  .nfc-dot-t { background: var(--lm-type-theorem); }
+  .nfc-dot-m { background: var(--lm-type-method); }
+  .nfc-dot-p { background: var(--lm-type-problem); }
+
+  .nfc-more {
+    display: block;
+    margin-top: 6px;
+    padding: 2px 0;
+    font-size: 12px;
+    color: var(--lm-type-method);
+  }
+
+  .nfc-more:hover {
+    text-decoration: underline;
+  }
+
   .kg-dlabel {
     paint-order: stroke;
     stroke: var(--lm-surface);

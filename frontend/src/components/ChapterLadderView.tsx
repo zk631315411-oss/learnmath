@@ -53,7 +53,6 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
 }) {
   const [screen, setScreen] = useState<Screen>(() => initialSection ? 'ladder' : 'overview');
   const [currentSection, setCurrentSection] = useState<string | null>(() => initialSection ?? null);
-  const [showProblems, setShowProblems] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const nodes = useMemo(() => data.sections.flatMap(section => section.nodes), [data.sections]);
@@ -73,14 +72,9 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
   const goTo = (nodeId: string) => {
     const target = nodeById.get(nodeId);
     if (!target) return;
-    if (isLeaf(target.type) && !showProblems && screen === 'ladder') return; // 分支节点被收起时忽略跳转
+    if (isLeaf(target.type) && screen === 'ladder') return; // 分支节点不上主干，详情卡内跳转忽略
     if (screen === 'ladder' && target.section !== activeSection) setCurrentSection(target.section);
     setSelectedId(nodeId);
-  };
-
-  const toggleProblems = () => {
-    setShowProblems(value => !value);
-    if (selected && isLeaf(selected.type)) setSelectedId(null);
   };
 
   return <div className="flex h-full flex-col bg-[var(--lm-bg)]" data-testid="chapter-ladder-view">
@@ -95,7 +89,6 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
         {data.sections.map(group => <option key={group.section} value={group.section}>{stripMath(group.section)}</option>)}
       </select>}
       <div className="ml-auto flex items-center gap-2">
-        {screen !== 'overview' && <button type="button" aria-pressed={showProblems} onClick={toggleProblems} className={`inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-medium transition-colors ${showProblems ? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900' : 'border-[var(--lm-border)] text-slate-500 hover:border-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>显示分支</button>}
         <Legend />
       </div>
     </div>
@@ -104,7 +97,7 @@ export default function ChapterLadderView({ data, edges, onOpenChat, onContinueN
       {screen === 'overview' && <ChapterOverview data={data} onOpenSection={(section) => { setCurrentSection(section); setScreen('ladder'); }} />}
       {screen === 'ladder' && sectionGroup && <>
         <div className="max-h-[62vh] overflow-y-auto border-b border-[var(--lm-border)] bg-[var(--lm-surface)]">
-          <SectionLadder section={sectionGroup} edges={sectionEdges} showProblems={showProblems} selectedId={selectedId} onSelect={toggleSelect} />
+          <SectionLadder section={sectionGroup} edges={sectionEdges} selectedId={selectedId} onSelect={toggleSelect} />
         </div>
         {!selected && <p className="px-4 py-3 text-center text-xs text-slate-400">点击梯子上的图形查看详情</p>}
         {selected && <div className="px-4 pb-6"><NodeDetailCard node={selected} nodes={nodes} edges={edges} onSelect={goTo} onClose={() => setSelectedId(null)} onContinueNode={onContinueNode} onOpenChat={onOpenChat} /></div>}

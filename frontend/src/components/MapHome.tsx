@@ -1,23 +1,64 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Check, ChevronDown, ChevronRight, CircleAlert, Play, RefreshCw, Route } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronRight, Play, RefreshCw, Route } from 'lucide-react';
 
 import type { ChapterMapItem, LearningMapNode, LearningStatus, NodeMapResponse } from '../services/api';
 import type { ChapterCatalogEdge } from '../catalog/types';
 import { splitChapterTitle } from '../utils/chapterTitle';
-import ChapterMapView from './ChapterMapView';
 import InlineMathText from './InlineMathText';
 import SectionLadder from './kg/SectionLadder';
-import { sectionStatusSummary } from './kg/shared';
+import NodeFocusCard from './kg/NodeFocusCard';
+import { sectionStatusSummary, stripMath, typeMeta } from './kg/shared';
 
-function InlineLadder({ chapter, section, edges, onContinueNode }: { chapter: string; section: NodeMapResponse['sections'][number]; edges: ChapterCatalogEdge[]; onContinueNode?: (chapter: string, node: LearningMapNode) => void }) {
+/**
+ * 节就地展开区（对齐 demo v3）：左侧纯概念梯子 + 右侧聚焦详情卡；
+ * 节尾平铺「本节方法·题型」pill（蓝=方法 橙=题型，不上主干），点击同样出详情卡。
+ */
+function InlineLadder({ chapter, section, edges, onContinueNode }: {
+  chapter: string;
+  section: NodeMapResponse['sections'][number];
+  edges: ChapterCatalogEdge[];
+  onContinueNode?: (chapter: string, node: LearningMapNode) => void;
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const nodeById = new Map(section.nodes.map(node => [node.node_id, node]));
-  const handleSelect = (nodeId: string) => {
+  const selected = selectedId ? nodeById.get(selectedId) ?? null : null;
+  const methods = section.nodes.filter(node => node.type?.toLowerCase() === 'method').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const problems = section.nodes.filter(node => node.type?.toLowerCase() === 'problemclass').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const handleJump = (nodeId: string) => setSelectedId(nodeId);
+  const handleStudy = (nodeId: string) => {
     const node = nodeById.get(nodeId);
-    if (node && onContinueNode) {
-      onContinueNode(chapter, node);
-    }
+    if (node && onContinueNode) onContinueNode(chapter, node);
   };
-  return <SectionLadder section={section} edges={edges} showProblems={false} leafTypes={new Set(['method', 'problemclass'])} selectedId={null} onSelect={handleSelect} />;
+
+  return <div className="rounded-xl border border-[var(--lm-border)] bg-[var(--lm-surface)]">
+    <div className="flex flex-col items-start gap-3 lg:flex-row">
+      <div className="min-w-0 flex-1">
+        <SectionLadder section={section} edges={edges} selectedId={selectedId} onSelect={handleJump} />
+      </div>
+      <div className="w-full shrink-0 p-3 lg:sticky lg:top-0 lg:w-[300px]">
+        {selected
+          ? <NodeFocusCard node={selected} allNodes={section.nodes} edges={edges} onJump={handleJump} onStudy={handleStudy} onClose={() => setSelectedId(null)} />
+          : <div className="rounded-xl border border-[var(--lm-border)] bg-[var(--lm-surface)] px-4 py-10 text-center text-[13px] text-[var(--lm-text-muted)]">点击左侧主干节点（圆点或名称文字）<br />看它的前置 / 题型 / 方法</div>}
+      </div>
+    </div>
+    {(methods.length > 0 || problems.length > 0) && <div className="border-t border-[var(--lm-border)] px-3 py-3">
+      <p className="mb-2 text-xs text-[var(--lm-text-muted)]">本节方法 · 题型（不上主干，跨概念复用）：方法 {methods.length} · 题型 {problems.length}</p>
+      <div className="flex flex-wrap gap-2">
+        {methods.map(node => <PillTag key={node.node_id} node={node} kind="m" selected={selectedId === node.node_id} onSelect={handleJump} />)}
+        {problems.map(node => <PillTag key={node.node_id} node={node} kind="p" selected={selectedId === node.node_id} onSelect={handleJump} />)}
+      </div>
+    </div>}
+  </div>;
+}
+
+function PillTag({ node, kind, selected, onSelect }: { node: LearningMapNode; kind: 'm' | 'p'; selected: boolean; onSelect: (nodeId: string) => void }) {
+  const color = kind === 'm' ? 'var(--lm-type-method)' : 'var(--lm-type-problem)';
+  return <button type="button" onClick={() => onSelect(node.node_id)} title={`${typeMeta(node.type).label} · ${stripMath(node.name)}`}
+    className="rounded-full border px-3 py-1 text-xs transition hover:brightness-95"
+    style={selected ? { background: color, borderColor: color, color: '#fff' } : { borderColor: color, color, background: 'var(--lm-surface)' }}>
+    {stripMath(node.name)}
+  </button>;
 }
 
 interface TextbookOption { textbookId: string; name: string }
@@ -30,14 +71,7 @@ interface Props {
   errors: Record<string, string>;
   loading: boolean;
   onContinue: (chapter: string, node?: LearningMapNode) => void;
-  onOpenChapter: (chapter: string) => void;
-  selectedChapter?: string | null;
-  selectedChapterMap?: NodeMapResponse | null;
-  selectedChapterError?: string;
-  onBackToChapters?: () => void;
-  onStartChapter?: () => void;
   onContinueNode?: (chapter: string, node: LearningMapNode) => void;
-  onOpenChat?: (chatId: string) => void;
   onRetry: () => void;
   onStartReading: () => void;
   textbookId: string;
@@ -56,13 +90,11 @@ function chapterNodes(response?: NodeMapResponse): LearningMapNode[] {
 
 export default function MapHome({
   textbookName, chapters, nodesByChapter, edgesByChapter, errors, loading,
-  onContinue, onOpenChapter, selectedChapter, selectedChapterMap, selectedChapterError,
-  onBackToChapters, onStartChapter, onContinueNode, onOpenChat, onRetry,
+  onContinue, onContinueNode, onRetry,
   onStartReading, textbookId, textbooks, onTextbookChange, onEnsureChapterData,
 }: Props) {
   const [textbookMenuOpen, setTextbookMenuOpen] = useState(false);
   const [explicitExpanded, setExplicitExpanded] = useState<string | null>(null);
-  const [initialSection, setInitialSection] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<{ chapter: string; section: string } | null>(null);
   const textbookMenuRef = useRef<HTMLDivElement>(null);
 
@@ -82,18 +114,6 @@ export default function MapHome({
     };
   }, [textbookMenuOpen]);
 
-  if (selectedChapter && onBackToChapters && onStartChapter && onContinueNode && onOpenChat) {
-    if (!selectedChapterMap) {
-      return <div className="h-full overflow-y-auto bg-[var(--lm-bg)] p-4 sm:p-8 lg:p-12">
-        <div className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden border border-[var(--lm-border)] bg-[var(--lm-surface)]">
-          <div className="flex items-center gap-3 border-b border-[var(--lm-border)] px-4 py-3"><button type="button" onClick={onBackToChapters} className="icon-button" title="返回章节" aria-label="返回章节"><ChevronRight className="h-4 w-4 rotate-180" /></button><div className="h-4 w-40 animate-pulse rounded bg-slate-200 dark:bg-slate-800" /></div>
-          {selectedChapterError ? <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"><CircleAlert className="h-6 w-6 text-rose-500" /><p className="text-sm text-rose-600 dark:text-rose-300">章节详情加载失败</p><button type="button" onClick={onRetry} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700">重试</button></div> : <div className="grid gap-3 p-4 sm:grid-cols-2"><div className="h-24 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /><div className="h-24 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" /></div>}
-        </div>
-      </div>;
-    }
-    return <div className="h-full overflow-hidden bg-[var(--lm-bg)] p-3 sm:p-6 lg:p-8"><div className="mx-auto h-full w-full max-w-none overflow-hidden border border-[var(--lm-border)]"><ChapterMapView data={selectedChapterMap} edges={edgesByChapter[selectedChapter] || []} onBack={() => { setInitialSection(null); onBackToChapters(); }} onOpenChat={onOpenChat} onStartReading={onStartChapter} onContinueNode={node => onContinueNode(selectedChapter, node)} initialSection={initialSection} /></div></div>;
-  }
-
   // 继续学习只推荐「可行动」的节点：需巩固 > 学习中 > 未探索（同级按教材序）。
   // 全部掌握时不推荐具体节点，hero 退化为「从第 N 章开始」+ 打开教材。
   const actionableRank = (status: LearningStatus) => status === 'needs_review' ? 0 : status === 'learning' ? 1 : status === 'unexplored' ? 2 : 3;
@@ -112,16 +132,11 @@ export default function MapHome({
     setExplicitExpanded(prev => {
       const next = prev === ch ? null : ch;
       if (next) {
-        setInitialSection(null);
         setExpandedSection(null);
         void onEnsureChapterData?.(ch);
       }
       return next;
     });
-  };
-  const openChapterSection = (chapter: string, section: string) => {
-    setInitialSection(section);
-    onOpenChapter(chapter);
   };
   const toggleSection = (chapter: string, section: string) => {
     setExpandedSection(prev => prev && prev.chapter === chapter && prev.section === section ? null : { chapter, section });
@@ -205,7 +220,7 @@ export default function MapHome({
                   <span className="hidden sm:block"><span className="block h-[3px] overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><span className="block h-full bg-slate-900 dark:bg-slate-300" style={{ width: `${exploredPct}%` }} /></span><span className="mt-1.5 block font-mono text-[11px] tabular-nums text-slate-400">{chapter.exploration_progress.explored ? `${chapter.exploration_progress.explored} / ${chapter.exploration_progress.total} 已探索` : `${chapter.node_count} 个知识点`}</span></span>
                   <span className={`hidden text-right text-xs sm:block ${statusClass}`}>{failed ? '加载失败 · 点击重试' : pending ? '详情准备中…' : statusSummary}</span>
                 </button>
-                <button type="button" data-testid="chapter-map-button" onClick={() => failed ? onRetry() : onOpenChapter(chapter.chapter)} className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--lm-border)] bg-[var(--lm-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300">地图</button>
+                {failed && <button type="button" data-testid="chapter-map-button" onClick={onRetry} className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--lm-border)] bg-[var(--lm-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300">重试</button>}
               </div>
               {expanded && <div className="pb-4 pl-12 pr-4">
                 {response?.sections.length ? <ul>{response.sections.map(section => {
@@ -225,7 +240,7 @@ export default function MapHome({
                     </button>
                     {isSectionExpanded && <div className="pb-3 pl-5 pr-1"><InlineLadder chapter={chapter.chapter} section={section} edges={edgesByChapter[chapter.chapter] || []} onContinueNode={onContinueNode} /></div>}
                   </li>;
-                })}</ul> : <p className="py-2 text-xs text-slate-400">{pending ? '小节详情准备中…' : '点击「查看地图」进入本章地图'}</p>}
+                })}</ul> : <p className="py-2 text-xs text-slate-400">{pending ? '小节详情准备中…' : '点击展开小节查看概念梯子'}</p>}
               </div>}
             </li>;
           })}</ul> : <div className="py-16 text-center"><p className="text-sm text-slate-500">教材目录暂不可用</p><button type="button" onClick={onStartReading} className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"><BookOpen className="h-4 w-4" />打开教材</button></div>}
