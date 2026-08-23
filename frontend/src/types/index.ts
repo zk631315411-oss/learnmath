@@ -24,6 +24,8 @@ export interface ChatHistoryRecord {
   generation_status?: 'pending' | 'completed' | 'interrupted' | 'cancelled' | null;
   generation_error?: string | null;
   client_turn_id?: string | null;
+  // 学生自定义对话标题；null/未设 = 沿用 question 原文
+  title?: string | null;
   question: string;
   answer: string | null;
   thinking?: string | null;

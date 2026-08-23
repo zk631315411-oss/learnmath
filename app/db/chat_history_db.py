@@ -112,6 +112,7 @@ _UPDATABLE_COLUMNS = {
     "answer", "screenshot_context_id", "thumbnail", "crop_bbox",
     "thinking", "tool_activities", "follow_ups",
     "generation_status", "generation_error", "client_turn_id",
+    "title",
 }
 
 

@@ -16,6 +16,8 @@ export interface Marker {
   // 生成状态契约（Batch 1）：老数据为 null/undefined，等价 completed
   generation_status?: 'pending' | 'completed' | 'interrupted' | 'cancelled' | null;
   client_turn_id?: string | null;
+  // 学生自定义对话标题；null/未设 = 沿用 question 原文
+  title?: string | null;
   question: string;
   answer: string | null;  // null = AI 思考中
   thinking: string | null;  // AI 思维链

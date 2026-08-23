@@ -20,6 +20,7 @@ import { useAuth } from './hooks/useAuth';
 import { useTextbookPreference, PRESET_PDFS } from './hooks/useTextbookPreference';
 import { useMarkers } from './hooks/useMarkers';
 import { useQuestionList } from './hooks/useQuestionList';
+import { usePageSections } from './hooks/usePageSections';
 import { useMapHomeData } from './hooks/useMapHomeData';
 import { useChat } from './hooks/useChat';
 import { usePdfPosition } from './hooks/usePdfPosition';
@@ -96,6 +97,7 @@ export default function App() {
   const interactionLocked = capture.busy;
   // 提问记录侧栏：以消息条数变化作为刷新信号（新提问落库后长度必然 +1）
   const questionList = useQuestionList(user, chat.historyVersion, textbookId);
+  const pageSections = usePageSections(textbookId, user.token || undefined);
   const mapHome = useMapHomeData(user.token || undefined, textbookId, mapCacheScope, authReady);
   const navigation = useWorkspaceNav({
     textbookId,
@@ -256,6 +258,8 @@ export default function App() {
   const learningSidebar = (onClose?: () => void) => <LearningSidebar
     onClose={onClose}
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
+    pageSections={pageSections}
+    onRenamed={questionList.refresh}
   />;
 
   const openDrawer = () => {

@@ -68,6 +68,7 @@ def init_db():
         ("generation_error", "TEXT"),
         ("generation_updated_at", "TEXT"),
         ("client_turn_id", "TEXT"),
+        ("title", "TEXT"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE chat_history ADD COLUMN {col} {col_type}")

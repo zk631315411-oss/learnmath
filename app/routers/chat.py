@@ -56,6 +56,8 @@ class UpdateChatRequest(BaseModel):
     generation_status: Optional[GenerationStatus] = None
     generation_error: Optional[str] = None
     client_turn_id: Optional[str] = Field(default=None, max_length=64)
+    # 学生自定义对话标题；None=沿用 question 原文，空串视为清除自定义标题
+    title: Optional[str] = Field(default=None, max_length=200)
 
 
 class FollowUpTurnIn(BaseModel):
@@ -126,7 +128,12 @@ def create_history(req: SaveChatRequest):
 @router.patch("/history/{chat_id}")
 def update_history(chat_id: str, req: UpdateChatRequest):
     """SSE 完成后更新记录：只更新请求体里显式出现的字段（显式 null = 清空）。"""
-    update_chat_record(chat_id, req.model_dump(include=req.model_fields_set))
+    fields = req.model_dump(include=req.model_fields_set)
+    # 自定义标题：strip 后为空则视为清除，回到沿用 question 原文
+    if "title" in fields:
+        title = fields["title"]
+        fields["title"] = (title.strip() or None) if isinstance(title, str) else None
+    update_chat_record(chat_id, fields)
     return {"status": "ok"}
 
 
