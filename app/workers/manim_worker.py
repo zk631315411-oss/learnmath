@@ -46,7 +46,11 @@ def render_manim_artifact(
                 command,
                 cwd=workdir,
                 capture_output=True,
+                # Windows 下 manim/LaTeX 输出常含 GBK 字节，text=True 的默认
+                # utf-8 解码会抛 UnicodeDecodeError 掩盖真实渲染错误。改用
+                # errors="replace" 容忍非法字节，保证拿到 returncode 与部分日志。
                 text=True,
+                errors="replace",
                 timeout=max(1, config.MANIM_RENDER_TIMEOUT_SECONDS - 5),
                 check=False,
                 env=_minimal_environment(),
