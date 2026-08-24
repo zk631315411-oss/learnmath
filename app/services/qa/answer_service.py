@@ -21,6 +21,7 @@ from typing import AsyncIterator
 from fastapi.concurrency import run_in_threadpool
 
 from app.config import config
+from app.db import kg_v44
 from app.services.agents.one_shot_tool import run_one_shot_tool
 from app.services.agents.tools.report_turn_outcome import build_report_turn_outcome_tool
 from app.services.llm_service import llm_service
@@ -339,6 +340,23 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                 user_id=turn_input.user_id,
                 turn_id=turn_id,
             )
+            # 为候选节点标注名称与来源（本轮 resolved = 教学主题，线程历史 = 背景），
+            # 防止自评模型把对概念 A 的掌握错挂到同线程出现过的近义概念 B（如
+            # 把「线性无关」的掌握挂到「线性相关」）。锚点提示只影响上报选择，不改变
+            # 校验集合——validate_and_report 仍按原规则放行/丢弃。
+            turn_set = set(turn_resolved_node_ids_in_order)
+            node_anchor_lines: list[str] = []
+            for node_id in allowed_node_ids:
+                # 取名称仅用于锚点提示的可读性；KG 不可用（如测试/降级）时
+                # 回退为 node_id 本身，绝不能因此中断证据落库流程。
+                try:
+                    node = kg_v44.get_kg_node(node_id, textbook_id=turn_input.textbook_id) or {}
+                    node_name = node.get("name") or node_id
+                except Exception:
+                    node_name = node_id
+                origin = "本轮教学主题" if node_id in turn_set else "线程早前出现(背景,非本轮主题)"
+                node_anchor_lines.append(f"  - {node_id}（{node_name}，{origin}）")
+            node_anchor_block = "\n".join(node_anchor_lines)
             # ToolRuntimeResult.messages intentionally stops before the final
             # visible assistant answer. This keeps the rating anchored to the
             # student's latest message and all help received before it.
@@ -348,8 +366,11 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                     "role": "system",
                     "content": (
                         "本次评价锚点是上下文中学生最近一条消息；教师针对该消息刚生成的回复"
-                        "不在本次评价范围内。本轮可用的 selected_node.node_id 仅有："
-                        f"{json.dumps(allowed_node_ids, ensure_ascii=False)}。"
+                        "不在本次评价范围内。本轮可用的 selected_node.node_id 仅有：\n"
+                        f"{node_anchor_block}\n"
+                        "上报节点必须是「本轮教学主题」对应的节点；「线程早前出现」的节点只是"
+                        "对话背景，即使学生在对话中提到过它，也不要把本轮的教学成果挂到它上面"
+                        "（例如本轮在教「线性无关」，就不要上报「线性相关」）。"
                         "检查此前完整对话：学生未借助老师提示且自行正确作答报 independent；"
                         "此前得到提示或拆步后正确答出报 assisted；老师应学生要求完整讲解了"
                         "知识点（直接给答案/完整解法）而学生没有后续独立作答的报 direct_taught"
