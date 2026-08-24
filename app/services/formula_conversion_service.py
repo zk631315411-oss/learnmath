@@ -31,6 +31,11 @@ SYSTEM_PROMPT = "\n".join(
         "只转写，不求值、不化简、不证明、不解释。输出 JSON，且只能包含 latex 字段。",
         "latex 必须是裸公式，不含 $、$$、\\(、\\)、代码围栏或 Markdown。",
         "禁止 HTML、链接、文件命令、自定义宏和文档命令。",
+        # A/B 实验验证（2026-08-24，8/8 vs 5/8）：以下两条修复实测高频坑——
+        "注意中文语序的运算优先级：描述中后说的运算往往作用于前面整个表达式。",
+        "  如“x平方加1开根号”是 \\sqrt{x^2+1}（整体开根号），不是 x^2+\\sqrt{1}。",
+        "保留描述里出现的每一个数学符号（π、α、β、e、θ 等），一个都不能丢。",
+        "  如“派r平方”是 \\pi r^2，π 不能省略。",
         "示例：",
         _formula_example(
             "x趋于0时sin x除以x的极限",
@@ -41,6 +46,11 @@ SYSTEM_PROMPT = "\n".join(
             r"\begin{pmatrix} a & b \\ c & d \end{pmatrix}",
         ),
         _formula_example("x平方加y平方等于1", "x^2+y^2=1"),
+        # 给"正态分布"这类有标准记号的常见概念一个锚点，避免模型塞中文或瞎编。
+        _formula_example(
+            "标准正态分布的概率密度函数",
+            r"\frac{1}{\sqrt{2\pi}} e^{-\frac{x^2}{2}}",
+        ),
     )
 )
 
@@ -102,6 +112,9 @@ _BLOCK_STRUCTURE = re.compile(
 _MALFORMED_ENV_END = re.compile(
     r"(?<!\\)\\\\end(\s*\{(?:matrix|[bBpvV]matrix|cases|aligned|align(?:ed)?|gather(?:ed)?|split)\})"
 )
+# 双反斜杠+字母命令（\\lim、\\to、\\frac）→ 单反斜杠，捕获组 \1 保留命令首字母。
+# 只匹配"后跟字母"的双反斜杠，不碰矩阵换行符（换行 \\ 后跟空格/&/逗号等非字母）。
+_DOUBLE_BACKSLASH_COMMAND = re.compile(r"\\\\([a-zA-Z])")
 
 
 class FormulaConversionError(RuntimeError):
@@ -201,6 +214,11 @@ def sanitize_latex(raw: str) -> str:
             break
 
     value = _MALFORMED_ENV_END.sub(r"\\end\1", value)
+    # 双重转义残留：模型在 JSON 字符串里把 LaTeX 反斜杠双重转义（"\\\\lim"），
+    # json.loads 解一层后剩 "\\lim"（命令前两个反斜杠）。归一为单反斜杠。
+    # 只匹配"双反斜杠+字母命令"（\\lim→\lim、\\to→\to），不影响矩阵换行符
+    # （换行 \\ 后跟空格/&/逗号/换行，不是字母，故 \\(?=[a-zA-Z]) 不会误伤它）。
+    value = _DOUBLE_BACKSLASH_COMMAND.sub(r"\\\1", value)
 
     if not value:
         raise FormulaConversionError("模型没有返回公式")
