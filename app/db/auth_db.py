@@ -1,6 +1,11 @@
 import sqlite3
 from typing import Optional
+
 from app.db.connection import get_conn
+
+
+def _optional_user(row: Optional[sqlite3.Row]) -> Optional[dict]:
+    return dict(row) if row else None
 
 
 def save_user(user_id: str, username: str, password_hash: str, device_id: str, is_anonymous: bool = False) -> bool:
@@ -30,10 +35,7 @@ def get_user_by_username(username: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    if not row:
-        return None
-
-    return dict(row)
+    return _optional_user(row)
 
 
 def get_user_by_id(user_id: str) -> Optional[dict]:
@@ -45,10 +47,7 @@ def get_user_by_id(user_id: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    if not row:
-        return None
-
-    return dict(row)
+    return _optional_user(row)
 
 
 def get_user_by_device_id(device_id: str) -> Optional[dict]:
@@ -64,7 +63,4 @@ def get_user_by_device_id(device_id: str) -> Optional[dict]:
     row = cursor.fetchone()
     conn.close()
 
-    if not row:
-        return None
-
-    return dict(row)
+    return _optional_user(row)

@@ -3,20 +3,25 @@ import type { KeyboardEvent } from 'react';
 import type { LearningMapNode, LearningStatus } from '../../services/api';
 import { STATUS_LABEL, STATUS_VAR, stripMath, typeMeta } from './shared';
 
-/** 形状=类型：概念圆 / 定理三角 / 公式方 / 方法六边形 / 题型纸页（两横线） */
-export function GlyphShape({ type }: { type?: string }) {
+/** 形状=类型：概念圆 / 定理三角 / 公式方 / 方法六边形 / 题型纸页（两横线）。
+ *  学过的节点整体用状态色填充+描边（一眼看出学习进度），未探索保持类型色描边+白填充。 */
+export function GlyphShape({ type, status }: { type?: string; status?: LearningStatus }) {
   const meta = typeMeta(type);
   const key = type?.toLowerCase() || 'concept';
-  const common = { fill: 'var(--lm-surface)', stroke: meta.color, strokeWidth: 2 };
+  const learned = status && status !== 'unexplored';
+  // 学过的节点：实心状态色填充 + 白描边（边界清晰），并略微放大；未探索保持类型色描边+白填充。
+  const common = learned
+    ? { fill: STATUS_VAR[status], stroke: 'var(--lm-surface)', strokeWidth: 2.5 }
+    : { fill: 'var(--lm-surface)', stroke: meta.color, strokeWidth: 2 };
   if (key === 'theorem') return <path d="M 0 -8 L 7.5 6 L -7.5 6 Z" strokeLinejoin="round" {...common} />;
   if (key === 'formula') return <rect x="-6.5" y="-6.5" width="13" height="13" rx="2" {...common} />;
   if (key === 'method') return <path d="M 7.5 0 L 3.75 6.5 L -3.75 6.5 L -7.5 0 L -3.75 -6.5 L 3.75 -6.5 Z" strokeLinejoin="round" {...common} />;
   if (key === 'problemclass') return <>
     <rect x="-5" y="-6.5" width="10" height="13" rx="1.8" {...common} />
-    <line x1="-2.4" y1="-1.6" x2="2.4" y2="-1.6" stroke={meta.color} strokeWidth="1.3" />
-    <line x1="-2.4" y1="1.8" x2="2.4" y2="1.8" stroke={meta.color} strokeWidth="1.3" />
+    <line x1="-2.4" y1="-1.6" x2="2.4" y2="-1.6" stroke={learned ? 'var(--lm-surface)' : meta.color} strokeWidth="1.3" />
+    <line x1="-2.4" y1="1.8" x2="2.4" y2="1.8" stroke={learned ? 'var(--lm-surface)' : meta.color} strokeWidth="1.3" />
   </>;
-  return <circle cx="0" cy="0" r="7" {...common} />;
+  return <circle cx="0" cy="0" r={learned ? 8.5 : 7} {...common} />;
 }
 
 /** 状态=右上角角标：未探索空心，其余实心状态色 */
@@ -60,8 +65,7 @@ export default function NodeGlyph({ node, x, y, selected = false, neighbor = fal
   >
     <title>{stripMath(node.name)}</title>
     <circle className="kg-halo" cx="0" cy="0" r="12" fill="none" stroke="var(--lm-brand)" strokeWidth="1.6" />
-    <GlyphShape type={node.type} />
-    <CornerBadge status={node.status} />
+    <GlyphShape type={node.type} status={node.status} />
     {node.blocked && <BlockedDot />}
   </g>;
 }

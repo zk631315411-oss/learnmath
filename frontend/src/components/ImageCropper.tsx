@@ -3,9 +3,11 @@ import ReactCrop, { convertToPixelCrop, type Crop, type PixelCrop } from 'react-
 import 'react-image-crop/dist/ReactCrop.css';
 import type { CropBBox } from '../types';
 
+import type { CaptureAction } from './ScreenCapture';
+
 interface Props {
   src: string;
-  onConfirm: (croppedBase64: string, centerRatioX: number, centerRatioY: number, cropBBox: CropBBox) => void;
+  onConfirm: (croppedBase64: string, centerRatioX: number, centerRatioY: number, cropBBox: CropBBox, action: CaptureAction) => void;
   onCancel: () => void;
 }
 
@@ -18,7 +20,7 @@ export default function ImageCropper({ src, onConfirm, onCancel }: Props) {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback((action: CaptureAction) => {
     if (!completedCrop || !imgRef.current) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -50,7 +52,7 @@ export default function ImageCropper({ src, onConfirm, onCancel }: Props) {
       width: ratio(completedCrop.width, img.width),
       height: ratio(completedCrop.height, img.height),
       unit: 'page_ratio',
-    });
+    }, action);
   }, [completedCrop, onConfirm]);
 
   return (
@@ -89,9 +91,13 @@ export default function ImageCropper({ src, onConfirm, onCancel }: Props) {
             className="px-4 py-2 text-sm rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
             取消
           </button>
-          <button onClick={handleConfirm}
+          <button onClick={() => handleConfirm('edit')}
+            className="px-4 py-2 text-sm rounded-lg bg-white border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors font-medium">
+            提取并编辑
+          </button>
+          <button onClick={() => handleConfirm('question')}
             className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium">
-            确认截取
+            提问
           </button>
         </div>
       </div>

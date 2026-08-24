@@ -21,10 +21,13 @@ const RESIZE_HANDLES: { handle: ResizeHandle; left: string; top: string; cursor:
   { handle: 'w', left: '0%', top: '50%', cursor: 'ew-resize' },
 ];
 
+/** 框选确认后的去向：直接提问进聊天待发区，或 OCR 提取后进聊天编辑 */
+export type CaptureAction = 'question' | 'edit';
+
 interface Props {
   isActive: boolean;
   currentPage: number;
-  onCapture: (imageData: string, pageRatioX: number, pageRatioY: number, cropBBox: CropBBox) => void;
+  onCapture: (imageData: string, pageRatioX: number, pageRatioY: number, cropBBox: CropBBox, action: CaptureAction) => void;
   onCancel: () => void;
 }
 
@@ -112,7 +115,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
     setConfirmed(true);
   }, [isSelecting, startPos, endPos, onAdjustUp, confirmSelection]);
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirm = useCallback(async (action: CaptureAction) => {
     if (!confirmed || !selectionRect) return;
 
     // 截图裁剪一律以确认态矩形为准：拖移/缩放后与用户所见完全一致
@@ -161,7 +164,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
             unit: 'page_ratio',
           }
         : { x: Math.max(0, rx - 0.25), y: Math.max(0, ry - 0.25), width: 0.5, height: 0.5, unit: 'page_ratio' };
-      onCapture(cropCanvas.toDataURL('image/png'), rx, ry, cropBBox);
+      onCapture(cropCanvas.toDataURL('image/png'), rx, ry, cropBBox, action);
     } catch (err) {
       console.error('截图失败:', err);
       alert('截图失败，请重试');
@@ -209,9 +212,9 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
     };
   }, [isActive]);
 
-  const handleCropConfirm = (croppedBase64: string, rx: number, ry: number, cropBBox: CropBBox) => {
+  const handleCropConfirm = (croppedBase64: string, rx: number, ry: number, cropBBox: CropBBox, action: CaptureAction) => {
     setCropSrc(null);
-    onCapture(croppedBase64, rx, ry, cropBBox);
+    onCapture(croppedBase64, rx, ry, cropBBox, action);
   };
 
   const handleCropCancel = () => {
@@ -320,13 +323,13 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
               ))}
             </div>
 
-            {/* 确认/取消按钮（独立层，阻止所有鼠标事件穿透） */}
+            {/* 取消/提取编辑/提问按钮（独立层，阻止所有鼠标事件穿透） */}
             <div
               className="absolute z-[10000]"
               style={{
-                left: selectionRect.left + selectionRect.width - 80,
+                left: selectionRect.left + selectionRect.width - 232,
                 top: selectionRect.top + selectionRect.height + 8,
-                width: 80,
+                width: 232,
                 height: 40,
               }}
               onMouseDown={(e) => e.stopPropagation()}
@@ -337,18 +340,26 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => { e.stopPropagation(); handleCancelSelection(); }}
-                  className="w-8 h-8 rounded-full bg-white border border-slate-300 flex items-center justify-center text-slate-500 hover:bg-slate-100 shadow-lg text-sm"
+                  className="rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 shadow-lg"
                   title="取消选区"
                 >
-                  ✕
+                  取消
                 </button>
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                  className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 shadow-lg text-sm"
-                  title="确认截图"
+                  onClick={(e) => { e.stopPropagation(); void handleConfirm('edit'); }}
+                  className="rounded-lg bg-white border border-indigo-300 px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 shadow-lg"
+                  title="提取文字/公式并编辑"
                 >
-                  ✓
+                  提取编辑
+                </button>
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); void handleConfirm('question'); }}
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 shadow-lg font-medium"
+                  title="直接提问"
+                >
+                  提问
                 </button>
               </div>
             </div>
@@ -367,7 +378,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
         {/* 顶部提示 */}
         {!isCapturing && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm whitespace-nowrap">
-            {confirmed ? '拖动选区或手柄可调整，点击 ✓ 确认截图' : '拖动鼠标框选区域，按 ESC 取消'}
+            {confirmed ? '拖动选区或手柄可调整，📝 提取编辑 / ✓ 直接提问' : '拖动鼠标框选区域，按 ESC 取消'}
           </div>
         )}
 

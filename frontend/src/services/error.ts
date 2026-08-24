@@ -1,3 +1,5 @@
+import { errorMessage } from '../utils/errorMessage';
+
 export enum ErrorType {
   NETWORK = 'NETWORK',
   TIMEOUT = 'TIMEOUT',
@@ -75,7 +77,7 @@ export function fromResponse(res: Response, body?: ApiErrorBody): ApiError {
 export function fromNetworkError(err: unknown): ApiError {
   if (err instanceof ApiError) return err;
   return new ApiError({
-    message: err instanceof Error ? err.message : '网络连接失败',
+    message: errorMessage(err, '网络连接失败'),
     type: ErrorType.NETWORK,
   });
 }

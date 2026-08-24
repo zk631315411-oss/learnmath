@@ -24,8 +24,6 @@ interface Props {
   loading: boolean;
   onContinue: (chapter: string, node?: LearningMapNode) => void;
   onContinueNode?: (chapter: string, node: LearningMapNode) => void;
-  /** 进入该章的地图页（整章梯子视图）。 */
-  onOpenChapter?: (chapter: string) => void;
   onRetry: () => void;
   onStartReading: () => void;
   textbookId: string;
@@ -46,14 +44,35 @@ function chapterNodes(response?: NodeMapResponse): LearningMapNode[] {
 
 export default function MapHome({
   textbookName, chapters, nodesByChapter, edgesByChapter, errors, loading,
-  onContinue, onContinueNode, onOpenChapter, onRetry,
+  onContinue, onContinueNode, onRetry,
   onStartReading, textbookId, textbooks, onTextbookChange, onEnsureChapterData,
   chapterExpandNonce,
 }: Props) {
   const [textbookMenuOpen, setTextbookMenuOpen] = useState(false);
   const [explicitExpanded, setExplicitExpanded] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<{ chapter: string; section: string } | null>(null);
+  /** 整章全景：点章行「地图」按钮后，该章所有节的梯子全部展开串成一整列。 */
+  const [panoramaChapter, setPanoramaChapter] = useState<string | null>(null);
+  // 刷新反馈：refresh 期间按钮转圈（loading prop），结束后若无数据变化也短暂提示「已刷新」。
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshedTip, setRefreshedTip] = useState(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textbookMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current); }, []);
+
+  const handleRefresh = () => {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    setRefreshedTip(false);
+    onRetry();
+    // 刷新完成没有明确事件（数据可能无变化），给 spinner 一个最短可见时长后提示「已刷新」。
+    refreshTimerRef.current = setTimeout(() => {
+      setRefreshing(false);
+      setRefreshedTip(true);
+      refreshTimerRef.current = setTimeout(() => setRefreshedTip(false), 1500);
+    }, 600);
+  };
 
   useEffect(() => {
     if (!textbookMenuOpen) return;
@@ -111,10 +130,22 @@ export default function MapHome({
       const next = prev === ch ? null : ch;
       if (next) {
         setExpandedSection(null);
+        setPanoramaChapter(null);
         void onEnsureChapterData?.(ch);
       }
       return next;
     });
+  };
+  /** 点「地图」按钮：进入/退出整章全景（所有节梯子就地全展开）。 */
+  const togglePanorama = (ch: string) => {
+    if (panoramaChapter === ch) {
+      setPanoramaChapter(null);
+      return;
+    }
+    setPanoramaChapter(ch);
+    setExplicitExpanded(ch);
+    setExpandedSection(null);
+    void onEnsureChapterData?.(ch);
   };
   const toggleSection = (chapter: string, section: string) => {
     setExpandedSection(prev => prev && prev.chapter === chapter && prev.section === section ? null : { chapter, section });
@@ -129,9 +160,7 @@ export default function MapHome({
             <div className="min-w-0">
               <h1 className="serif-zh text-[26px] font-semibold leading-snug text-slate-900 dark:text-slate-50">{heroTitle}</h1>
               {firstCandidate && <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-                <span>{firstCandidate.node.section}</span>
-                <span className="text-slate-300 dark:text-slate-600">·</span>
-                <InlineMathText>{firstCandidate.node.name}</InlineMathText>
+                <span><InlineMathText>{firstCandidate.node.section}</InlineMathText></span>
                 <span className="text-slate-300 dark:text-slate-600">·</span>
                 <span>{statusLabel[firstCandidate.node.status]}</span>
               </div>}
@@ -170,7 +199,10 @@ export default function MapHome({
                 <span className="text-xs text-slate-400">{chapters.length ? (errors.__progress ? `${chapters.length} 章 · ${chapters.reduce((sum, item) => sum + item.node_count, 0)} 个知识点 · 进度统计暂不可用` : `${chapters.length} 章 · ${chapters.reduce((sum, item) => sum + item.node_count, 0)} 个知识点 · ${chapters.reduce((sum, item) => sum + item.exploration_progress.explored, 0)} 个已探索知识点`) : textbookName}</span>
               </div>
             </div>
-            <button type="button" onClick={onRetry} disabled={loading} className="icon-button self-start" title="刷新学习地图" aria-label="刷新学习地图"><RefreshCw className={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} /></button>
+            <div className="flex items-center gap-2 self-start">
+              {refreshedTip && <span className="text-xs text-slate-400 dark:text-slate-500" role="status">已刷新</span>}
+              <button type="button" onClick={handleRefresh} disabled={loading || refreshing} className="icon-button" title="刷新学习地图" aria-label="刷新学习地图"><RefreshCw className={loading || refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} /></button>
+            </div>
           </div>
           {errors.__page && <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300"><span>{errors.__page}</span><button type="button" onClick={onRetry} className="font-medium underline">重试</button></div>}
           {errors.__progress && !errors.__page && (
@@ -189,6 +221,7 @@ export default function MapHome({
             const statusSummary = counts.needs_review ? `${counts.needs_review} 个需巩固` : counts.learning ? `${counts.learning} 个学习中` : counts.mastered === chapter.node_count && chapter.node_count > 0 ? '全部学过' : chapter.exploration_progress.explored === 0 ? '尚未开始' : `${chapter.exploration_progress.explored} 个已探索`;
             const exploredPct = chapter.exploration_progress.total ? chapter.exploration_progress.explored / chapter.exploration_progress.total * 100 : 0;
             const expanded = expandedFor(chapter.chapter);
+            const panorama = panoramaChapter === chapter.chapter;
             const statusClass = failed || (!pending && counts.needs_review) ? 'font-medium text-rose-600 dark:text-rose-300' : 'text-slate-400';
             return <li key={chapter.chapter}>
               <div className="flex items-center">
@@ -199,9 +232,27 @@ export default function MapHome({
                   <span className={`hidden text-right text-xs sm:block ${statusClass}`}>{failed ? '加载失败 · 点击重试' : pending ? '详情准备中…' : statusSummary}</span>
                 </button>
                 {failed && <button type="button" data-testid="chapter-map-button" onClick={onRetry} className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--lm-border)] bg-[var(--lm-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300">重试</button>}
-                {!failed && onOpenChapter && <button type="button" data-testid="chapter-map-button" onClick={() => onOpenChapter(chapter.chapter)} aria-label={`打开${chapter.chapter}地图`} title="打开本章地图" className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--lm-border)] bg-[var(--lm-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300"><MapIcon className="h-3.5 w-3.5" />地图</button>}
+                {!failed && <button type="button" data-testid="chapter-map-button" aria-pressed={panorama} onClick={() => togglePanorama(chapter.chapter)} aria-label={`${panorama ? '收起' : '展开'}${chapter.chapter}整章全景`} title={panorama ? '收起整章全景' : '整章全景：展开本章所有节的概念梯子'} className={`mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium shadow-sm transition ${panorama ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' : 'border-[var(--lm-border)] bg-[var(--lm-surface)] text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300'}`}><MapIcon className="h-3.5 w-3.5" />地图</button>}
               </div>
-              {expanded && <div className="pb-4 pl-12 pr-4">
+              {expanded && (panorama ? (
+                // 整章全景：所有节的纯概念梯子依次串联，节标题分隔，纵向间距收紧。
+                <div className="pb-4 pl-6 pr-4 sm:pl-10">
+                  {response?.sections.length ? <ul className="space-y-3">{response.sections.map(section => {
+                    const sectionStatus = sectionStatusSummary(section.nodes);
+                    const sectionHasReview = section.nodes.some(n => n.status === 'needs_review');
+                    return <li key={section.section}>
+                      <div className="flex items-baseline justify-between gap-4 border-b border-dashed border-slate-200 pb-1.5 dark:border-slate-800">
+                        <span className="inline-flex min-w-0 items-center gap-2 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
+                          <MapIcon className="h-3.5 w-3.5 shrink-0 text-indigo-400" aria-hidden="true" />
+                          <InlineMathText>{section.section}</InlineMathText>
+                        </span>
+                        <span className={`shrink-0 text-xs ${sectionHasReview ? 'text-rose-600 dark:text-rose-300' : 'text-slate-400'}`}>{sectionStatus}</span>
+                      </div>
+                      <div className="pt-1"><SectionLadderPanel chapter={chapter.chapter} section={section} edges={edgesByChapter[chapter.chapter] || []} onContinueNode={onContinueNode} compact /></div>
+                    </li>;
+                  })}</ul> : <p className="py-2 text-xs text-slate-400">{pending ? '小节详情准备中…' : '整章数据加载后展开全景'}</p>}
+                </div>
+              ) : <div className="pb-4 pl-12 pr-4">
                 {response?.sections.length ? <ul>{response.sections.map(section => {
                   const sectionStatus = sectionStatusSummary(section.nodes);
                   const sectionHasReview = section.nodes.some(n => n.status === 'needs_review');
@@ -220,7 +271,7 @@ export default function MapHome({
                     {isSectionExpanded && <div className="pb-3 pl-5 pr-1"><SectionLadderPanel chapter={chapter.chapter} section={section} edges={edgesByChapter[chapter.chapter] || []} onContinueNode={onContinueNode} /></div>}
                   </li>;
                 })}</ul> : <p className="py-2 text-xs text-slate-400">{pending ? '小节详情准备中…' : '点击展开小节查看概念梯子'}</p>}
-              </div>}
+              </div>)}
             </li>;
           })}</ul> : <div className="py-16 text-center"><p className="text-sm text-slate-500">教材目录暂不可用</p><button type="button" onClick={onStartReading} className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"><BookOpen className="h-4 w-4" />打开教材</button></div>}
         </section>

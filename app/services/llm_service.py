@@ -42,7 +42,7 @@ class LLMService:
             messages=messages,
             stream=stream,
             **({"stream_options": {"include_usage": True}} if stream else {}),
-            temperature=temperature,
+            **self._temperature_kwarg(temperature),
         )
 
     def chat_with_tools(
@@ -69,9 +69,17 @@ class LLMService:
             tool_choice=tool_choice,
             stream=stream,
             **({"stream_options": {"include_usage": True}} if stream else {}),
-            temperature=temperature,
+            **self._temperature_kwarg(temperature),
             **extra,
         )
+
+    @staticmethod
+    def _temperature_kwarg(temperature: float) -> dict:
+        """kimi 系模型（kimi-k3 等）仅接受 temperature=1 或服务端默认，
+        对非默认取值直接 400。对 kimi 模型省略该参数，沿用服务端默认。"""
+        if str(config.QA_LLM_MODEL).lower().startswith("kimi"):
+            return {}
+        return {"temperature": temperature}
 
 
 llm_service = LLMService()

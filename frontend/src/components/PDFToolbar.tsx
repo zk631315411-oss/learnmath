@@ -11,10 +11,9 @@ interface Props {
   chatCollapsed?: boolean;
   onToggleChat?: () => void;
   mobile?: boolean;
-  navigationDisabled?: boolean;
 }
 
-export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureDisabled = false, chatCollapsed = false, onToggleChat, mobile = false, navigationDisabled = false }: Props) {
+export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureDisabled = false, chatCollapsed = false, onToggleChat, mobile = false }: Props) {
   const currentPage = controls?.currentPage ?? 1;
   const numPages = controls?.numPages ?? 0;
   const zoomMode = controls?.zoomMode ?? 'fit-page';
@@ -42,7 +41,7 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
         <button
           type="button"
           onClick={() => controls?.goToPage(Math.max(1, currentPage - 1))}
-          disabled={!controls || navigationDisabled || currentPage <= 1}
+          disabled={!controls || currentPage <= 1}
           className="icon-button"
           title="上一页"
           aria-label="上一页"
@@ -60,14 +59,13 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
             }
           }}
           onBlur={commitPage}
-          disabled={navigationDisabled}
           className="h-8 w-12 rounded-lg border border-[var(--lm-border)] bg-[var(--lm-bg)] text-center text-xs font-medium text-[var(--lm-text)] outline-none focus:border-[var(--lm-brand)] focus:ring-2 focus:ring-[var(--lm-brand)]/20"
         />
         <span className="text-xs text-[var(--lm-text-muted)]">/ {numPages || '—'}</span>
         <button
           type="button"
           onClick={() => controls?.goToPage(Math.min(numPages, currentPage + 1))}
-          disabled={!controls || navigationDisabled || !numPages || currentPage >= numPages}
+          disabled={!controls || !numPages || currentPage >= numPages}
           className="icon-button"
           title="下一页"
           aria-label="下一页"
@@ -105,7 +103,7 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
           <PanelLeft className="h-4 w-4" />
           <span className="hidden md:inline">记录</span>
         </button>
-        <button type="button" onClick={onCapture} disabled={captureDisabled || navigationDisabled} className="toolbar-button toolbar-button-primary" title="框选页面内容" aria-label="框选">
+        <button type="button" onClick={onCapture} disabled={captureDisabled} className="toolbar-button toolbar-button-primary" title="框选页面内容" aria-label="框选">
           <Scissors className="h-4 w-4" /><span className="hidden sm:inline">框选</span>
         </button>
         {onToggleChat && (

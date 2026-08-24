@@ -2,22 +2,24 @@ import { useMemo } from 'react';
 
 import type { ChapterCatalogEdge } from '../../catalog/types';
 import type { NodeMapResponse } from '../../services/api';
-import { LADDER, layoutSineLadder } from '../../utils/ladderLayout';
+import { COMPACT_GAP_Y, LADDER, layoutSineLadder } from '../../utils/ladderLayout';
 import NodeGlyph from './NodeGlyph';
-import { stripMath } from './shared';
+import { STATUS_LABEL, STATUS_VAR, stripMath } from './shared';
 
 /**
  * 节梯子（纯概念梯子）：主干只放 Concept/Theorem/Formula，按教材顺序自上而下
  * 正弦蜿蜒；Method/ProblemClass 不上主干（下放聚焦详情卡与节尾清单）。
  * glyph + 名称文字是同一个命中区，点击 onSelect；选中后非相关节点变淡。
+ * compact=true 时用更紧凑的纵向间距（整章全景串联多节时用，减少总长）。
  */
-export default function SectionLadder({ section, edges = [], selectedId, onSelect }: {
+export default function SectionLadder({ section, edges = [], selectedId, onSelect, compact = false }: {
   section: NodeMapResponse['sections'][number];
   edges?: ChapterCatalogEdge[];
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
+  compact?: boolean;
 }) {
-  const layout = useMemo(() => layoutSineLadder(section.nodes, edges), [section.nodes, edges]);
+  const layout = useMemo(() => layoutSineLadder(section.nodes, edges, compact ? COMPACT_GAP_Y : LADDER.gapY), [section.nodes, edges, compact]);
   const posById = new Map(layout.positions.map(position => [position.nodeId, position]));
   const nodeById = new Map(section.nodes.map(node => [node.node_id, node]));
 
@@ -57,7 +59,12 @@ export default function SectionLadder({ section, edges = [], selectedId, onSelec
           onClick={() => onSelect(nodeId)}
         >
           <NodeGlyph node={node} x={p.x} y={p.y} selected={nodeId === selectedId} />
-          <text className="kg-nm kg-dlabel" x={tx} y={p.y + 4} textAnchor={right ? 'start' : 'end'}>{stripMath(node.name)}</text>
+          <text className="kg-nm kg-dlabel" x={tx} y={p.y + 4} textAnchor={right ? 'start' : 'end'}>
+            {stripMath(node.name)}
+            {node.status !== 'unexplored' && (
+              <tspan className="kg-status-tag" fill={STATUS_VAR[node.status]} dx={5}>{STATUS_LABEL[node.status]}</tspan>
+            )}
+          </text>
         </g>;
       })}
     </svg>

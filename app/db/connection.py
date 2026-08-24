@@ -10,6 +10,19 @@ def get_conn():
     return conn
 
 
+def _ensure_column(cursor, table: str, column: str, definition: str) -> bool:
+    """幂等补列：列已存在时跳过，返回是否实际新增。
+
+    兼容历史库迁移的统一写法，取代散落的 try/ALTER/except 与
+    PRAGMA table_info 手工比对两种变体。
+    """
+    columns = {row[1] for row in cursor.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column in columns:
+        return False
+    cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+    return True
+
+
 def init_db():
     conn = get_conn()
     cursor = conn.cursor()
@@ -70,11 +83,7 @@ def init_db():
         ("client_turn_id", "TEXT"),
         ("title", "TEXT"),
     ]:
-        try:
-            cursor.execute(f"ALTER TABLE chat_history ADD COLUMN {col} {col_type}")
-        except Exception:
-            # 列已存在时 ALTER 必然失败，这是预期的幂等分支而非异常
-            pass
+        _ensure_column(cursor, "chat_history", col, col_type)
     # 历史行回灌生成时间戳（幂等：只动 NULL 行）
     cursor.execute(
         "UPDATE chat_history SET generation_updated_at=created_at "
@@ -93,8 +102,7 @@ def init_db():
         )
     """)
     # 兼容历史库：早期建表缺 is_anonymous 列时补上
-    if "is_anonymous" not in {row[1] for row in cursor.execute("PRAGMA table_info(users)").fetchall()}:
-        cursor.execute("ALTER TABLE users ADD COLUMN is_anonymous INTEGER NOT NULL DEFAULT 0")
+    _ensure_column(cursor, "users", "is_anonymous", "INTEGER NOT NULL DEFAULT 0")
     # 一个设备最多对应一个匿名身份；正式账号仍可复用同一 device_id。
     # 部分唯一索引兼容已有正式账号和历史数据。
     cursor.execute(
@@ -136,11 +144,7 @@ def init_db():
         ("vision_extraction", "TEXT"),
         ("extraction_version", "TEXT"),
     ):
-        try:
-            cursor.execute(f"ALTER TABLE screenshot_context_cache ADD COLUMN {column} {definition}")
-        except Exception:
-            # 列已存在时 ALTER 必然失败，这是预期的幂等分支而非异常
-            pass
+        _ensure_column(cursor, "screenshot_context_cache", column, definition)
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_screenshot_cache_lookup
@@ -166,18 +170,13 @@ def init_db():
         )
     """)
 
-    evidence_columns = {
-        row[1] for row in cursor.execute("PRAGMA table_info(evidence_turns)").fetchall()
-    }
-    if "report_path" not in evidence_columns:
-        cursor.execute("ALTER TABLE evidence_turns ADD COLUMN report_path TEXT")
+    if _ensure_column(cursor, "evidence_turns", "report_path", "TEXT"):
         cursor.execute(
             "UPDATE evidence_turns SET report_path='unknown' WHERE report_path IS NULL"
         )
     # Batch 1：client_turn_id 是前端生成的稳定逻辑 turn 身份，用于重试幂等。
     # 历史行该列为 NULL；SQLite 唯一索引中 NULL 互不相等，不会误伤老数据。
-    if "client_turn_id" not in evidence_columns:
-        cursor.execute("ALTER TABLE evidence_turns ADD COLUMN client_turn_id TEXT")
+    _ensure_column(cursor, "evidence_turns", "client_turn_id", "TEXT")
 
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_evidence_user_node ON evidence_turns(user_id, node_id)
@@ -250,11 +249,7 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_learner_estimates_user_book
         ON learner_node_estimates(user_id, textbook_id, stale, computed_at)
     """)
-    learner_estimate_columns = {
-        row[1] for row in cursor.execute("PRAGMA table_info(learner_node_estimates)").fetchall()
-    }
-    if "last_outcome" not in learner_estimate_columns:
-        cursor.execute("ALTER TABLE learner_node_estimates ADD COLUMN last_outcome TEXT")
+    _ensure_column(cursor, "learner_node_estimates", "last_outcome", "TEXT")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS learner_model_runs (
           id TEXT PRIMARY KEY,
@@ -322,15 +317,13 @@ def init_db():
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_manim_artifacts_user ON manim_artifacts(user_id, created_at)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_manim_artifacts_chat ON manim_artifacts(chat_id, created_at)")
-    manim_columns = {row[1] for row in cursor.execute("PRAGMA table_info(manim_artifacts)").fetchall()}
-    if "rq_job_id" not in manim_columns:
-        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN rq_job_id TEXT")
-    if "repair_count" not in manim_columns:
-        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN repair_count INTEGER NOT NULL DEFAULT 0")
-    if "duration_seconds" not in manim_columns:
-        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN duration_seconds REAL NOT NULL DEFAULT 12")
-    if "quality" not in manim_columns:
-        cursor.execute("ALTER TABLE manim_artifacts ADD COLUMN quality TEXT NOT NULL DEFAULT 'low'")
+    for column, definition in (
+        ("rq_job_id", "TEXT"),
+        ("repair_count", "INTEGER NOT NULL DEFAULT 0"),
+        ("duration_seconds", "REAL NOT NULL DEFAULT 12"),
+        ("quality", "TEXT NOT NULL DEFAULT 'low'"),
+    ):
+        _ensure_column(cursor, "manim_artifacts", column, definition)
 
     conn.commit()
     conn.close()

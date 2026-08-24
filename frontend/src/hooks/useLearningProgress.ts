@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getLearningProgress, type LearningProgressResponse } from '../services/api';
 import type { ProgressMap } from '../catalog/catalogData';
+import { errorMessage } from '../utils/errorMessage';
 import { loadJSON, saveJSON } from '../utils/storage';
 import { progressStorageKey } from '../utils/storageKeys';
 
@@ -71,7 +72,7 @@ export function useLearningProgress(
     } catch (cause) {
       // 同样忽略过期请求抛出的错误，避免掩盖正确结果。
       if (textbookId !== requestedTextbookId || catalogVersion !== requestedCatalogVersion) return;
-      const message = cause instanceof Error ? cause.message : '进度加载失败';
+      const message = errorMessage(cause, '进度加载失败');
       console.error('[learning-progress] failed:', { textbookId, catalogVersion, message, cause });
       setError(message);
     } finally { setLoading(false); }

@@ -11,11 +11,13 @@ import { stripMath, typeMeta } from './shared';
  * 节尾平铺「本节方法·题型」pill（蓝=方法 橙=题型，不上主干），点击同样出详情卡。
  * 主页（MapHome）与地图页（ChapterMapView）共用，保证两处梯子表现一致。
  */
-export default function SectionLadderPanel({ chapter, section, edges, onContinueNode }: {
+export default function SectionLadderPanel({ chapter, section, edges, onContinueNode, compact = false }: {
   chapter: string;
   section: NodeMapResponse['sections'][number];
   edges: ChapterCatalogEdge[];
   onContinueNode?: (chapter: string, node: LearningMapNode) => void;
+  /** 整章全景模式：梯子用紧凑间距。 */
+  compact?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const nodeById = new Map(section.nodes.map(node => [node.node_id, node]));
@@ -32,7 +34,7 @@ export default function SectionLadderPanel({ chapter, section, edges, onContinue
   return <div className="rounded-xl border border-[var(--lm-border)] bg-[var(--lm-surface)]">
     <div className="flex flex-col items-start gap-3 lg:flex-row">
       <div className="min-w-0 flex-1">
-        <SectionLadder section={section} edges={edges} selectedId={selectedId} onSelect={handleJump} />
+        <SectionLadder section={section} edges={edges} selectedId={selectedId} onSelect={handleJump} compact={compact} />
       </div>
       <div className="w-full shrink-0 p-3 lg:sticky lg:top-0 lg:w-[300px]">
         {selected

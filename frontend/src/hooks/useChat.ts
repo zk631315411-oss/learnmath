@@ -13,6 +13,7 @@ import {
   type FollowUpTurnPayload,
 } from '../services/api';
 import { streamQA } from '../services/streamQA';
+import { errorMessage } from '../utils/errorMessage';
 import { useAnswerTasks, type AnswerTask } from './answerTaskStore';
 import { projectThreadMessages } from './threadProjection';
 import type { Marker } from '../components/PageMarker';
@@ -135,12 +136,19 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
   const unreadCount = unreadByWorkspace[unreadKey] || 0;
 
   useEffect(() => {
-    setMessages(previous => projectThreadMessages(previous, tasks, {
-      userId,
-      textbookId,
-      pageNumber: currentPage,
-      activeThreadId,
-    }));
+    setMessages(previous => {
+      const next = projectThreadMessages(previous, tasks, {
+        userId,
+        textbookId,
+        pageNumber: currentPage,
+        activeThreadId,
+      });
+      // 浅比较守卫：投影结果无实际变化时复用 prev，阻断 render→setState→render 循环
+      if (next.length === previous.length && next.every((message, index) => message === previous[index])) {
+        return previous;
+      }
+      return next;
+    });
     // Projection intentionally reacts to task snapshots and visible context.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, userId, textbookId, currentPage, activeThreadId]);
@@ -552,7 +560,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       setHistoryVersion(version => version + 1);
       return completedMarker;
     } catch (e) {
-      const msg = (e instanceof Error ? e.message : '回答失败，请重试');
+      const msg = errorMessage(e, '回答失败，请重试');
       const terminalStatus = controller.signal.aborted ? 'cancelled' : 'interrupted';
       taskStore.finish(turnId, terminalStatus, { answer: partialAnswer, errorMessage: msg });
       if (isMountedRef.current && isTaskVisible(task)) setError(msg);

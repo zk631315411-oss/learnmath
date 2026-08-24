@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { login as apiLogin, register as apiRegister, anonymousAccess, getCurrentUser, migrateMarkers } from '../services/api';
 import type { User } from '../types';
+import { errorMessage } from '../utils/errorMessage';
 import { loadString, removeString, saveString } from '../utils/storage';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 
@@ -102,7 +103,7 @@ export function useAuth() {
       setAuthUsername('');
       setAuthPassword('');
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : '操作失败');
+      setAuthError(errorMessage(e, '操作失败'));
     }
   }, [authMode, authUsername, authPassword, user.deviceId, user.token, startMigration]);
 

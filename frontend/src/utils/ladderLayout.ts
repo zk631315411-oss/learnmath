@@ -17,6 +17,9 @@ export const LADDER = {
   bottomPad: 60,
 } as const;
 
+/** 整章全景用的紧凑间距：gapY 收紧，减少整章串联后的总长度。 */
+export const COMPACT_GAP_Y = 72;
+
 const STEM_TYPES = new Set(['concept', 'theorem', 'formula']);
 
 const isStem = (node: LearningMapNode) => STEM_TYPES.has(node.type?.toLowerCase() ?? '');
@@ -45,16 +48,17 @@ export interface SectionLadderLayout {
 export function layoutSineLadder(
   nodes: LearningMapNode[],
   _edges: ChapterCatalogEdge[] = [],
+  gapY: number = LADDER.gapY,
 ): SectionLadderLayout {
   const stem = [...nodes].filter(isStem).sort(byOrder);
 
   const positions: GlyphPosition[] = stem.map((node, index) => {
     const x = LADDER.cx + LADDER.amp * Math.sin(index * 0.92);
-    const y = LADDER.padTop + index * LADDER.gapY;
+    const y = LADDER.padTop + index * gapY;
     return { nodeId: node.node_id, x, y, labelSide: x >= LADDER.cx ? 'right' : 'left' };
   });
 
-  const height = LADDER.padTop * 2 + Math.max(0, stem.length - 1) * LADDER.gapY + LADDER.bottomPad;
+  const height = LADDER.padTop * 2 + Math.max(0, stem.length - 1) * gapY + LADDER.bottomPad;
 
   return {
     width: LADDER.width,

@@ -19,6 +19,7 @@ import MatrixEditor from './MatrixEditor';
 import HandwritingCanvas from './HandwritingCanvas';
 import FormulaStructureNav from './FormulaStructureNav';
 import { convertFormula, recognizeFormula } from '../../services/api';
+import { errorMessage } from '../../utils/errorMessage';
 import type { RecognizedBlock } from '../../types';
 import { insertRecognizedBlocks } from './recognizedBlocks';
 
@@ -221,7 +222,7 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
       setResolvedDisplay(result.display_mode);
     } catch (conversionError) {
       if (requestId !== conversionRequestRef.current) return;
-      setError(conversionError instanceof Error ? conversionError.message : '转换服务暂时不可用，请手动输入公式');
+      setError(errorMessage(conversionError, '转换服务暂时不可用，请手动输入公式'));
     } finally {
       if (requestId === conversionRequestRef.current) setConverting(false);
     }
@@ -280,7 +281,7 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
       const result = await recognizeFormula(dataUrl, token);
       setLatex(result.latex); setResolvedDisplay(result.display_mode);
     } catch (recognitionError) {
-      setError(recognitionError instanceof Error ? recognitionError.message : '手写识别失败，请重试');
+      setError(errorMessage(recognitionError, '手写识别失败，请重试'));
     }
   };
 

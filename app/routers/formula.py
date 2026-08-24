@@ -2,8 +2,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException, UploadFile
 
+from app.auth.dependencies import require_user_id
+from app.auth.jwt_handler import decode_token
 from app.models.schemas import FormulaConvertRequest, FormulaConvertResponse, FormulaRecognizeContentResponse
-from app.routers.auth import get_user_id_from_token
 from app.services.formula_conversion_service import (
     FormulaConversionError,
     formula_conversion_service,
@@ -38,8 +39,7 @@ async def convert_formula(
     request: FormulaConvertRequest,
     authorization: Optional[str] = Header(None),
 ) -> FormulaConvertResponse:
-    if not get_user_id_from_token(authorization):
-        raise HTTPException(status_code=401, detail="未登录或 token 无效")
+    require_user_id(authorization, decoder=decode_token)
     try:
         latex, display_mode = await formula_conversion_service.convert(
             request.description, request.preferred_display
@@ -54,8 +54,7 @@ async def recognize_formula(
     image: UploadFile,
     authorization: Optional[str] = Header(None),
 ) -> FormulaConvertResponse:
-    if not get_user_id_from_token(authorization):
-        raise HTTPException(status_code=401, detail={"code": "unauthorized", "message": "未登录或 token 无效"})
+    require_user_id(authorization, decoder=decode_token)
     normalized = await _read_normalized_image(image)
     try:
         latex, display_mode = await formula_vision_service.recognize(normalized)
@@ -69,8 +68,7 @@ async def recognize_formula_content(
     image: UploadFile,
     authorization: Optional[str] = Header(None),
 ) -> FormulaRecognizeContentResponse:
-    if not get_user_id_from_token(authorization):
-        raise HTTPException(status_code=401, detail={"code": "unauthorized", "message": "未登录或 token 无效"})
+    require_user_id(authorization, decoder=decode_token)
     normalized = await _read_normalized_image(image)
     try:
         blocks, warnings = await formula_vision_service.recognize_content(normalized)

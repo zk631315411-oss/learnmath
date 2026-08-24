@@ -244,7 +244,7 @@ class FormulaVisionRouteTests(unittest.TestCase):
     def test_requires_authentication(self) -> None:
         response = self.client.post('/api/formula/recognize', files={'image': ('formula.png', png_bytes(), 'image/png')})
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json()['detail']['code'], 'unauthorized')
+        self.assertEqual(response.json()['detail'], '未登录或token无效')
 
     def test_rejects_unsupported_media_type(self) -> None:
         response = self.client.post('/api/formula/recognize', headers=self.headers, files={'image': ('formula.gif', b'GIF89a', 'image/gif')})

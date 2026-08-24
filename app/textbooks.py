@@ -27,7 +27,7 @@ TEXTBOOK_LABELS: dict[str, str] = {
 
 def textbook_scope_description(textbook_id: str | None) -> str:
     """Return a model-facing description of the backend-bound KG scope."""
-    clean = (textbook_id or "").strip().lower()
+    clean = normalize_textbook_id(textbook_id)
     if not clean:
         return "当前未绑定单一教材，检索会在全部已配置教材范围内进行。"
     label = TEXTBOOK_LABELS.get(clean)
@@ -49,5 +49,9 @@ _CANONICAL_MAP: dict[str, TextbookId] = {
 
 def canonical_textbook_id(textbook_id: str) -> TextbookId:
     """标准化教材 ID，未知值返回默认（gaodai_shang）。"""
-    clean = (textbook_id or "").strip().lower()
-    return _CANONICAL_MAP.get(clean, TextbookId.GAODAI_SHANG)
+    return _CANONICAL_MAP.get(normalize_textbook_id(textbook_id), TextbookId.GAODAI_SHANG)
+
+
+def normalize_textbook_id(textbook_id: str | None) -> str:
+    """教材 ID 统一清洗：去空白 + 小写（教材代号均为小写注册）。"""
+    return (textbook_id or "").strip().lower()

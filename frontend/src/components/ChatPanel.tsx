@@ -89,7 +89,8 @@ function ChatPanelInner({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(messages.length);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  // 滚动意图用 ref 保存：值本身不驱动渲染，避免 scroll effect 读它又被自身 setState 重跑
+  const shouldAutoScrollRef = useRef(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const formulaComposerRef = useRef<FormulaComposerHandle>(null);
 
@@ -104,7 +105,7 @@ function ChatPanelInner({
     if (!container) return;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     const nearBottom = distanceFromBottom <= 80;
-    setShouldAutoScroll(nearBottom);
+    shouldAutoScrollRef.current = nearBottom;
     if (nearBottom) setShowScrollToBottom(false);
   };
 
@@ -116,16 +117,16 @@ function ChatPanelInner({
       && messages[messages.length - 1]?.role === 'user';
     previousMessageCountRef.current = messages.length;
     if (newUserMessageStarted) {
-      setShouldAutoScroll(true);
+      shouldAutoScrollRef.current = true;
       setShowScrollToBottom(false);
       return;
     }
-    if (shouldAutoScroll) {
+    if (shouldAutoScrollRef.current) {
       scrollToBottom(isLoading ? 'auto' : 'smooth');
     } else if (isLoading) {
       setShowScrollToBottom(true);
     }
-  }, [messages, thinkingStage, isLoading, shouldAutoScroll]);
+  }, [messages, thinkingStage, isLoading]);
 
   const handleSubmit = () => {
     const hasImage = !!pendingImages && pendingImages.length > 0;
@@ -163,6 +164,10 @@ function ChatPanelInner({
           const isActiveAssistant = isLoading && msg.role === 'assistant' && index === messages.length - 1;
           return (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.role === 'assistant' && (
+              <img src="/mascot/fox-pointer.png" alt="小狸助教" aria-hidden="true"
+                className="mr-2 mt-1 h-8 w-8 shrink-0 select-none rounded-full border border-[var(--lm-border)] bg-[#f3ead9] object-contain p-0.5" />
+            )}
             <div className={`flex min-w-0 flex-col items-start ${msg.role === 'user' ? 'max-w-[88%]' : 'w-full max-w-full'}`}>
               <div className={`chat-message min-w-0 max-w-full rounded-2xl px-4 py-3 ${
                 msg.role === 'user'
@@ -209,7 +214,7 @@ function ChatPanelInner({
           <button
             type="button"
             onClick={() => {
-              setShouldAutoScroll(true);
+              shouldAutoScrollRef.current = true;
               setShowScrollToBottom(false);
               requestAnimationFrame(() => scrollToBottom('smooth'));
             }}

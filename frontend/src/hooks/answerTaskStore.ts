@@ -34,6 +34,8 @@ export class AnswerTaskStore {
   private tasks = new Map<string, AnswerTask>();
   private listeners = new Set<() => void>();
   private version = 0;
+  // getAll 结果缓存：tasks 未变更时复用同一数组引用，保证下游 useEffect 依赖稳定
+  private cachedAll: AnswerTask[] | null = null;
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -42,7 +44,10 @@ export class AnswerTaskStore {
 
   getVersion = () => this.version;
 
-  getAll = () => Array.from(this.tasks.values());
+  getAll = () => {
+    if (!this.cachedAll) this.cachedAll = Array.from(this.tasks.values());
+    return this.cachedAll;
+  };
 
   get = (clientTurnId: string) => this.tasks.get(clientTurnId);
 
@@ -107,6 +112,7 @@ export class AnswerTaskStore {
 
   private publish() {
     this.version += 1;
+    this.cachedAll = null;
     this.listeners.forEach(listener => listener());
   }
 }

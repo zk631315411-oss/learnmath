@@ -146,6 +146,11 @@
     font-size: 13px;
   }
 
+  .kg-status-tag {
+    font-size: 10.5px;
+    opacity: 0.9;
+  }
+
   .kg-nm-dim {
     fill: var(--lm-text-muted);
     opacity: 0.55;

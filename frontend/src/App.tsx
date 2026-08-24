@@ -11,7 +11,6 @@ import LearningSidebar from './components/LearningSidebar';
 import PDFToolbar from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
-import ChapterMapView from './components/ChapterMapView';
 import BottomSheet, { type SheetStage } from './components/BottomSheet';
 import PageNotesPanel from './components/PageNotesPanel';
 import type { PDFViewerControls } from './components/PDFViewer';
@@ -36,7 +35,6 @@ import { normalizeSectionKey } from './utils/sectionKey';
 import { getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
-import CapturePreviewSheet from './components/CapturePreviewSheet';
 import { applyProgressDelta } from './hooks/useLearningProgress';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
@@ -74,6 +72,14 @@ export default function App() {
 
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+
+  // 高亮自动淡出：跳转定位后显示一会儿即消失，不遮挡继续阅读
+  useEffect(() => {
+    if (!highlightNodeId) return;
+    const timer = setTimeout(() => setHighlightNodeId(null), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightNodeId]);
+
   const [desktopChatCollapsed, setDesktopChatCollapsed] = useState(() => loadJSON(STORAGE_KEYS.desktopChatCollapsed, false));
   const [threadRequestKey, setThreadRequestKey] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
@@ -93,8 +99,8 @@ export default function App() {
     saveJSON(STORAGE_KEYS.desktopChatCollapsed, false);
   }, []);
   const capture = useCaptureFlow({
-    currentPage,
     isDesktop,
+    token: user.token,
     setOverlaySurface,
     queueImage: chat.handleCapture,
     revealDesktopChat,
@@ -266,11 +272,6 @@ export default function App() {
     else { mapHome.retryCatalog(); void mapHome.refresh(); }
   };
 
-  const openMapChapter = async (chapter: string) => {
-    await mapHome.openChapter(chapter);
-    navigatePage('map', chapter);
-  };
-
   const learningSidebar = (onClose?: () => void) => <LearningSidebar
     onClose={onClose}
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
@@ -344,11 +345,11 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  // 跳页是基础阅读导航，不被 capture.busy 拦截（否则截图提取中会锁死翻页）。
   const handlePageChange = useCallback((page: number) => {
-    if (interactionLocked) return;
     capture.clearDraft();
     setCurrentPage(page);
-  }, [interactionLocked, overlaySurface, setCurrentPage]);
+  }, [capture.clearDraft, setCurrentPage]);
 
   const selectClass = "text-sm rounded-lg border border-[var(--lm-border)] bg-[var(--lm-surface)] px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-colors dark:text-slate-200";
 
@@ -388,16 +389,6 @@ export default function App() {
 
         <main className={view === 'map' ? 'min-h-0 flex-1 overflow-hidden' : 'flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3 lg:flex-row'}>
           {view === 'map' ? (
-            // 地图页 = view 'map' + 选中章节：整章梯子视图；无章节则是主页章列表。
-            selectedMapChapter && mapHome.nodesByChapter[selectedMapChapter] ? (
-              <ChapterMapView
-                data={mapHome.nodesByChapter[selectedMapChapter]}
-                edges={mapHome.edgesByChapter[selectedMapChapter] || []}
-                onBack={() => navigatePage('map')}
-                onStartReading={() => { void openChapter(selectedMapChapter); }}
-                onContinueNode={(chapter, node) => void openChapter(chapter, node)}
-              />
-            ) : (
             <MapHome
               textbookName={PRESET_PDFS.find(item => item.textbookId === textbookId)?.name || '选择教材'}
               chapters={mapHome.chapters}
@@ -407,7 +398,6 @@ export default function App() {
               loading={mapHome.loading || !startupReady}
               onContinue={openChapter}
               onContinueNode={(chapter, node) => void openChapter(chapter, node)}
-              onOpenChapter={chapter => void openMapChapter(chapter)}
               onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
               chapterExpandNonce={navigation.chapterExpandNonce}
@@ -416,14 +406,12 @@ export default function App() {
               onTextbookChange={value => setTextbookId(value as TextbookId)}
               onEnsureChapterData={chapter => mapHome.openChapter(chapter)}
             />
-            )
           ) : isDesktop ? (
             <>
               <div className="lm-panel flex min-w-0 flex-1 flex-col overflow-hidden">
                 {selectedPdf && textbookId ? (
                   <>
-                    <PDFToolbar controls={pdfControls} onOpenDrawer={openDrawer} onCapture={startCapture} captureDisabled={!selectedPdf}
-                      navigationDisabled={interactionLocked}
+                    <PDFToolbar controls={pdfControls} onOpenDrawer={openDrawer} onCapture={startCapture} captureDisabled={!selectedPdf || interactionLocked}
                       chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} />
                     <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange}
@@ -478,18 +466,14 @@ export default function App() {
         </UtilityDrawer>
 
         {capture.isCapturing && (
-          <DeferredPanel><ScreenCapture isActive currentPage={currentPage} onCapture={capture.completeSelection} onCancel={capture.cancel} /></DeferredPanel>
+          <DeferredPanel><ScreenCapture isActive currentPage={currentPage}
+            onCapture={(image, _rx, _ry, cropBBox, action) => {
+              if (action === 'question') capture.queueCapture(image, cropBBox);
+              else void capture.recognizeAndEdit(image, cropBBox);
+            }}
+            onCancel={capture.cancel} /></DeferredPanel>
         )}
 
-        {overlaySurface === 'capture-preview' && capture.captureDraft && <CapturePreviewSheet
-          capture={capture.captureDraft}
-          token={user.token}
-          onQuestion={capture.queueCapture}
-          onInsert={capture.insertContent}
-          onReselect={capture.reselect}
-          onClose={capture.closePreview}
-          onBusyChange={capture.setBusy}
-        />}
         {overlaySurface === 'photo' && capture.photoFile && <PhotoPreviewSheet initialFile={capture.photoFile} token={user.token} onPhotoQuestion={capture.queuePhoto} onInsert={capture.insertContent} onClose={capture.closePhoto} />}
 
         {showAuthModal && (
