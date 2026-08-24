@@ -28,6 +28,8 @@ interface Props {
   emptyState?: React.ReactNode;
   externalFormula?: ExternalFormulaDraft | null;
   onExternalFormulaConsumed?: (nonce: string) => void;
+  externalFormulaQueue?: { formulas: { latex: string; displayMode: 'inline' | 'block' }[]; nonce: string } | null;
+  onExternalFormulaQueueConsumed?: (nonce: string) => void;
   onCancelGeneration?: () => void;
   onOpenPhoto?: (file: File) => void;
   externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
@@ -81,6 +83,7 @@ function ChatPanelInner({
   token, pendingImages, onRemovePendingImage, onClearPendingImages,
   error, thinkingStage, thinkingStageKey, isThinking = false, compact, emptyState,
   externalFormula, onExternalFormulaConsumed,
+  externalFormulaQueue, onExternalFormulaQueueConsumed,
   onCancelGeneration,
   onOpenPhoto,
   externalContent, onExternalContentConsumed,
@@ -272,6 +275,7 @@ function ChatPanelInner({
             <FormulaComposer ref={formulaComposerRef} value={input} onChange={setInput} token={token ?? undefined}
               placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit}
               externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed}
+              externalFormulaQueue={externalFormulaQueue} onExternalFormulaQueueConsumed={onExternalFormulaQueueConsumed}
               externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} />
           </div>
           {isLoading ? (

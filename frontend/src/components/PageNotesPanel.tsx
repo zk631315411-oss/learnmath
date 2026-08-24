@@ -38,6 +38,10 @@ export interface PageNotesComposer {
   onOpenPhoto?: (file: File) => void;
   externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
   onExternalContentConsumed?: (nonce: string) => void;
+  externalFormula?: { latex: string; displayMode: 'inline' | 'block'; nonce: string } | null;
+  onExternalFormulaConsumed?: (nonce: string) => void;
+  externalFormulaQueue?: { formulas: { latex: string; displayMode: 'inline' | 'block' }[]; nonce: string } | null;
+  onExternalFormulaQueueConsumed?: (nonce: string) => void;
 }
 
 interface Props {
@@ -60,7 +64,7 @@ export default function PageNotesPanel({ page, conversation, composer }: Props) 
     messages, isLoading, token, pendingImages, error, thinkingStage, thinkingStageKey, isThinking,
     onSendNew, onSendFollowUp, onClearMessages, onRemovePendingImage, onClearPendingImages, onCancelGeneration,
   } = conversation;
-  const { onOpenPhoto, externalContent, onExternalContentConsumed } = composer;
+  const { onOpenPhoto, externalContent, onExternalContentConsumed, externalFormula, onExternalFormulaConsumed, externalFormulaQueue, onExternalFormulaQueueConsumed } = composer;
   const [mode, setMode] = useState<'page' | 'thread'>('page');
   const pageItems = items.filter(item => item.page_number === currentPage);
   const threadPage = activeMarker?.page_number;
@@ -73,7 +77,7 @@ export default function PageNotesPanel({ page, conversation, composer }: Props) 
   if (mode === 'thread') {
     return <div className="flex h-full flex-col bg-[var(--lm-surface)]">
       <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-[var(--lm-border)] px-3"><button type="button" onClick={() => setMode('page')} className="icon-button" title="返回本页" aria-label="返回本页"><ArrowLeft className="h-4 w-4" /></button><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700 dark:text-slate-100">对话视图</p><p className="text-[11px] text-slate-400">{threadPage ? `来源第 ${threadPage} 页` : `当前第 ${currentPage} 页`}</p></div>{threadPage && threadPage !== currentPage && <button type="button" onClick={() => onOpenThread(activeMarker!)} aria-label={`来自第 ${threadPage} 页，跳回来源`} className="shrink-0 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-300">跳回来源</button>}</div>
-      <div className="min-h-0 flex-1"><ChatPanel messages={messages} onSendMessage={onSendFollowUp} onClearMessages={onClearMessages} isLoading={isLoading} token={token} pendingImages={pendingImages} onRemovePendingImage={onRemovePendingImage} onClearPendingImages={onClearPendingImages} error={error} thinkingStage={thinkingStage} thinkingStageKey={thinkingStageKey} isThinking={isThinking} compact externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} onCancelGeneration={onCancelGeneration} onOpenPhoto={onOpenPhoto} /></div>
+      <div className="min-h-0 flex-1"><ChatPanel messages={messages} onSendMessage={onSendFollowUp} onClearMessages={onClearMessages} isLoading={isLoading} token={token} pendingImages={pendingImages} onRemovePendingImage={onRemovePendingImage} onClearPendingImages={onClearPendingImages} error={error} thinkingStage={thinkingStage} thinkingStageKey={thinkingStageKey} isThinking={isThinking} compact externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed} externalFormulaQueue={externalFormulaQueue} onExternalFormulaQueueConsumed={onExternalFormulaQueueConsumed} onCancelGeneration={onCancelGeneration} onOpenPhoto={onOpenPhoto} /></div>
     </div>;
   }
 
@@ -95,6 +99,6 @@ export default function PageNotesPanel({ page, conversation, composer }: Props) 
             {followUpCount > 0 && <p className="mt-1.5 text-[11px] text-slate-400">{followUpCount} 条追问</p>}
           </button>;
         })}</div>}</div>
-    <div className="shrink-0"><ChatPanel messages={[]} onSendMessage={sendNew} onClearMessages={onClearMessages} isLoading={isLoading} token={token} pendingImages={pendingImages} onRemovePendingImage={onRemovePendingImage} onClearPendingImages={onClearPendingImages} error={error} thinkingStage={thinkingStage} thinkingStageKey={thinkingStageKey} isThinking={isThinking} compact emptyState={<div className="hidden" />} externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} onCancelGeneration={onCancelGeneration} onOpenPhoto={onOpenPhoto} /></div>
+    <div className="shrink-0"><ChatPanel messages={[]} onSendMessage={sendNew} onClearMessages={onClearMessages} isLoading={isLoading} token={token} pendingImages={pendingImages} onRemovePendingImage={onRemovePendingImage} onClearPendingImages={onClearPendingImages} error={error} thinkingStage={thinkingStage} thinkingStageKey={thinkingStageKey} isThinking={isThinking} compact emptyState={<div className="hidden" />} externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed} externalFormulaQueue={externalFormulaQueue} onExternalFormulaQueueConsumed={onExternalFormulaQueueConsumed} onCancelGeneration={onCancelGeneration} onOpenPhoto={onOpenPhoto} /></div>
   </div>;
 }

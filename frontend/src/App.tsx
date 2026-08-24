@@ -336,6 +336,10 @@ export default function App() {
       onOpenPhoto: capture.openPhoto,
       externalContent: capture.externalContent,
       onExternalContentConsumed: capture.consumeExternalContent,
+      externalFormula: capture.externalFormula,
+      onExternalFormulaConsumed: capture.consumeExternalFormula,
+      externalFormulaQueue: capture.externalFormulaQueue,
+      onExternalFormulaQueueConsumed: capture.consumeExternalFormula,
     }}
   />;
 
@@ -358,7 +362,8 @@ export default function App() {
       <div className="flex h-screen flex-col bg-[var(--lm-bg)] dark:bg-slate-950">
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <img src="/mascot/fox-head.png" alt="学数有道吉祥物" className="h-8 w-8 rounded-full" />
             <span className="text-lg font-bold text-slate-800 dark:text-slate-100">学数有道</span>
           </div>
 
@@ -472,6 +477,25 @@ export default function App() {
               else void capture.recognizeAndEdit(image, cropBBox);
             }}
             onCancel={capture.cancel} /></DeferredPanel>
+        )}
+
+        {/* 提取编辑·识别中提示 */}
+        {capture.busy && (
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/30" role="status" aria-live="polite">
+            <div className="flex items-center gap-3 rounded-xl bg-white px-6 py-4 shadow-xl dark:bg-slate-800">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+              <span className="text-sm text-slate-700 dark:text-slate-200">正在识别框选内容…</span>
+            </div>
+          </div>
+        )}
+
+        {/* 操作反馈提示（如识别失败已转为直接提问），几秒自动消失 */}
+        {capture.notice && (
+          <div className="fixed left-1/2 top-20 z-[10002] -translate-x-1/2" role="alert">
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 shadow-lg dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-200">
+              {capture.notice}
+            </div>
+          </div>
         )}
 
         {overlaySurface === 'photo' && capture.photoFile && <PhotoPreviewSheet initialFile={capture.photoFile} token={user.token} onPhotoQuestion={capture.queuePhoto} onInsert={capture.insertContent} onClose={capture.closePhoto} />}

@@ -349,7 +349,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => { e.stopPropagation(); void handleConfirm('edit'); }}
                   className="rounded-lg bg-white border border-indigo-300 px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 shadow-lg"
-                  title="提取文字/公式并编辑"
+                  title="把框选内容识别成文字/公式再编辑提问。适合框单个公式或一小段；框选过大可能识别失败"
                 >
                   提取编辑
                 </button>

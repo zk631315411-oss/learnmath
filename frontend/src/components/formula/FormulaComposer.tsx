@@ -36,6 +36,9 @@ interface Props {
   onExternalFormulaConsumed?: (nonce: string) => void;
   externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
   onExternalContentConsumed?: (nonce: string) => void;
+  /** 识别出的多个公式：弹窗顶部显示一次性队列，逐个编辑插入（含单个，交互统一）。 */
+  externalFormulaQueue?: { formulas: { latex: string; displayMode: 'inline' | 'block' }[]; nonce: string } | null;
+  onExternalFormulaQueueConsumed?: (nonce: string) => void;
 }
 
 export interface FormulaComposerHandle { captureInsertionBookmark: () => void; }
@@ -232,8 +235,13 @@ function SymbolKeyButton({ item, onInsert }: { item: SymbolKey; onInsert: (value
 const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function FormulaComposer({
   value, onChange, token, placeholder = '输入文字，或插入数学公式…', disabled, compact, onSubmit,
   externalFormula, onExternalFormulaConsumed, externalContent, onExternalContentConsumed,
+  externalFormulaQueue, onExternalFormulaQueueConsumed,
 }: Props, ref) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  // 识别公式队列：一次性的，逐个编辑插入，不写永久历史
+  const [queue, setQueue] = useState<{ latex: string; displayMode: 'inline' | 'block' }[] | null>(null);
+  const [queueIndex, setQueueIndex] = useState(0);
+  const [queueDone, setQueueDone] = useState<boolean[]>([]);
   const [description, setDescription] = useState('');
   const [latex, setLatex] = useState('');
   const [displayChoice, setDisplayChoice] = useState<DisplayChoice>('block');
@@ -249,6 +257,7 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
   const conversionRequestRef = useRef(0);
   const submitRef = useRef(onSubmit);
   const consumedNonceRef = useRef<string | null>(null);
+  const consumedQueueNonceRef = useRef<string | null>(null);
   const insertionBookmarkRef = useRef<SelectionBookmark | null>(null);
   const matrixEditorRef = useRef<MatrixEditorHandle | null>(null);
   // 标记"当前占位符选中态是不是上一次 insertTemplate 留下的"。
@@ -353,6 +362,25 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
     setDialogOpen(true);
     onExternalFormulaConsumed?.(externalFormula.nonce);
   }, [externalFormula, onExternalFormulaConsumed]);
+
+  // 识别公式队列：出现新队列时初始化（当前第 1 个），弹公式编辑器
+  useEffect(() => {
+    if (!externalFormulaQueue || externalFormulaQueue.formulas.length === 0) return;
+    if (consumedQueueNonceRef.current === externalFormulaQueue.nonce) return;
+    consumedQueueNonceRef.current = externalFormulaQueue.nonce;
+    invalidateConversion();
+    const fs = externalFormulaQueue.formulas;
+    setQueue(fs);
+    setQueueIndex(0);
+    setQueueDone(new Array(fs.length).fill(false));
+    setEditingNode(null);
+    setDescription('');
+    setLatex(fs[0].latex);
+    setDisplayChoice(fs[0].displayMode);
+    setResolvedDisplay(fs[0].displayMode);
+    setError('');
+    setDialogOpen(true);
+  }, [externalFormulaQueue]);
 
   useEffect(() => {
     if (!editor || !externalContent || consumedNonceRef.current === externalContent.nonce) return;
@@ -477,7 +505,35 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
       inserted = editor.chain().focus().insertInlineMath({ latex: cleanLatex }).run();
     }
     // 仅当命令返回 true（文档确实被修改）才记入最近公式，插入失败不污染历史
-    if (inserted) recordFormulaUsage(cleanLatex);
+    // 识别队列是一次性的（已有 OCR 来源），不写永久历史
+    if (inserted && !queue) recordFormulaUsage(cleanLatex);
+
+    // 队列模式：插入当前项 → 标记完成 → 切到下一个未完成项；全部完成才关窗并消耗队列
+    if (queue) {
+      if (inserted) {
+        const newDone = queueDone.slice();
+        newDone[queueIndex] = true;
+        setQueueDone(newDone);
+        const nextIdx = queue.findIndex((_, i) => !newDone[i]);
+        if (nextIdx >= 0) {
+          setQueueIndex(nextIdx);
+          setLatex(queue[nextIdx].latex);
+          setDisplayChoice(queue[nextIdx].displayMode);
+          setResolvedDisplay(queue[nextIdx].displayMode);
+          return; // 不关窗，继续编辑下一个
+        }
+        // 全部插入完成 → 消耗队列并关窗
+        if (externalFormulaQueue) onExternalFormulaQueueConsumed?.(externalFormulaQueue.nonce);
+        setQueue(null);
+        setQueueDone([]);
+        setQueueIndex(0);
+        closeDialog();
+        setEditingNode(null);
+        return;
+      }
+      return; // 插入失败：停留当前项不关窗
+    }
+
     closeDialog();
     setEditingNode(null);
   };
@@ -510,9 +566,38 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
         }}>
           <section className="formula-dialog" role="dialog" aria-modal="true" aria-label="公式编辑器">
             <header className="formula-dialog-header">
-              <div><h3>{editingNode ? '编辑公式' : '插入公式'}</h3><p>描述转写</p></div>
+              <div><h3>{editingNode ? '编辑公式' : '插入公式'}</h3><p>{queue ? `识别到 ${queue.length} 个公式 · 第 ${queueDone.filter(Boolean).length + 1} / ${queue.length} 个（逐个编辑插入，编完即弃）` : '描述转写'}</p></div>
               <button type="button" onClick={closeDialog} title="关闭" aria-label="关闭"><X size={18} /></button>
             </header>
+
+            {queue && (
+              <div className="border-b border-[var(--lm-border)] px-4 pb-3 pt-1">
+                <p className="mb-2 text-xs text-[var(--lm-text-muted)]">识别到的公式（点击切换编辑）：</p>
+                <div className="flex flex-wrap gap-2">
+                  {queue.map((f, i) => {
+                    const isCur = i === queueIndex;
+                    const isDone = queueDone[i];
+                    return (
+                      <button key={i} type="button" disabled={isDone}
+                        onClick={() => {
+                          if (isDone) return;
+                          setQueueIndex(i);
+                          setLatex(f.latex);
+                          setDisplayChoice(f.displayMode);
+                          setResolvedDisplay(f.displayMode);
+                        }}
+                        className={`rounded-md border px-3 py-1.5 font-serif text-sm transition ${
+                          isCur ? 'border-2 border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                          : isDone ? 'border-slate-200 text-slate-300 line-through dark:border-slate-700 dark:text-slate-600'
+                          : 'border-[var(--lm-border)] text-slate-700 hover:border-indigo-300 dark:text-slate-200'
+                        }`}>
+                        {`公式 ${i + 1}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="formula-dialog-body">
               <div className="formula-description-row">
@@ -589,7 +674,7 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
                     对学生是多余心智负担，且本场景(问 AI 数学题)公式多单独成行展示。
                     displayChoice 常量化，见下方 display 相关逻辑。 */}
                 <button type="button" className="formula-insert-button" disabled={!latex.trim()} onClick={insertFormula}>
-                  <Plus size={16} />{editingNode ? '更新' : '插入'}
+                  <Plus size={16} />{editingNode ? '更新' : queue ? (queueDone.filter(Boolean).length + 1 < queue.length ? '插入并编辑下一个' : '插入（最后一个）') : '插入'}
                 </button>
               </div>
             </div>
