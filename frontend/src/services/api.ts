@@ -142,6 +142,7 @@ export interface LearningMapNode {
   name: string;
   type?: string;
   order?: number;
+  page?: number | null;
   section: string;
   status: LearningStatus;
   closed_evidence_count: number;

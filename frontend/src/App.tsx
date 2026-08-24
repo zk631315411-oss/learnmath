@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { LoaderCircle, X } from 'lucide-react';
+import { BookOpen, LoaderCircle, Map as MapIcon, X } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
@@ -11,9 +11,11 @@ import LearningSidebar from './components/LearningSidebar';
 import PDFToolbar from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
+import ChapterMapView from './components/ChapterMapView';
 import BottomSheet, { type SheetStage } from './components/BottomSheet';
 import PageNotesPanel from './components/PageNotesPanel';
 import type { PDFViewerControls } from './components/PDFViewer';
+import PdfHighlight, { getNodeHighlight } from './components/PdfHighlight';
 import ThemeToggle from './components/ThemeToggle';
 import type { Marker } from './components/PageMarker';
 import { useAuth } from './hooks/useAuth';
@@ -61,6 +63,9 @@ export default function App() {
 
   const { selectedPdf, textbookId, setTextbookId } = useTextbookPreference();
 
+  // 换教材时清除残留高亮，避免跨教材串框
+  useEffect(() => { setHighlightNodeId(null); }, [textbookId]);
+
   const { currentPage, setCurrentPage, setTextbookPage } = usePdfPosition(textbookId);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [overlaySurface, setOverlaySurface] = useState<OverlaySurface>('none');
@@ -68,6 +73,7 @@ export default function App() {
   const drawerOpen = overlaySurface === 'drawer';
 
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
+  const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
   const [desktopChatCollapsed, setDesktopChatCollapsed] = useState(() => loadJSON(STORAGE_KEYS.desktopChatCollapsed, false));
   const [threadRequestKey, setThreadRequestKey] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
@@ -111,7 +117,7 @@ export default function App() {
     },
     onPageRequest: setTextbookPage,
   });
-  const { view, startupReady } = navigation;
+  const { view, selectedMapChapter, startupReady } = navigation;
   const navigatePage = navigation.navigate;
 
   useEffect(() => ensureStorageSchema(), []);
@@ -198,9 +204,18 @@ export default function App() {
 
   const openChapter = async (chapter: string, preferredNode?: import('./services/api').LearningMapNode) => {
     const loadedCatalog = await mapHome.openChapter(chapter);
-    let page: number | null = null;
+    // 精确命中：node_highlights 提供 PDF 物理页 + bbox；低置信/无记录则不替换落点。
+    let highlight: Awaited<ReturnType<typeof getNodeHighlight>> = null;
+    if (preferredNode?.node_id) {
+      try {
+        highlight = await getNodeHighlight(textbookId, preferredNode.node_id);
+      } catch { /* fall through to legacy landing */ }
+    }
+    // Node-level page (from md line mapping) is the most precise landing
+    // point; section/question/chapter pages remain ordered fallbacks.
+    let page: number | null = highlight?.page ?? preferredNode?.page ?? null;
     const marker = preferredNode?.chat.id ? questionList.items.find(item => item.id === preferredNode.chat.id) : undefined;
-    if (user.token) {
+    if (page == null && user.token) {
       const response = mapHome.nodesByChapter[chapter];
       const sections = [preferredNode?.section, response?.sections[0]?.section]
         .map(section => normalizeSectionKey(section))
@@ -236,6 +251,7 @@ export default function App() {
     // Persist the chapter landing page before switching into the reader. The
     // PDF viewer performs its one-time restore on mount, so writing the page
     // here prevents that restore from reverting a freshly resolved section.
+    setHighlightNodeId(highlight && preferredNode ? preferredNode.node_id : null);
     setCurrentPage(page);
     markReaderStarted(page);
   };
@@ -246,8 +262,13 @@ export default function App() {
   };
 
   const retryMap = () => {
-    mapHome.retryCatalog();
-    void mapHome.refresh();
+    if (selectedMapChapter) void mapHome.openChapter(selectedMapChapter);
+    else { mapHome.retryCatalog(); void mapHome.refresh(); }
+  };
+
+  const openMapChapter = async (chapter: string) => {
+    await mapHome.openChapter(chapter);
+    navigatePage('map', chapter);
   };
 
   const learningSidebar = (onClose?: () => void) => <LearningSidebar
@@ -346,6 +367,11 @@ export default function App() {
               <option value="">选择教材...</option>{PRESET_PDFS.map((pdf) => <option key={pdf.path} value={pdf.textbookId}>{pdf.name}</option>)}
             </select>}
 
+            {textbookId && <button type="button" disabled={interactionLocked} onClick={() => { if (!interactionLocked) navigatePage(view === 'map' ? 'reader' : 'map'); }} className="toolbar-button" title={view === 'map' ? '开始阅读' : '返回学习地图'}>
+              {view === 'map' ? <BookOpen className="h-4 w-4" /> : <MapIcon className="h-4 w-4" />}
+              <span className="hidden sm:inline">{view === 'map' ? '阅读' : '地图'}</span>
+            </button>}
+
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
 
             {migrationStatus !== 'idle' && <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status">
@@ -362,6 +388,16 @@ export default function App() {
 
         <main className={view === 'map' ? 'min-h-0 flex-1 overflow-hidden' : 'flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3 lg:flex-row'}>
           {view === 'map' ? (
+            // 地图页 = view 'map' + 选中章节：整章梯子视图；无章节则是主页章列表。
+            selectedMapChapter && mapHome.nodesByChapter[selectedMapChapter] ? (
+              <ChapterMapView
+                data={mapHome.nodesByChapter[selectedMapChapter]}
+                edges={mapHome.edgesByChapter[selectedMapChapter] || []}
+                onBack={() => navigatePage('map')}
+                onStartReading={() => { void openChapter(selectedMapChapter); }}
+                onContinueNode={(chapter, node) => void openChapter(chapter, node)}
+              />
+            ) : (
             <MapHome
               textbookName={PRESET_PDFS.find(item => item.textbookId === textbookId)?.name || '选择教材'}
               chapters={mapHome.chapters}
@@ -371,6 +407,7 @@ export default function App() {
               loading={mapHome.loading || !startupReady}
               onContinue={openChapter}
               onContinueNode={(chapter, node) => void openChapter(chapter, node)}
+              onOpenChapter={chapter => void openMapChapter(chapter)}
               onRetry={retryMap}
               onStartReading={() => markReaderStarted()}
               chapterExpandNonce={navigation.chapterExpandNonce}
@@ -379,6 +416,7 @@ export default function App() {
               onTextbookChange={value => setTextbookId(value as TextbookId)}
               onEnsureChapterData={chapter => mapHome.openChapter(chapter)}
             />
+            )
           ) : isDesktop ? (
             <>
               <div className="lm-panel flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -390,7 +428,9 @@ export default function App() {
                     <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange}
                         markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
-                        hideToolbar onControlsChange={setPdfControls} pageOverlay={null} /></DeferredPanel>
+                        hideToolbar onControlsChange={setPdfControls} pageOverlay={({ page, scale }) => (
+                          <PdfHighlight textbookId={textbookId} nodeId={highlightNodeId} currentPage={page} scale={scale} />
+                        )} /></DeferredPanel>
                     </div>
                   </>
                 ) : (
@@ -408,7 +448,9 @@ export default function App() {
                   <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange} mobile
                         markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
-                        hideToolbar onControlsChange={setPdfControls} pageOverlay={null} /></DeferredPanel>
+                        hideToolbar onControlsChange={setPdfControls} pageOverlay={({ page, scale }) => (
+                          <PdfHighlight textbookId={textbookId} nodeId={highlightNodeId} currentPage={page} scale={scale} />
+                        )} /></DeferredPanel>
                   </div>
                 ) : (
                   <EmptyGuideCard />

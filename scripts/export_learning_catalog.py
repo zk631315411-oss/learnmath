@@ -32,6 +32,125 @@ FRONTEND_OUTPUT = ROOT / "frontend" / "public" / "map-catalog"
 SECTION_PREFIX = re.compile(r"(?:^|[^\d])(\d+(?:\.\d+)*)")
 CHAPTER_PREFIX = re.compile(r"^\s*(?:第\s*)?(\d+)\s*章")
 
+# 知识点级页码落点：textbook_id -> (基准 md, 目录 md)。KG 节点的 line_start 是
+# 其所属小节在基准 md 中的行号；目录 md 提供 标题->书页码；PDF 书签提供
+# 书页码->物理页偏移（节级条目取中位数）。缺配置的教材跳过（page 留 None）。
+NODE_PAGE_SOURCE_MD: dict[str, dict[str, str]] = {
+    "gaodai_shang": {
+        "base_md": "D:/ai-math/教材提取模块/高代提取/归档/中间产物/高等代数上册_full_clean.md",
+        "toc_md": "D:/ai-math/比赛相关文件与文件夹/揭榜挂帅/教材库/高等代数/高等代数上册_structured.md",
+    },
+    "gaodai_xia": {
+        "base_md": "D:/ai-math/教材提取模块/高代提取/归档/中间产物/高等代数下册_full_clean.md",
+        "toc_md": "D:/ai-math/比赛相关文件与文件夹/揭榜挂帅/教材库/高等代数/高等代数下册_structured.md",
+    },
+}
+
+
+def _norm_heading(text: str) -> str:
+    """归一化标题：去空白/markdown 强调/数学符号差异，便于跨文件匹配。"""
+    value = re.sub(r"\s+", "", str(text or ""))
+    for token in ("$", "\\pmb{", "\\mathbf{", "{", "}", "\\", "：", ":"):
+        value = value.replace(token, "")
+    value = re.sub(r"[…\.]+$", "", value)
+    return value.strip("*").strip()
+
+
+class NodePageMapper:
+    """基准 md 行号 -> 书页码 -> PDF 物理页 的映射器。
+
+    任何一步失败（文件缺失/标题对不上/偏移算不出）都退化为 None，
+    绝不抛错中断导出。
+    """
+
+    def __init__(self, base_md: Path, toc_md: Path, pdf_path: Path):
+        self._offset: int | None = None
+        self._marks: list[tuple[int, int]] = []  # (行号, 书页码) 锚点，按行号升序
+        try:
+            if not base_md.exists() or not toc_md.exists():
+                return
+            toc_pages = self._parse_toc(toc_md)
+            if not toc_pages:
+                return
+            marks = self._match_base_headings(base_md, toc_pages)
+            if not marks:
+                return
+            self._marks = marks
+            self._offset = self._calibrate_offset(pdf_path, toc_pages)
+        except Exception as exc:  # 映射是增强项，失败只降级为节页回退
+            print(f"[node-page] mapper init failed ({base_md.name}): {exc}")
+            self._marks = []
+            self._offset = None
+
+    @staticmethod
+    def _parse_toc(toc_md: Path) -> dict[str, int]:
+        pages: dict[str, int] = {}
+        # 兼容两种目录行尾：上册 "标题 …… (87)"，下册 "标题 … 87"
+        pattern = re.compile(
+            r"^\s*(?:#+\s*)?(?:\*\*)?\s*(.+?)\s*(?:\*\*)?\s*[…\.\s·]*\(?(\d+)\)?\s*\*?\*?\s*$"
+        )
+        title_prefix = re.compile(r"^(第\d+章|\d+\.\d+|引言|习题|补充题|应用小天地)")
+        for line in toc_md.read_text(encoding="utf-8", errors="ignore").splitlines():
+            match = pattern.match(line)
+            if match and title_prefix.match(match.group(1)):
+                pages.setdefault(_norm_heading(match.group(1)), int(match.group(2)))
+        return pages
+
+    @staticmethod
+    def _match_base_headings(base_md: Path, toc_pages: dict[str, int]) -> list[tuple[int, int]]:
+        marks: list[tuple[int, int]] = []
+        heading = re.compile(r"^(#{1,4})\s+(.+?)\s*$")
+        for line_no, line in enumerate(base_md.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+            match = heading.match(line)
+            if match:
+                page = toc_pages.get(_norm_heading(match.group(2)))
+                if page is not None:
+                    marks.append((line_no, page))
+        marks.sort()
+        return marks
+
+    @staticmethod
+    def _calibrate_offset(pdf_path: Path, toc_pages: dict[str, int]) -> int | None:
+        offsets: list[int] = []
+        with fitz.open(pdf_path) as document:
+            for _level, title, phys_page in document.get_toc(simple=True):
+                norm_title = _norm_heading(title)
+                # 只用 x.y 节级书签校准：章级书签可能误命中书末习题答案页
+                if norm_title in toc_pages and re.match(r"^\d+\.\d+", norm_title):
+                    offsets.append(int(phys_page) - toc_pages[norm_title])
+        if not offsets:
+            return None
+        offsets.sort()
+        return offsets[len(offsets) // 2]
+
+    def page_for_line(self, line_start: Any) -> int | None:
+        """行号 -> PDF 物理页（节内按行位置插值），算不出返回 None。"""
+        if self._offset is None or not self._marks:
+            return None
+        try:
+            line_no = int(line_start)
+        except (TypeError, ValueError):
+            return None
+        if line_no <= 0:
+            return None
+        prev: tuple[int, int] | None = None
+        nxt: tuple[int, int] | None = None
+        for mark in self._marks:
+            if mark[0] <= line_no:
+                prev = mark
+            else:
+                nxt = mark
+                break
+        if prev is None:
+            return None
+        start_line, start_page = prev
+        end_line = nxt[0] if nxt else start_line + 10**9
+        end_page = nxt[1] if nxt else start_page + 6  # 文末外推
+        span_lines = max(end_line - start_line, 1)
+        span_pages = max(end_page - start_page, 1)
+        frac = min(max((line_no - start_line) / span_lines, 0.0), 1.0)
+        return start_page + round(frac * span_pages) + self._offset
+
 
 def _section_key(value: str) -> str | None:
     match = SECTION_PREFIX.search(str(value or ""))
@@ -86,6 +205,18 @@ def _export_textbook(item: dict[str, Any]) -> dict[str, Any]:
     if not pdf_path.exists():
         raise RuntimeError(f"missing PDF for {textbook_id}: {pdf_path}")
     section_pages, chapter_pages, total_pages = _toc_pages(pdf_path)
+
+    node_page_mapper: NodePageMapper | None = None
+    md_config = NODE_PAGE_SOURCE_MD.get(textbook_id)
+    if md_config:
+        mapper = NodePageMapper(Path(md_config["base_md"]), Path(md_config["toc_md"]), pdf_path)
+        if mapper._marks and mapper._offset is not None:
+            node_page_mapper = mapper
+            print(
+                f"[node-page] {textbook_id}: {len(mapper._marks)} 个行号锚点, 偏移 {mapper._offset:+d}"
+            )
+        else:
+            print(f"[node-page] {textbook_id}: 映射不可用（锚点/偏移缺失），节点 page 回退 null")
 
     raw_chapters = _retry_kg(list_kg_chapter_nodes, textbook_id)
     book_edges = _retry_kg(list_kg_edges, textbook_id)
@@ -150,6 +281,7 @@ def _export_textbook(item: dict[str, Any]) -> dict[str, Any]:
                     str(value) for value in (node.get("prerequisite_ids") or []) if value
                 ],
                 "order": node_order,
+                "page": node_page_mapper.page_for_line(node.get("line_start")) if node_page_mapper else None,
             }
             if not static_node["name"]:
                 raise RuntimeError(f"empty node name: {node_id}")

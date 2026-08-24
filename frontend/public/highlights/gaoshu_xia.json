@@ -1,0 +1,6800 @@
+{
+ "gaoshu_xia:node:1d0fe761a018": {
+  "page": 13,
+  "bbox": [
+   129.12,
+   219.84,
+   535.2,
+   288.48
+  ],
+  "sim": 0.976,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:599a2695fe74": {
+  "page": 13,
+  "bbox": [
+   129.12,
+   256.32,
+   535.2,
+   323.52
+  ],
+  "sim": 0.935,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:54c7b4e4887a": {
+  "page": 13,
+  "bbox": [
+   128.16,
+   274.08,
+   535.2,
+   342.24
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:57e1597c5daa": {
+  "page": 13,
+  "bbox": [
+   129.6,
+   101.76,
+   534.24,
+   233.28
+  ],
+  "sim": 0.966,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:47df0bcda524": {
+  "page": 13,
+  "bbox": [
+   128.64,
+   679.68,
+   535.2,
+   748.8
+  ],
+  "sim": 0.697,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2b8265e0684f": {
+  "page": 13,
+  "bbox": [
+   128.16,
+   417.12,
+   535.2,
+   464.64
+  ],
+  "sim": 0.742,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b7b85dbbe62b": {
+  "page": 13,
+  "bbox": [
+   129.12,
+   627.84,
+   534.24,
+   693.12
+  ],
+  "sim": 0.944,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a30a825cd7e7": {
+  "page": 14,
+  "bbox": [
+   90.24,
+   359.04,
+   503.04,
+   429.12
+  ],
+  "sim": 0.692,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1b53d155e10a": {
+  "page": 14,
+  "bbox": [
+   89.76,
+   579.36,
+   503.04,
+   649.92
+  ],
+  "sim": 0.889,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6a880fae9b65": {
+  "page": 14,
+  "bbox": [
+   89.76,
+   598.08,
+   503.04,
+   667.68
+  ],
+  "sim": 0.693,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c377aee2c34e": {
+  "page": 13,
+  "bbox": [
+   128.16,
+   443.04,
+   534.72,
+   503.04
+  ],
+  "sim": 0.474,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:0d6b8b62134a": {
+  "page": 15,
+  "bbox": [
+   151.68,
+   546.24,
+   420.48,
+   618.72
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:26060d5d0c08": {
+  "page": 15,
+  "bbox": [
+   125.76,
+   282.72,
+   484.32,
+   358.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0df947a174b8": {
+  "page": 18,
+  "bbox": [
+   117.12,
+   313.92,
+   498.72,
+   382.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8ec347ad34c1": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   377.76,
+   535.2,
+   442.56
+  ],
+  "sim": 0.975,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:15970f5e762b": {
+  "page": 16,
+  "bbox": [
+   105.6,
+   586.56,
+   489.12,
+   660.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:46fb3374e7ce": {
+  "page": 18,
+  "bbox": [
+   93.6,
+   349.92,
+   498.72,
+   419.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d746c030b7e3": {
+  "page": 16,
+  "bbox": [
+   83.04,
+   375.84,
+   490.56,
+   448.8
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:25ff435a5100": {
+  "page": 18,
+  "bbox": [
+   117.12,
+   295.2,
+   388.32,
+   349.44
+  ],
+  "sim": 0.708,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:635a8d7cb1d9": {
+  "page": 18,
+  "bbox": [
+   94.56,
+   183.36,
+   500.16,
+   258.24
+  ],
+  "sim": 0.718,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cfc79d9bf751": {
+  "page": 17,
+  "bbox": [
+   129.6,
+   494.4,
+   535.2,
+   567.36
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6bc3ccd70e1e": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   187.68,
+   535.2,
+   260.64
+  ],
+  "sim": 0.9,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:72d2314ddfdf": {
+  "page": 18,
+  "bbox": [
+   119.52,
+   91.2,
+   412.8,
+   144.0
+  ],
+  "sim": 0.745,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d8b77fc8a82d": {
+  "page": 17,
+  "bbox": [
+   129.6,
+   494.4,
+   535.2,
+   567.36
+  ],
+  "sim": 0.961,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b07f78c1f277": {
+  "page": 16,
+  "bbox": [
+   105.6,
+   534.24,
+   489.12,
+   624.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5806e1e6d64b": {
+  "page": 18,
+  "bbox": [
+   93.6,
+   349.92,
+   498.72,
+   419.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:41d8815e7104": {
+  "page": 16,
+  "bbox": [
+   82.56,
+   698.4,
+   490.56,
+   769.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:88b5b9ab80b7": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   208.8,
+   535.2,
+   277.44
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7d9a420c5e34": {
+  "page": 17,
+  "bbox": [
+   84.96,
+   51.36,
+   533.76,
+   111.36
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5e2e67b0469b": {
+  "page": 16,
+  "bbox": [
+   82.08,
+   625.44,
+   491.04,
+   696.48
+  ],
+  "sim": 0.974,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:08d534bcbf67": {
+  "page": 16,
+  "bbox": [
+   82.08,
+   661.44,
+   491.04,
+   732.48
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8280b474b49e": {
+  "page": 18,
+  "bbox": [
+   92.64,
+   366.72,
+   499.2,
+   435.84
+  ],
+  "sim": 0.644,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b2bd8a08bd5f": {
+  "page": 15,
+  "bbox": [
+   126.72,
+   112.8,
+   538.08,
+   184.8
+  ],
+  "sim": 0.633,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0bb8871c83da": {
+  "page": 20,
+  "bbox": [
+   91.68,
+   648.96,
+   498.72,
+   720.0
+  ],
+  "sim": 0.9,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f54296124342": {
+  "page": 20,
+  "bbox": [
+   91.68,
+   614.88,
+   498.72,
+   684.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:97607d6ebc47": {
+  "page": 20,
+  "bbox": [
+   91.68,
+   630.72,
+   498.72,
+   701.76
+  ],
+  "sim": 0.673,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:77b1e2fea129": {
+  "page": 20,
+  "bbox": [
+   91.68,
+   630.72,
+   498.72,
+   701.76
+  ],
+  "sim": 0.788,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:52d480b95319": {
+  "page": 20,
+  "bbox": [
+   93.12,
+   259.68,
+   498.72,
+   314.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:585fb22bdba7": {
+  "page": 19,
+  "bbox": [
+   96.0,
+   355.2,
+   499.68,
+   431.52
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dd8a1df8cd0f": {
+  "page": 19,
+  "bbox": [
+   94.56,
+   632.64,
+   501.6,
+   690.24
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d622f2afe567": {
+  "page": 15,
+  "bbox": [
+   125.28,
+   184.8,
+   453.12,
+   260.16
+  ],
+  "sim": 0.737,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a610859893e8": {
+  "page": 19,
+  "bbox": [
+   94.56,
+   632.64,
+   501.6,
+   690.24
+  ],
+  "sim": 0.979,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9acc8c0e8a3d": {
+  "page": 20,
+  "bbox": [
+   93.12,
+   259.68,
+   498.72,
+   314.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:49d0355332aa": {
+  "page": 20,
+  "bbox": [
+   92.16,
+   297.12,
+   498.72,
+   370.56
+  ],
+  "sim": 0.54,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4a70ca58ea57": {
+  "page": 20,
+  "bbox": [
+   114.72,
+   571.68,
+   498.72,
+   648.96
+  ],
+  "sim": 0.758,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dd235ba72f6c": {
+  "page": 20,
+  "bbox": [
+   114.72,
+   571.68,
+   498.72,
+   648.96
+  ],
+  "sim": 0.7,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:27b9eb02ce6f": {
+  "page": 18,
+  "bbox": [
+   92.16,
+   569.28,
+   501.12,
+   646.56
+  ],
+  "sim": 0.932,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e828a9a4220d": {
+  "page": 20,
+  "bbox": [
+   114.72,
+   534.72,
+   446.4,
+   610.08
+  ],
+  "sim": 0.71,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c7b2b45ca5f3": {
+  "page": 20,
+  "bbox": [
+   91.68,
+   614.88,
+   498.72,
+   684.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0be48532c176": {
+  "page": 14,
+  "bbox": [
+   89.76,
+   670.08,
+   501.6,
+   741.6
+  ],
+  "sim": 0.513,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d0ec72fed93f": {
+  "page": 19,
+  "bbox": [
+   96.0,
+   355.2,
+   499.68,
+   431.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:58820fed7965": {
+  "page": 19,
+  "bbox": [
+   96.48,
+   315.36,
+   501.12,
+   395.04
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8227c770956a": {
+  "page": 16,
+  "bbox": [
+   82.56,
+   451.68,
+   491.52,
+   530.4
+  ],
+  "sim": 0.482,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:68b3df0a64de": {
+  "page": 15,
+  "bbox": [
+   126.72,
+   151.68,
+   538.08,
+   223.68
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5ea40c27fbb3": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   360.48,
+   535.2,
+   428.16
+  ],
+  "sim": 0.51,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:872674d8fba8": {
+  "page": 20,
+  "bbox": [
+   92.16,
+   297.12,
+   498.72,
+   370.56
+  ],
+  "sim": 0.44,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:9190056a6234": {
+  "page": 15,
+  "bbox": [
+   126.72,
+   112.8,
+   538.08,
+   184.8
+  ],
+  "sim": 0.556,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:36a18e21e15a": {
+  "page": 19,
+  "bbox": [
+   51.36,
+   48.48,
+   499.68,
+   129.6
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:33883657792c": {
+  "page": 20,
+  "bbox": [
+   114.72,
+   571.68,
+   498.72,
+   648.96
+  ],
+  "sim": 0.592,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:851c9a8dd6e8": {
+  "page": 18,
+  "bbox": [
+   92.16,
+   579.36,
+   501.12,
+   663.36
+  ],
+  "sim": 0.456,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:faff47ad49f9": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   187.68,
+   535.2,
+   260.64
+  ],
+  "sim": 0.475,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:32a1703875ba": {
+  "page": 18,
+  "bbox": [
+   92.16,
+   579.36,
+   501.12,
+   663.36
+  ],
+  "sim": 0.654,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a039214e1e74": {
+  "page": 17,
+  "bbox": [
+   129.6,
+   516.48,
+   535.2,
+   585.12
+  ],
+  "sim": 0.551,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9612d883eaf4": {
+  "page": 20,
+  "bbox": [
+   114.72,
+   571.68,
+   498.72,
+   648.96
+  ],
+  "sim": 0.604,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0c9b9e3d94b6": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   360.48,
+   535.2,
+   428.16
+  ],
+  "sim": 0.351,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:bded33785f0c": {
+  "page": 18,
+  "bbox": [
+   119.52,
+   91.2,
+   412.8,
+   144.0
+  ],
+  "sim": 0.538,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:737ba4c8a4b4": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   360.48,
+   535.2,
+   428.16
+  ],
+  "sim": 0.478,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:b9fc2797bc2f": {
+  "page": 18,
+  "bbox": [
+   92.16,
+   579.36,
+   501.12,
+   663.36
+  ],
+  "sim": 0.469,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:4f7644c3ee91": {
+  "page": 17,
+  "bbox": [
+   129.6,
+   516.48,
+   535.2,
+   585.12
+  ],
+  "sim": 0.519,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:443cf648bf48": {
+  "page": 17,
+  "bbox": [
+   128.64,
+   360.48,
+   535.2,
+   428.16
+  ],
+  "sim": 0.493,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:0b9c1d9acd9d": {
+  "page": 18,
+  "bbox": [
+   92.16,
+   601.44,
+   500.16,
+   686.88
+  ],
+  "sim": 0.541,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d455eca0fa78": {
+  "page": 18,
+  "bbox": [
+   119.52,
+   91.2,
+   412.8,
+   144.0
+  ],
+  "sim": 0.566,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:db065c83fe70": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   129.12,
+   533.76,
+   197.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7fc3216faeea": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   129.12,
+   533.76,
+   197.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5c4f3b450cd2": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   129.12,
+   533.76,
+   197.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:925e8f3ab1df": {
+  "page": 33,
+  "bbox": [
+   133.92,
+   111.84,
+   533.76,
+   180.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3bec59fe0d0c": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   129.12,
+   533.76,
+   197.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5dea8c60fa64": {
+  "page": 33,
+  "bbox": [
+   133.92,
+   91.68,
+   533.28,
+   161.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:379991ee8583": {
+  "page": 32,
+  "bbox": [
+   56.16,
+   508.8,
+   311.04,
+   580.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5c0ad92f8fb9": {
+  "page": 32,
+  "bbox": [
+   56.16,
+   546.24,
+   312.0,
+   616.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b1cc51d17325": {
+  "page": 32,
+  "bbox": [
+   56.16,
+   508.8,
+   311.04,
+   580.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:96fbc035107f": {
+  "page": 30,
+  "bbox": [
+   53.76,
+   459.84,
+   461.28,
+   553.44
+  ],
+  "sim": 0.977,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d6d34f3b2376": {
+  "page": 30,
+  "bbox": [
+   54.24,
+   707.04,
+   462.24,
+   765.12
+  ],
+  "sim": 0.905,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0d770b893460": {
+  "page": 32,
+  "bbox": [
+   56.16,
+   660.48,
+   463.2,
+   729.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4ff70948b50e": {
+  "page": 32,
+  "bbox": [
+   56.64,
+   603.84,
+   312.0,
+   672.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:bbd7426b276f": {
+  "page": 32,
+  "bbox": [
+   56.64,
+   603.84,
+   312.0,
+   672.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6a8d76f5924e": {
+  "page": 32,
+  "bbox": [
+   57.12,
+   323.04,
+   465.12,
+   374.4
+  ],
+  "sim": 0.914,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3a3a14f19e77": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   640.8,
+   532.8,
+   708.96
+  ],
+  "sim": 0.952,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9a1dec8517bc": {
+  "page": 34,
+  "bbox": [
+   56.16,
+   570.24,
+   464.16,
+   644.16
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1528cc4c65af": {
+  "page": 34,
+  "bbox": [
+   57.12,
+   382.08,
+   466.08,
+   432.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:894ce454f2fc": {
+  "page": 34,
+  "bbox": [
+   57.12,
+   382.08,
+   466.08,
+   432.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e7cb98297b10": {
+  "page": 34,
+  "bbox": [
+   57.12,
+   382.08,
+   466.08,
+   432.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ee4b403821a1": {
+  "page": 33,
+  "bbox": [
+   132.0,
+   601.92,
+   534.24,
+   653.76
+  ],
+  "sim": 0.673,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:850a02085410": {
+  "page": 34,
+  "bbox": [
+   56.64,
+   569.28,
+   465.12,
+   625.44
+  ],
+  "sim": 0.568,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:53468f7dcb09": {
+  "page": 30,
+  "bbox": [
+   52.32,
+   641.28,
+   461.76,
+   723.84
+  ],
+  "sim": 0.833,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:869d40dc4880": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   621.12,
+   534.24,
+   672.48
+  ],
+  "sim": 0.639,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fd39017c8896": {
+  "page": 28,
+  "bbox": [
+   100.32,
+   552.48,
+   529.92,
+   608.64
+  ],
+  "sim": 0.605,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ea60a45effd6": {
+  "page": 33,
+  "bbox": [
+   132.96,
+   695.04,
+   532.32,
+   766.08
+  ],
+  "sim": 0.625,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:328a400f0ca3": {
+  "page": 28,
+  "bbox": [
+   185.28,
+   673.92,
+   408.0,
+   746.4
+  ],
+  "sim": 0.458,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:251d4b0f8038": {
+  "page": 34,
+  "bbox": [
+   58.56,
+   72.48,
+   465.6,
+   146.4
+  ],
+  "sim": 0.558,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b5835a060ea4": {
+  "page": 34,
+  "bbox": [
+   58.56,
+   72.48,
+   465.6,
+   146.4
+  ],
+  "sim": 0.583,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:393f800abd8e": {
+  "page": 34,
+  "bbox": [
+   56.16,
+   398.4,
+   466.08,
+   470.88
+  ],
+  "sim": 0.556,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c06799c0b080": {
+  "page": 28,
+  "bbox": [
+   100.32,
+   552.48,
+   529.92,
+   608.64
+  ],
+  "sim": 0.39,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:dc4bd80e2634": {
+  "page": 30,
+  "bbox": [
+   52.8,
+   518.4,
+   461.76,
+   594.72
+  ],
+  "sim": 0.556,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:799a2010bd39": {
+  "page": 30,
+  "bbox": [
+   52.8,
+   557.76,
+   462.24,
+   636.48
+  ],
+  "sim": 0.649,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b1ee77d1ffde": {
+  "page": 34,
+  "bbox": [
+   56.16,
+   398.4,
+   466.08,
+   470.88
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cb0664b679ce": {
+  "page": 30,
+  "bbox": [
+   52.32,
+   641.28,
+   461.76,
+   723.84
+  ],
+  "sim": 0.618,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ba107a9d7816": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   658.56,
+   532.8,
+   728.16
+  ],
+  "sim": 0.704,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d3fbe46591ad": {
+  "page": 28,
+  "bbox": [
+   185.28,
+   673.92,
+   408.0,
+   746.4
+  ],
+  "sim": 0.636,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7ce678892a2d": {
+  "page": 33,
+  "bbox": [
+   132.48,
+   640.8,
+   532.8,
+   708.96
+  ],
+  "sim": 0.629,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b167339f0429": {
+  "page": 41,
+  "bbox": [
+   131.52,
+   108.96,
+   531.36,
+   179.04
+  ],
+  "sim": 0.895,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:af294252d526": {
+  "page": 41,
+  "bbox": [
+   133.44,
+   74.4,
+   530.4,
+   142.56
+  ],
+  "sim": 0.759,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ec06d34b8f8a": {
+  "page": 42,
+  "bbox": [
+   53.76,
+   148.32,
+   510.24,
+   244.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:47b59c870d32": {
+  "page": 42,
+  "bbox": [
+   52.8,
+   422.88,
+   464.16,
+   472.8
+  ],
+  "sim": 0.953,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fde5dd13b6ad": {
+  "page": 42,
+  "bbox": [
+   51.84,
+   580.32,
+   464.64,
+   648.96
+  ],
+  "sim": 0.927,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:89104cc51a64": {
+  "page": 41,
+  "bbox": [
+   105.12,
+   252.0,
+   531.84,
+   331.68
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:12c8b144ffbf": {
+  "page": 44,
+  "bbox": [
+   56.64,
+   382.56,
+   465.12,
+   451.2
+  ],
+  "sim": 0.964,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9891eb148eee": {
+  "page": 44,
+  "bbox": [
+   56.64,
+   382.56,
+   465.12,
+   451.2
+  ],
+  "sim": 0.964,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a49416943296": {
+  "page": 43,
+  "bbox": [
+   96.96,
+   406.08,
+   499.68,
+   492.96
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c052a83b1649": {
+  "page": 43,
+  "bbox": [
+   96.96,
+   406.08,
+   499.68,
+   492.96
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:55a50fb5c0ef": {
+  "page": 43,
+  "bbox": [
+   96.96,
+   406.08,
+   499.68,
+   492.96
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:052747e3a84e": {
+  "page": 44,
+  "bbox": [
+   56.16,
+   262.56,
+   466.08,
+   339.84
+  ],
+  "sim": 0.984,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b15de34807b9": {
+  "page": 44,
+  "bbox": [
+   82.08,
+   322.56,
+   466.08,
+   380.16
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6b854efeba1f": {
+  "page": 40,
+  "bbox": [
+   81.6,
+   87.36,
+   412.8,
+   153.12
+  ],
+  "sim": 0.929,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4073aeb3a2fe": {
+  "page": 41,
+  "bbox": [
+   131.52,
+   143.52,
+   532.32,
+   209.76
+  ],
+  "sim": 0.633,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ce57145b4260": {
+  "page": 41,
+  "bbox": [
+   132.96,
+   642.24,
+   532.32,
+   708.0
+  ],
+  "sim": 0.521,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:17b89ea244b2": {
+  "page": 39,
+  "bbox": [
+   81.6,
+   656.64,
+   527.52,
+   723.36
+  ],
+  "sim": 0.722,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2da2e90885df": {
+  "page": 41,
+  "bbox": [
+   132.96,
+   642.24,
+   532.32,
+   708.0
+  ],
+  "sim": 0.521,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:905a56c85858": {
+  "page": 40,
+  "bbox": [
+   80.16,
+   275.52,
+   501.12,
+   344.16
+  ],
+  "sim": 0.778,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ef0729c977bc": {
+  "page": 41,
+  "bbox": [
+   132.96,
+   642.24,
+   532.32,
+   708.0
+  ],
+  "sim": 0.553,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:346b3ee9a452": {
+  "page": 40,
+  "bbox": [
+   81.6,
+   87.36,
+   412.8,
+   153.12
+  ],
+  "sim": 0.846,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:95f8680ad098": {
+  "page": 44,
+  "bbox": [
+   56.64,
+   382.56,
+   465.12,
+   451.2
+  ],
+  "sim": 0.402,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:8820649a7aaf": {
+  "page": 41,
+  "bbox": [
+   132.96,
+   642.24,
+   532.32,
+   708.0
+  ],
+  "sim": 0.558,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5074a3280e80": {
+  "page": 40,
+  "bbox": [
+   81.6,
+   87.36,
+   412.8,
+   153.12
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ba87ea22629f": {
+  "page": 41,
+  "bbox": [
+   132.96,
+   642.24,
+   532.32,
+   708.0
+  ],
+  "sim": 0.596,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4c2720782ce8": {
+  "page": 42,
+  "bbox": [
+   53.76,
+   148.32,
+   510.24,
+   244.32
+  ],
+  "sim": 0.643,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ee384b3d0bda": {
+  "page": 41,
+  "bbox": [
+   132.48,
+   555.36,
+   535.2,
+   604.8
+  ],
+  "sim": 0.789,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:facf0ef414df": {
+  "page": 42,
+  "bbox": [
+   53.76,
+   148.32,
+   510.24,
+   244.32
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fa20c10e2217": {
+  "page": 38,
+  "bbox": [
+   52.8,
+   389.28,
+   466.08,
+   468.48
+  ],
+  "sim": 0.75,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:12aca54aeb4a": {
+  "page": 42,
+  "bbox": [
+   52.8,
+   457.92,
+   464.16,
+   526.56
+  ],
+  "sim": 0.55,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:17d3f615c4b6": {
+  "page": 42,
+  "bbox": [
+   52.8,
+   422.88,
+   464.16,
+   472.8
+  ],
+  "sim": 0.562,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9a18adcd8f3c": {
+  "page": 42,
+  "bbox": [
+   52.8,
+   441.12,
+   464.16,
+   508.32
+  ],
+  "sim": 0.582,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:564516da7304": {
+  "page": 40,
+  "bbox": [
+   81.6,
+   87.36,
+   412.8,
+   153.12
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8ceb7cc2d07b": {
+  "page": 40,
+  "bbox": [
+   81.6,
+   86.4,
+   412.8,
+   137.28
+  ],
+  "sim": 0.553,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8f58ec9fcc2e": {
+  "page": 39,
+  "bbox": [
+   81.6,
+   656.64,
+   527.52,
+   723.36
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4565c238640b": {
+  "page": 49,
+  "bbox": [
+   132.96,
+   350.88,
+   535.68,
+   417.6
+  ],
+  "sim": 0.461,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:a0c36a4f97dd": {
+  "page": 40,
+  "bbox": [
+   80.16,
+   257.28,
+   501.12,
+   327.36
+  ],
+  "sim": 0.452,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:945632ef0657": {
+  "page": 56,
+  "bbox": [
+   92.16,
+   437.28,
+   500.64,
+   510.72
+  ],
+  "sim": 0.959,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5cfadfdb3087": {
+  "page": 56,
+  "bbox": [
+   92.16,
+   691.68,
+   499.2,
+   763.2
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:74a480f0400c": {
+  "page": 56,
+  "bbox": [
+   116.64,
+   573.12,
+   390.72,
+   634.08
+  ],
+  "sim": 0.947,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a2ceaf75a71d": {
+  "page": 57,
+  "bbox": [
+   96.0,
+   220.32,
+   407.52,
+   291.36
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c95441c6b5c3": {
+  "page": 57,
+  "bbox": [
+   96.0,
+   240.0,
+   498.72,
+   308.64
+  ],
+  "sim": 0.973,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:138a6087d39d": {
+  "page": 56,
+  "bbox": [
+   93.6,
+   233.28,
+   501.6,
+   317.76
+  ],
+  "sim": 0.808,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:425ff6bb7b97": {
+  "page": 56,
+  "bbox": [
+   93.12,
+   360.0,
+   501.12,
+   435.36
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dc465044f13a": {
+  "page": 52,
+  "bbox": [
+   72.48,
+   339.36,
+   355.68,
+   409.44
+  ],
+  "sim": 0.762,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ba84934de242": {
+  "page": 56,
+  "bbox": [
+   93.12,
+   619.2,
+   500.16,
+   690.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4da8e9873a9a": {
+  "page": 56,
+  "bbox": [
+   93.6,
+   599.52,
+   500.16,
+   671.04
+  ],
+  "sim": 0.943,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e6f64b74ea10": {
+  "page": 56,
+  "bbox": [
+   92.16,
+   656.16,
+   499.68,
+   727.68
+  ],
+  "sim": 0.947,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e63f40765d7b": {
+  "page": 56,
+  "bbox": [
+   92.16,
+   691.68,
+   499.2,
+   763.2
+  ],
+  "sim": 0.944,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fb6753f50883": {
+  "page": 56,
+  "bbox": [
+   92.16,
+   656.16,
+   499.68,
+   727.68
+  ],
+  "sim": 0.909,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ec3e921b8bdf": {
+  "page": 57,
+  "bbox": [
+   95.52,
+   656.64,
+   499.2,
+   725.28
+  ],
+  "sim": 0.972,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e3c7ac330889": {
+  "page": 57,
+  "bbox": [
+   95.52,
+   674.4,
+   499.2,
+   747.36
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d2bc4fd7c949": {
+  "page": 57,
+  "bbox": [
+   95.52,
+   656.64,
+   499.2,
+   725.28
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:31dc123ac7ba": {
+  "page": 58,
+  "bbox": [
+   56.16,
+   619.68,
+   465.12,
+   694.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:627ec63ae285": {
+  "page": 58,
+  "bbox": [
+   54.72,
+   656.64,
+   431.52,
+   728.64
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:436d56899e65": {
+  "page": 58,
+  "bbox": [
+   56.64,
+   398.4,
+   466.56,
+   469.44
+  ],
+  "sim": 0.973,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9633a491891f": {
+  "page": 58,
+  "bbox": [
+   56.64,
+   416.64,
+   466.56,
+   504.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f1d6e80ef2e6": {
+  "page": 58,
+  "bbox": [
+   55.68,
+   507.36,
+   465.12,
+   576.48
+  ],
+  "sim": 0.92,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:38fe4b0cb4e7": {
+  "page": 58,
+  "bbox": [
+   56.64,
+   416.64,
+   466.56,
+   504.96
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1d11537da00e": {
+  "page": 58,
+  "bbox": [
+   57.12,
+   435.84,
+   465.12,
+   522.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:50be269aa4f0": {
+  "page": 58,
+  "bbox": [
+   80.64,
+   746.4,
+   527.52,
+   780.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d95e78e86bd5": {
+  "page": 58,
+  "bbox": [
+   57.12,
+   435.84,
+   465.12,
+   522.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8f8b08f6350c": {
+  "page": 59,
+  "bbox": [
+   130.56,
+   76.8,
+   533.76,
+   142.56
+  ],
+  "sim": 0.953,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4815e5091c84": {
+  "page": 58,
+  "bbox": [
+   57.12,
+   435.84,
+   465.12,
+   522.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:807bb1a72c00": {
+  "page": 60,
+  "bbox": [
+   54.72,
+   282.72,
+   468.48,
+   355.68
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b5d9ef6993cb": {
+  "page": 60,
+  "bbox": [
+   54.72,
+   300.96,
+   468.48,
+   373.44
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e60e84286659": {
+  "page": 61,
+  "bbox": [
+   31.2,
+   749.28,
+   500.64,
+   781.44
+  ],
+  "sim": 0.895,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b5fb35c1c206": {
+  "page": 62,
+  "bbox": [
+   54.24,
+   91.2,
+   468.48,
+   133.44
+  ],
+  "sim": 0.865,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d5e980dc8cb9": {
+  "page": 61,
+  "bbox": [
+   96.48,
+   487.68,
+   499.68,
+   547.68
+  ],
+  "sim": 0.848,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:47bc5707a7ca": {
+  "page": 61,
+  "bbox": [
+   96.0,
+   409.44,
+   501.12,
+   483.84
+  ],
+  "sim": 0.746,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7cafc85dd75f": {
+  "page": 61,
+  "bbox": [
+   95.04,
+   660.0,
+   501.12,
+   728.64
+  ],
+  "sim": 0.967,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0483b129707e": {
+  "page": 62,
+  "bbox": [
+   56.64,
+   116.64,
+   467.52,
+   165.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:bd0860d69042": {
+  "page": 62,
+  "bbox": [
+   54.72,
+   42.24,
+   522.72,
+   107.52
+  ],
+  "sim": 0.949,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7131c00d0c27": {
+  "page": 64,
+  "bbox": [
+   91.68,
+   528.96,
+   501.12,
+   600.96
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4a08ff545790": {
+  "page": 64,
+  "bbox": [
+   92.64,
+   156.48,
+   502.56,
+   211.68
+  ],
+  "sim": 0.612,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3fda018cd9c1": {
+  "page": 64,
+  "bbox": [
+   92.16,
+   641.76,
+   500.64,
+   712.8
+  ],
+  "sim": 0.984,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d88cfa716075": {
+  "page": 64,
+  "bbox": [
+   92.16,
+   696.96,
+   501.12,
+   768.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:15a89f69c3f2": {
+  "page": 64,
+  "bbox": [
+   92.16,
+   248.64,
+   501.12,
+   319.2
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:eb852e3b45e0": {
+  "page": 64,
+  "bbox": [
+   92.64,
+   472.32,
+   501.12,
+   544.32
+  ],
+  "sim": 0.987,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1d575a5cfd23": {
+  "page": 64,
+  "bbox": [
+   91.68,
+   547.68,
+   501.12,
+   619.2
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:24d27cc7d914": {
+  "page": 64,
+  "bbox": [
+   92.16,
+   266.88,
+   501.12,
+   338.88
+  ],
+  "sim": 0.965,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d9634130d2f2": {
+  "page": 67,
+  "bbox": [
+   164.64,
+   558.24,
+   494.4,
+   590.88
+  ],
+  "sim": 0.789,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e9486d7c5f33": {
+  "page": 67,
+  "bbox": [
+   133.44,
+   322.56,
+   532.32,
+   370.56
+  ],
+  "sim": 0.938,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8b707f76fa37": {
+  "page": 61,
+  "bbox": [
+   96.0,
+   372.48,
+   501.6,
+   448.8
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:eb39a64d465d": {
+  "page": 62,
+  "bbox": [
+   63.36,
+   632.64,
+   534.72,
+   691.68
+  ],
+  "sim": 0.659,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ba2039c49eed": {
+  "page": 67,
+  "bbox": [
+   134.88,
+   613.44,
+   533.28,
+   685.92
+  ],
+  "sim": 0.939,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4ad57ccf9b91": {
+  "page": 67,
+  "bbox": [
+   134.88,
+   613.44,
+   533.28,
+   685.92
+  ],
+  "sim": 0.939,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:04a66f2d9790": {
+  "page": 70,
+  "bbox": [
+   54.72,
+   200.64,
+   467.52,
+   272.64
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ceccc9e2728b": {
+  "page": 69,
+  "bbox": [
+   132.96,
+   196.8,
+   531.36,
+   265.92
+  ],
+  "sim": 0.461,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:fc4cf201a8bc": {
+  "page": 70,
+  "bbox": [
+   55.2,
+   309.6,
+   326.88,
+   345.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ca64d0eb476f": {
+  "page": 70,
+  "bbox": [
+   55.2,
+   661.92,
+   466.56,
+   704.64
+  ],
+  "sim": 0.699,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:286c914fd8b9": {
+  "page": 70,
+  "bbox": [
+   55.2,
+   310.08,
+   467.04,
+   381.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:98184a56ff99": {
+  "page": 171,
+  "bbox": [
+   54.72,
+   305.28,
+   540.48,
+   407.04
+  ],
+  "sim": 0.184,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:ed436e16398d": {
+  "page": 74,
+  "bbox": [
+   56.16,
+   91.2,
+   470.4,
+   146.4
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:df41c0d0e5f0": {
+  "page": 74,
+  "bbox": [
+   56.16,
+   108.96,
+   469.44,
+   164.64
+  ],
+  "sim": 0.778,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:32cd925054e8": {
+  "page": 74,
+  "bbox": [
+   56.16,
+   40.8,
+   508.8,
+   128.16
+  ],
+  "sim": 0.921,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:82876bbec55c": {
+  "page": 73,
+  "bbox": [
+   103.68,
+   587.52,
+   496.8,
+   639.36
+  ],
+  "sim": 0.906,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2fb4c5014154": {
+  "page": 171,
+  "bbox": [
+   54.72,
+   305.28,
+   540.48,
+   407.04
+  ],
+  "sim": 0.184,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:afbd4334fcb0": {
+  "page": 76,
+  "bbox": [
+   96.0,
+   91.68,
+   495.84,
+   160.32
+  ],
+  "sim": 0.647,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3dbbce49c71d": {
+  "page": 73,
+  "bbox": [
+   104.64,
+   642.72,
+   496.32,
+   711.84
+  ],
+  "sim": 0.232,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:a672f958e2a0": {
+  "page": 73,
+  "bbox": [
+   103.68,
+   587.52,
+   496.8,
+   639.36
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8e69e211258e": {
+  "page": 73,
+  "bbox": [
+   104.64,
+   642.72,
+   496.32,
+   711.84
+  ],
+  "sim": 0.232,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:bdd050189eaa": {
+  "page": 150,
+  "bbox": [
+   60.96,
+   599.04,
+   535.68,
+   683.04
+  ],
+  "sim": 0.153,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:ba8801138df9": {
+  "page": 77,
+  "bbox": [
+   68.16,
+   509.76,
+   423.84,
+   552.48
+  ],
+  "sim": 0.483,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:8545d83052a0": {
+  "page": 81,
+  "bbox": [
+   96.96,
+   485.76,
+   500.16,
+   555.36
+  ],
+  "sim": 0.81,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:113f365a4a01": {
+  "page": 81,
+  "bbox": [
+   96.96,
+   485.76,
+   500.16,
+   555.36
+  ],
+  "sim": 0.762,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:eee96b181992": {
+  "page": 80,
+  "bbox": [
+   91.2,
+   252.96,
+   499.68,
+   316.32
+  ],
+  "sim": 0.545,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3d631cd2b037": {
+  "page": 81,
+  "bbox": [
+   96.96,
+   485.76,
+   500.16,
+   555.36
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e5f78b006e95": {
+  "page": 80,
+  "bbox": [
+   112.8,
+   744.96,
+   559.68,
+   779.04
+  ],
+  "sim": 0.823,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:257859b025b2": {
+  "page": 82,
+  "bbox": [
+   59.04,
+   154.56,
+   468.96,
+   218.4
+  ],
+  "sim": 0.636,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b18b1f47f30b": {
+  "page": 76,
+  "bbox": [
+   96.96,
+   711.84,
+   559.2,
+   782.4
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fc6356a11f91": {
+  "page": 81,
+  "bbox": [
+   96.96,
+   485.76,
+   500.16,
+   555.36
+  ],
+  "sim": 0.929,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c7032d692477": {
+  "page": 81,
+  "bbox": [
+   96.96,
+   485.76,
+   500.16,
+   555.36
+  ],
+  "sim": 0.709,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0fba28d56ac6": {
+  "page": 80,
+  "bbox": [
+   91.2,
+   216.0,
+   499.68,
+   299.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f1d08fdf5a88": {
+  "page": 81,
+  "bbox": [
+   96.96,
+   452.16,
+   484.8,
+   502.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:553d9b141ecd": {
+  "page": 80,
+  "bbox": [
+   91.2,
+   252.96,
+   499.68,
+   316.32
+  ],
+  "sim": 0.753,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a757ce40767c": {
+  "page": 80,
+  "bbox": [
+   112.8,
+   744.96,
+   559.68,
+   779.04
+  ],
+  "sim": 0.457,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:e288d162e75c": {
+  "page": 84,
+  "bbox": [
+   56.16,
+   572.16,
+   463.2,
+   679.68
+  ],
+  "sim": 0.466,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:cf17605420f5": {
+  "page": 77,
+  "bbox": [
+   156.96,
+   537.12,
+   529.92,
+   643.68
+  ],
+  "sim": 0.378,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:0b8e7f72e746": {
+  "page": 84,
+  "bbox": [
+   56.16,
+   572.16,
+   463.2,
+   679.68
+  ],
+  "sim": 0.558,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ec9d2c75675b": {
+  "page": 171,
+  "bbox": [
+   54.72,
+   334.08,
+   540.48,
+   431.52
+  ],
+  "sim": 0.49,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:c2a0704d34c5": {
+  "page": 87,
+  "bbox": [
+   156.48,
+   108.96,
+   501.12,
+   162.24
+  ],
+  "sim": 0.846,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fd99a425fccb": {
+  "page": 88,
+  "bbox": [
+   61.44,
+   647.04,
+   361.44,
+   716.16
+  ],
+  "sim": 0.895,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:538eba3f4847": {
+  "page": 88,
+  "bbox": [
+   56.16,
+   129.6,
+   467.52,
+   201.12
+  ],
+  "sim": 0.523,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0ffc0766d6f6": {
+  "page": 88,
+  "bbox": [
+   56.16,
+   129.6,
+   467.52,
+   201.12
+  ],
+  "sim": 0.566,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b616318a6db8": {
+  "page": 88,
+  "bbox": [
+   56.16,
+   129.6,
+   467.52,
+   201.12
+  ],
+  "sim": 0.767,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e6233cc0c937": {
+  "page": 88,
+  "bbox": [
+   56.16,
+   129.6,
+   467.52,
+   201.12
+  ],
+  "sim": 0.787,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2287c1ff4987": {
+  "page": 171,
+  "bbox": [
+   54.72,
+   305.28,
+   540.48,
+   407.04
+  ],
+  "sim": 0.274,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:10d318633595": {
+  "page": 88,
+  "bbox": [
+   56.16,
+   129.6,
+   467.52,
+   201.12
+  ],
+  "sim": 0.437,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:544b154bd705": {
+  "page": 89,
+  "bbox": [
+   132.0,
+   506.88,
+   534.24,
+   576.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cae0e4f64ca6": {
+  "page": 89,
+  "bbox": [
+   131.52,
+   603.84,
+   533.76,
+   673.44
+  ],
+  "sim": 0.495,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:117a73664ee9": {
+  "page": 89,
+  "bbox": [
+   131.52,
+   603.84,
+   533.76,
+   673.44
+  ],
+  "sim": 0.714,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5a4028cd6ed7": {
+  "page": 88,
+  "bbox": [
+   85.44,
+   450.24,
+   452.16,
+   507.84
+  ],
+  "sim": 0.507,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:32a522e1c2d7": {
+  "page": 93,
+  "bbox": [
+   96.48,
+   140.64,
+   499.68,
+   211.68
+  ],
+  "sim": 0.954,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:39987d4aedaa": {
+  "page": 93,
+  "bbox": [
+   96.48,
+   117.6,
+   499.2,
+   176.16
+  ],
+  "sim": 0.927,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:aa2701636351": {
+  "page": 94,
+  "bbox": [
+   86.88,
+   389.28,
+   498.24,
+   468.48
+  ],
+  "sim": 0.629,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d6573bc87677": {
+  "page": 94,
+  "bbox": [
+   88.8,
+   547.2,
+   498.72,
+   621.6
+  ],
+  "sim": 0.525,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0821ce314e6f": {
+  "page": 94,
+  "bbox": [
+   88.8,
+   547.2,
+   498.72,
+   621.6
+  ],
+  "sim": 0.624,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:37caeb4099d7": {
+  "page": 88,
+  "bbox": [
+   62.4,
+   468.0,
+   529.92,
+   526.08
+  ],
+  "sim": 0.376,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:2997a983185e": {
+  "page": 94,
+  "bbox": [
+   85.92,
+   328.32,
+   498.24,
+   403.68
+  ],
+  "sim": 0.44,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:e8d34f26a559": {
+  "page": 88,
+  "bbox": [
+   85.44,
+   450.24,
+   452.16,
+   507.84
+  ],
+  "sim": 0.366,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:c75194235874": {
+  "page": 94,
+  "bbox": [
+   87.36,
+   605.76,
+   551.52,
+   660.48
+  ],
+  "sim": 0.983,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:014533e9a146": {
+  "page": 94,
+  "bbox": [
+   86.88,
+   186.72,
+   499.2,
+   256.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7675a5102e6b": {
+  "page": 100,
+  "bbox": [
+   57.6,
+   191.52,
+   471.36,
+   252.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8863cbec3737": {
+  "page": 99,
+  "bbox": [
+   130.08,
+   648.0,
+   529.44,
+   710.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9f723bf3d8e0": {
+  "page": 99,
+  "bbox": [
+   131.52,
+   330.24,
+   528.96,
+   379.2
+  ],
+  "sim": 0.895,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e3d2481ab6d9": {
+  "page": 96,
+  "bbox": [
+   74.88,
+   704.16,
+   384.0,
+   769.92
+  ],
+  "sim": 0.556,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ca970e254b84": {
+  "page": 99,
+  "bbox": [
+   129.6,
+   693.12,
+   530.4,
+   762.24
+  ],
+  "sim": 0.684,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d6776cc58cee": {
+  "page": 99,
+  "bbox": [
+   130.56,
+   129.6,
+   456.48,
+   258.24
+  ],
+  "sim": 0.943,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ca6dd25f058c": {
+  "page": 99,
+  "bbox": [
+   130.08,
+   648.0,
+   529.44,
+   710.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:381a92e005d1": {
+  "page": 99,
+  "bbox": [
+   129.6,
+   693.12,
+   530.4,
+   762.24
+  ],
+  "sim": 0.891,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:86f9e5d2ddd5": {
+  "page": 100,
+  "bbox": [
+   57.6,
+   420.48,
+   468.96,
+   475.2
+  ],
+  "sim": 0.862,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4b8fe6a48db6": {
+  "page": 100,
+  "bbox": [
+   81.12,
+   72.48,
+   469.92,
+   127.68
+  ],
+  "sim": 0.651,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:68691577a30c": {
+  "page": 103,
+  "bbox": [
+   132.48,
+   215.04,
+   492.96,
+   285.12
+  ],
+  "sim": 0.826,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4e3da2c63a76": {
+  "page": 103,
+  "bbox": [
+   132.48,
+   180.96,
+   428.16,
+   248.64
+  ],
+  "sim": 0.716,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2ccc6352fc63": {
+  "page": 103,
+  "bbox": [
+   131.04,
+   232.8,
+   492.96,
+   301.44
+  ],
+  "sim": 0.812,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c4be2fb69550": {
+  "page": 102,
+  "bbox": [
+   91.2,
+   395.04,
+   491.52,
+   464.64
+  ],
+  "sim": 0.597,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:edf382398cd4": {
+  "page": 102,
+  "bbox": [
+   91.2,
+   395.04,
+   491.52,
+   464.64
+  ],
+  "sim": 0.756,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:11f0690747a4": {
+  "page": 102,
+  "bbox": [
+   91.2,
+   503.04,
+   499.68,
+   572.64
+  ],
+  "sim": 0.919,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6343ad91df3e": {
+  "page": 102,
+  "bbox": [
+   115.68,
+   699.84,
+   498.72,
+   764.16
+  ],
+  "sim": 0.96,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:385ef571761f": {
+  "page": 106,
+  "bbox": [
+   52.8,
+   391.2,
+   468.48,
+   452.64
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0ab034641cf0": {
+  "page": 106,
+  "bbox": [
+   54.24,
+   270.24,
+   468.0,
+   405.6
+  ],
+  "sim": 0.967,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fe7e9d96ccd5": {
+  "page": 106,
+  "bbox": [
+   60.0,
+   203.52,
+   467.52,
+   385.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:71256ef872ab": {
+  "page": 106,
+  "bbox": [
+   53.28,
+   442.56,
+   468.48,
+   497.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:618851a8cf25": {
+  "page": 106,
+  "bbox": [
+   52.8,
+   519.84,
+   522.24,
+   578.88
+  ],
+  "sim": 0.909,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3582a86af09b": {
+  "page": 107,
+  "bbox": [
+   100.8,
+   384.48,
+   468.48,
+   438.24
+  ],
+  "sim": 0.571,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1ba0352ca956": {
+  "page": 107,
+  "bbox": [
+   98.88,
+   690.24,
+   496.32,
+   766.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7a288740eaea": {
+  "page": 103,
+  "bbox": [
+   132.48,
+   604.32,
+   534.72,
+   657.12
+  ],
+  "sim": 0.646,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cea0e07d1404": {
+  "page": 110,
+  "bbox": [
+   61.92,
+   140.64,
+   468.0,
+   213.12
+  ],
+  "sim": 0.694,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1994a36372d9": {
+  "page": 107,
+  "bbox": [
+   99.84,
+   306.72,
+   495.84,
+   367.2
+  ],
+  "sim": 0.885,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1feb51392094": {
+  "page": 108,
+  "bbox": [
+   57.12,
+   599.52,
+   466.08,
+   733.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fea31819942d": {
+  "page": 110,
+  "bbox": [
+   61.92,
+   140.64,
+   468.0,
+   213.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:eb883fb721b7": {
+  "page": 109,
+  "bbox": [
+   103.2,
+   652.32,
+   492.96,
+   725.28
+  ],
+  "sim": 0.476,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:36bced8a5ae8": {
+  "page": 109,
+  "bbox": [
+   101.76,
+   309.6,
+   491.04,
+   382.56
+  ],
+  "sim": 0.895,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e36fb87de20f": {
+  "page": 109,
+  "bbox": [
+   102.24,
+   228.48,
+   468.0,
+   300.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8c850a93e89e": {
+  "page": 109,
+  "bbox": [
+   102.24,
+   228.48,
+   468.0,
+   300.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7ba203845230": {
+  "page": 109,
+  "bbox": [
+   102.24,
+   210.24,
+   490.08,
+   280.8
+  ],
+  "sim": 0.901,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1ddfa7ce1580": {
+  "page": 109,
+  "bbox": [
+   102.24,
+   192.0,
+   490.08,
+   262.08
+  ],
+  "sim": 0.872,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e8b6943a8d5b": {
+  "page": 109,
+  "bbox": [
+   102.24,
+   454.08,
+   492.96,
+   528.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:06c857ead8f9": {
+  "page": 112,
+  "bbox": [
+   58.56,
+   683.52,
+   465.12,
+   744.96
+  ],
+  "sim": 0.641,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f6b9abbeca7b": {
+  "page": 112,
+  "bbox": [
+   57.6,
+   489.6,
+   464.16,
+   558.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:de0c3ca24cec": {
+  "page": 112,
+  "bbox": [
+   58.56,
+   620.64,
+   465.6,
+   672.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ec12ca3f1986": {
+  "page": 112,
+  "bbox": [
+   58.56,
+   380.16,
+   465.12,
+   450.24
+  ],
+  "sim": 0.977,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8d0ad46f503d": {
+  "page": 112,
+  "bbox": [
+   59.04,
+   333.12,
+   464.64,
+   413.28
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3ee1a6dd7e83": {
+  "page": 112,
+  "bbox": [
+   58.08,
+   708.48,
+   527.52,
+   780.0
+  ],
+  "sim": 0.226,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:b4c65198ea48": {
+  "page": 112,
+  "bbox": [
+   57.6,
+   471.36,
+   465.12,
+   525.12
+  ],
+  "sim": 0.821,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:573915cc3b1e": {
+  "page": 112,
+  "bbox": [
+   58.56,
+   683.52,
+   465.12,
+   744.96
+  ],
+  "sim": 0.815,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:450958b35ec6": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   193.44,
+   498.24,
+   282.72
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9179133c3e61": {
+  "page": 121,
+  "bbox": [
+   52.32,
+   48.48,
+   497.28,
+   112.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5e3fa574b94f": {
+  "page": 120,
+  "bbox": [
+   192.0,
+   252.96,
+   498.24,
+   286.56
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1aa54eaff5eb": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   554.88,
+   499.2,
+   643.68
+  ],
+  "sim": 0.639,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:76cbded78cba": {
+  "page": 118,
+  "bbox": [
+   57.12,
+   339.36,
+   472.32,
+   409.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f62680af75c8": {
+  "page": 120,
+  "bbox": [
+   94.56,
+   669.12,
+   499.2,
+   746.88
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c81db0113949": {
+  "page": 119,
+  "bbox": [
+   96.0,
+   208.8,
+   362.88,
+   261.12
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3a2cae904cc4": {
+  "page": 120,
+  "bbox": [
+   95.52,
+   441.12,
+   498.24,
+   523.2
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2c8f797d4004": {
+  "page": 118,
+  "bbox": [
+   57.12,
+   301.92,
+   526.56,
+   354.24
+  ],
+  "sim": 0.953,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8c625299b6e3": {
+  "page": 119,
+  "bbox": [
+   96.0,
+   208.8,
+   362.88,
+   261.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:673b62ef0206": {
+  "page": 120,
+  "bbox": [
+   95.52,
+   430.08,
+   498.24,
+   503.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fbd0dee6de93": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   175.68,
+   498.24,
+   247.68
+  ],
+  "sim": 0.952,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:bcf7983d954f": {
+  "page": 120,
+  "bbox": [
+   95.04,
+   254.88,
+   498.24,
+   302.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d6ba3f70ee3a": {
+  "page": 120,
+  "bbox": [
+   94.08,
+   272.16,
+   497.76,
+   330.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1bf728f020b6": {
+  "page": 120,
+  "bbox": [
+   94.08,
+   285.12,
+   497.76,
+   337.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9a8987f92940": {
+  "page": 120,
+  "bbox": [
+   95.04,
+   254.88,
+   498.24,
+   302.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1a206d26edc8": {
+  "page": 120,
+  "bbox": [
+   94.08,
+   272.16,
+   497.76,
+   330.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c4972500215e": {
+  "page": 120,
+  "bbox": [
+   95.04,
+   254.88,
+   498.24,
+   302.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:824dbfdc1e35": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   507.36,
+   499.2,
+   596.64
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7f6972e1fe36": {
+  "page": 122,
+  "bbox": [
+   94.08,
+   227.52,
+   500.16,
+   311.04
+  ],
+  "sim": 0.847,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fca6f58d8ad6": {
+  "page": 121,
+  "bbox": [
+   97.92,
+   304.8,
+   499.2,
+   386.4
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c0671949f7c5": {
+  "page": 121,
+  "bbox": [
+   96.96,
+   158.88,
+   499.2,
+   236.16
+  ],
+  "sim": 0.873,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9f39987057b4": {
+  "page": 121,
+  "bbox": [
+   120.0,
+   694.56,
+   418.08,
+   768.96
+  ],
+  "sim": 0.818,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1d1b07a7c723": {
+  "page": 121,
+  "bbox": [
+   96.48,
+   257.28,
+   488.16,
+   351.84
+  ],
+  "sim": 0.536,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cd3ffed5dabd": {
+  "page": 121,
+  "bbox": [
+   120.0,
+   694.56,
+   418.08,
+   768.96
+  ],
+  "sim": 0.75,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6ee88e8a956e": {
+  "page": 121,
+  "bbox": [
+   120.48,
+   576.48,
+   459.84,
+   660.96
+  ],
+  "sim": 0.78,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8c96849667e4": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   554.88,
+   499.2,
+   643.68
+  ],
+  "sim": 0.538,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b2755b4f3487": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   554.88,
+   499.2,
+   643.68
+  ],
+  "sim": 0.446,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:927760043842": {
+  "page": 116,
+  "bbox": [
+   78.24,
+   106.08,
+   494.4,
+   157.92
+  ],
+  "sim": 0.651,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:969958a881b2": {
+  "page": 120,
+  "bbox": [
+   95.52,
+   335.52,
+   498.24,
+   406.08
+  ],
+  "sim": 0.652,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:984a32d127c0": {
+  "page": 116,
+  "bbox": [
+   78.24,
+   106.08,
+   494.4,
+   157.92
+  ],
+  "sim": 0.793,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6cd41203d648": {
+  "page": 120,
+  "bbox": [
+   94.56,
+   669.12,
+   499.2,
+   746.88
+  ],
+  "sim": 0.545,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d3205ea322a1": {
+  "page": 116,
+  "bbox": [
+   78.24,
+   106.08,
+   494.4,
+   157.92
+  ],
+  "sim": 0.828,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:966fd78e2ee6": {
+  "page": 115,
+  "bbox": [
+   81.12,
+   540.48,
+   485.76,
+   594.24
+  ],
+  "sim": 0.929,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a04e80b5ad02": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   554.88,
+   499.2,
+   643.68
+  ],
+  "sim": 0.534,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:92c84a53e6b4": {
+  "page": 120,
+  "bbox": [
+   93.12,
+   507.36,
+   499.2,
+   596.64
+  ],
+  "sim": 0.508,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d500548c5ea0": {
+  "page": 118,
+  "bbox": [
+   57.12,
+   339.36,
+   472.32,
+   409.44
+  ],
+  "sim": 0.562,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dfc04e53856c": {
+  "page": 121,
+  "bbox": [
+   97.92,
+   353.28,
+   499.2,
+   438.72
+  ],
+  "sim": 0.81,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:decdeb7f5a54": {
+  "page": 120,
+  "bbox": [
+   94.08,
+   308.64,
+   498.24,
+   370.08
+  ],
+  "sim": 0.56,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8910c07eb18f": {
+  "page": 120,
+  "bbox": [
+   95.52,
+   335.52,
+   498.24,
+   406.08
+  ],
+  "sim": 0.737,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cae95c31fbac": {
+  "page": 118,
+  "bbox": [
+   55.68,
+   126.72,
+   472.32,
+   276.0
+  ],
+  "sim": 0.579,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0752228f46e2": {
+  "page": 121,
+  "bbox": [
+   97.92,
+   353.28,
+   499.2,
+   438.72
+  ],
+  "sim": 0.615,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:97d72eb9ebaa": {
+  "page": 118,
+  "bbox": [
+   55.68,
+   126.72,
+   472.32,
+   276.0
+  ],
+  "sim": 0.579,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4568d4a56b92": {
+  "page": 120,
+  "bbox": [
+   95.52,
+   354.24,
+   497.28,
+   437.28
+  ],
+  "sim": 0.437,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:2e987b310047": {
+  "page": 121,
+  "bbox": [
+   96.96,
+   185.76,
+   499.2,
+   255.36
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3f4612b3d65c": {
+  "page": 121,
+  "bbox": [
+   96.96,
+   185.76,
+   499.2,
+   255.36
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:230424305d98": {
+  "page": 121,
+  "bbox": [
+   96.96,
+   185.76,
+   499.2,
+   255.36
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8aa46c920825": {
+  "page": 122,
+  "bbox": [
+   93.6,
+   264.96,
+   500.64,
+   348.0
+  ],
+  "sim": 0.537,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:49307e16fed8": {
+  "page": 115,
+  "bbox": [
+   61.92,
+   659.04,
+   532.32,
+   715.2
+  ],
+  "sim": 0.454,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:daad57e3350f": {
+  "page": 141,
+  "bbox": [
+   95.04,
+   138.24,
+   498.72,
+   198.24
+  ],
+  "sim": 0.774,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:10a857e5565e": {
+  "page": 141,
+  "bbox": [
+   96.0,
+   198.72,
+   413.28,
+   282.24
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:55e8ec1d5822": {
+  "page": 141,
+  "bbox": [
+   96.0,
+   230.4,
+   444.0,
+   297.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:37c177486667": {
+  "page": 141,
+  "bbox": [
+   96.96,
+   433.44,
+   498.72,
+   531.84
+  ],
+  "sim": 0.979,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7113cc078109": {
+  "page": 141,
+  "bbox": [
+   96.96,
+   399.84,
+   498.72,
+   479.04
+  ],
+  "sim": 0.946,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:da3f11123c89": {
+  "page": 141,
+  "bbox": [
+   95.04,
+   314.88,
+   498.72,
+   397.44
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:679369feef23": {
+  "page": 142,
+  "bbox": [
+   56.16,
+   350.4,
+   465.12,
+   408.48
+  ],
+  "sim": 0.914,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:448c51a1aa2e": {
+  "page": 141,
+  "bbox": [
+   96.96,
+   602.88,
+   502.08,
+   688.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2935a758593e": {
+  "page": 141,
+  "bbox": [
+   96.96,
+   602.88,
+   502.08,
+   688.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f1f3f36daa40": {
+  "page": 142,
+  "bbox": [
+   57.12,
+   69.6,
+   462.72,
+   139.2
+  ],
+  "sim": 0.542,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:539d906a2e46": {
+  "page": 141,
+  "bbox": [
+   96.0,
+   666.72,
+   502.08,
+   744.48
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dcb6d6dbe722": {
+  "page": 142,
+  "bbox": [
+   57.12,
+   122.4,
+   462.72,
+   191.04
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fdfbd6317f36": {
+  "page": 144,
+  "bbox": [
+   62.4,
+   692.64,
+   466.56,
+   760.8
+  ],
+  "sim": 0.544,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:de2e85cb4b82": {
+  "page": 146,
+  "bbox": [
+   94.08,
+   682.56,
+   499.68,
+   762.72
+  ],
+  "sim": 0.427,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:91304308f390": {
+  "page": 140,
+  "bbox": [
+   75.84,
+   363.36,
+   479.04,
+   431.04
+  ],
+  "sim": 0.535,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:73c0c8f0cb17": {
+  "page": 142,
+  "bbox": [
+   57.12,
+   39.84,
+   502.08,
+   121.92
+  ],
+  "sim": 0.42,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:c8f2cd83d566": {
+  "page": 141,
+  "bbox": [
+   96.0,
+   630.72,
+   502.08,
+   710.4
+  ],
+  "sim": 0.439,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:9483e33236f6": {
+  "page": 141,
+  "bbox": [
+   96.0,
+   630.72,
+   502.08,
+   710.4
+  ],
+  "sim": 0.64,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e691bfa6b7bc": {
+  "page": 141,
+  "bbox": [
+   95.52,
+   280.32,
+   498.72,
+   348.96
+  ],
+  "sim": 0.524,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6d73ec9b2dfe": {
+  "page": 140,
+  "bbox": [
+   75.84,
+   363.36,
+   479.04,
+   431.04
+  ],
+  "sim": 0.45,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:40f370971522": {
+  "page": 141,
+  "bbox": [
+   95.52,
+   297.12,
+   498.72,
+   379.2
+  ],
+  "sim": 0.651,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c7be8d1f473d": {
+  "page": 144,
+  "bbox": [
+   83.04,
+   665.28,
+   313.92,
+   742.56
+  ],
+  "sim": 0.425,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:e8db033e0128": {
+  "page": 141,
+  "bbox": [
+   96.0,
+   630.72,
+   502.08,
+   710.4
+  ],
+  "sim": 0.477,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:85e4769f35a9": {
+  "page": 141,
+  "bbox": [
+   95.52,
+   280.32,
+   498.72,
+   348.96
+  ],
+  "sim": 0.556,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b11b4e418c5c": {
+  "page": 151,
+  "bbox": [
+   134.88,
+   481.92,
+   534.72,
+   552.0
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d19c7b91d65c": {
+  "page": 151,
+  "bbox": [
+   134.88,
+   481.92,
+   534.72,
+   552.0
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9a935befe6bd": {
+  "page": 153,
+  "bbox": [
+   85.92,
+   48.0,
+   529.92,
+   110.4
+  ],
+  "sim": 0.636,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:26b2c866c068": {
+  "page": 152,
+  "bbox": [
+   59.04,
+   724.8,
+   315.84,
+   765.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4e8f9d3a32ec": {
+  "page": 150,
+  "bbox": [
+   80.16,
+   658.56,
+   465.12,
+   752.64
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:95174f633538": {
+  "page": 152,
+  "bbox": [
+   55.2,
+   98.4,
+   467.04,
+   178.56
+  ],
+  "sim": 0.894,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4ecd69230d59": {
+  "page": 147,
+  "bbox": [
+   64.32,
+   391.2,
+   393.6,
+   472.32
+  ],
+  "sim": 0.9,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:556a47aeae80": {
+  "page": 154,
+  "bbox": [
+   84.0,
+   489.6,
+   456.0,
+   572.64
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:47a8de090e46": {
+  "page": 155,
+  "bbox": [
+   83.04,
+   48.48,
+   539.04,
+   124.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e971ee22d9cc": {
+  "page": 154,
+  "bbox": [
+   83.04,
+   353.76,
+   490.08,
+   382.56
+  ],
+  "sim": 0.619,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c4a6c047ffd3": {
+  "page": 154,
+  "bbox": [
+   84.0,
+   472.8,
+   488.16,
+   543.84
+  ],
+  "sim": 0.745,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b427f2a7b5d3": {
+  "page": 155,
+  "bbox": [
+   129.6,
+   624.96,
+   538.08,
+   692.64
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:03f049a1c36f": {
+  "page": 154,
+  "bbox": [
+   84.0,
+   454.56,
+   488.16,
+   526.08
+  ],
+  "sim": 0.774,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e4aee914d23b": {
+  "page": 155,
+  "bbox": [
+   130.08,
+   610.08,
+   538.08,
+   672.48
+  ],
+  "sim": 0.922,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:64b248c52f30": {
+  "page": 151,
+  "bbox": [
+   86.88,
+   108.96,
+   533.76,
+   199.68
+  ],
+  "sim": 0.571,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fb8c5a46d91f": {
+  "page": 159,
+  "bbox": [
+   133.92,
+   419.52,
+   529.92,
+   496.32
+  ],
+  "sim": 0.782,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2efd54be46a6": {
+  "page": 159,
+  "bbox": [
+   134.88,
+   520.8,
+   529.44,
+   608.16
+  ],
+  "sim": 0.958,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5106bf82d411": {
+  "page": 159,
+  "bbox": [
+   157.44,
+   553.92,
+   513.6,
+   630.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:abe00d6d9b3c": {
+  "page": 159,
+  "bbox": [
+   157.44,
+   589.44,
+   513.6,
+   661.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6262975bff89": {
+  "page": 160,
+  "bbox": [
+   94.08,
+   99.36,
+   497.28,
+   196.8
+  ],
+  "sim": 0.889,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:aacb31b9750d": {
+  "page": 159,
+  "bbox": [
+   135.36,
+   700.32,
+   530.4,
+   768.0
+  ],
+  "sim": 0.959,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dd6a051c751b": {
+  "page": 160,
+  "bbox": [
+   94.08,
+   68.16,
+   497.28,
+   166.08
+  ],
+  "sim": 0.856,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c44e58cbea1d": {
+  "page": 160,
+  "bbox": [
+   111.84,
+   41.28,
+   557.76,
+   149.76
+  ],
+  "sim": 0.827,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b61898c7b6d2": {
+  "page": 160,
+  "bbox": [
+   94.08,
+   239.52,
+   498.24,
+   295.2
+  ],
+  "sim": 0.862,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:bb9acf7a3b76": {
+  "page": 161,
+  "bbox": [
+   136.32,
+   357.6,
+   529.44,
+   404.16
+  ],
+  "sim": 0.931,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4889ff025fbb": {
+  "page": 161,
+  "bbox": [
+   106.56,
+   420.48,
+   529.92,
+   501.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:65eed15d15d1": {
+  "page": 161,
+  "bbox": [
+   134.88,
+   224.16,
+   528.96,
+   284.64
+  ],
+  "sim": 0.933,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d30fb350db1d": {
+  "page": 160,
+  "bbox": [
+   94.08,
+   239.52,
+   498.24,
+   295.2
+  ],
+  "sim": 0.688,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b45b9aa7876b": {
+  "page": 161,
+  "bbox": [
+   134.88,
+   243.36,
+   529.44,
+   303.84
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e02ddc38f00f": {
+  "page": 161,
+  "bbox": [
+   136.32,
+   260.64,
+   529.44,
+   337.92
+  ],
+  "sim": 0.952,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:01771730b945": {
+  "page": 163,
+  "bbox": [
+   71.04,
+   738.24,
+   530.88,
+   783.36
+  ],
+  "sim": 0.942,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:28484c53b517": {
+  "page": 164,
+  "bbox": [
+   96.96,
+   46.08,
+   570.72,
+   109.44
+  ],
+  "sim": 0.966,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ebf9056c6297": {
+  "page": 163,
+  "bbox": [
+   132.48,
+   626.88,
+   530.88,
+   754.56
+  ],
+  "sim": 0.671,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:137bdf7b063a": {
+  "page": 150,
+  "bbox": [
+   60.96,
+   599.04,
+   535.68,
+   683.04
+  ],
+  "sim": 0.233,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:a707cec21555": {
+  "page": 164,
+  "bbox": [
+   96.48,
+   705.6,
+   497.28,
+   765.12
+  ],
+  "sim": 0.892,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2b736af88f49": {
+  "page": 164,
+  "bbox": [
+   95.52,
+   559.2,
+   498.24,
+   639.84
+  ],
+  "sim": 0.957,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:582a2ee2863a": {
+  "page": 164,
+  "bbox": [
+   95.52,
+   232.32,
+   498.24,
+   293.28
+  ],
+  "sim": 0.936,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0377cf97693f": {
+  "page": 164,
+  "bbox": [
+   96.48,
+   595.68,
+   441.6,
+   665.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4e1154f9e6c8": {
+  "page": 167,
+  "bbox": [
+   65.76,
+   266.88,
+   530.4,
+   369.6
+  ],
+  "sim": 0.846,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f2146d86033c": {
+  "page": 166,
+  "bbox": [
+   59.52,
+   215.04,
+   535.2,
+   298.08
+  ],
+  "sim": 0.509,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7299b6c07d4c": {
+  "page": 165,
+  "bbox": [
+   84.96,
+   42.24,
+   528.48,
+   140.64
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9ff5c2774874": {
+  "page": 162,
+  "bbox": [
+   100.8,
+   324.48,
+   467.04,
+   378.24
+  ],
+  "sim": 0.882,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:275ee8371535": {
+  "page": 169,
+  "bbox": [
+   95.04,
+   96.0,
+   408.96,
+   149.28
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5ac67b3a0dc3": {
+  "page": 169,
+  "bbox": [
+   95.04,
+   96.0,
+   408.96,
+   149.28
+  ],
+  "sim": 0.944,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:44eb8a7798bd": {
+  "page": 168,
+  "bbox": [
+   60.96,
+   443.04,
+   464.64,
+   524.16
+  ],
+  "sim": 0.932,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ad587b179cf1": {
+  "page": 168,
+  "bbox": [
+   60.48,
+   527.52,
+   322.08,
+   581.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9b04483f9a43": {
+  "page": 169,
+  "bbox": [
+   227.04,
+   290.88,
+   499.2,
+   349.92
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d2950f3cf3ed": {
+  "page": 168,
+  "bbox": [
+   59.04,
+   617.28,
+   463.2,
+   689.28
+  ],
+  "sim": 0.882,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fff7a5de54dc": {
+  "page": 169,
+  "bbox": [
+   205.44,
+   186.24,
+   391.2,
+   217.44
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6591b1bc1af9": {
+  "page": 169,
+  "bbox": [
+   181.92,
+   255.36,
+   408.96,
+   287.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d93c44b5164e": {
+  "page": 169,
+  "bbox": [
+   96.0,
+   668.64,
+   483.36,
+   762.72
+  ],
+  "sim": 0.644,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9922d36d021f": {
+  "page": 169,
+  "bbox": [
+   95.52,
+   339.36,
+   498.72,
+   400.8
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b178e15e51cc": {
+  "page": 168,
+  "bbox": [
+   61.44,
+   390.24,
+   413.76,
+   442.56
+  ],
+  "sim": 0.944,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c31ba0ef587d": {
+  "page": 169,
+  "bbox": [
+   94.56,
+   569.76,
+   498.72,
+   651.36
+  ],
+  "sim": 0.939,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5b055910add3": {
+  "page": 169,
+  "bbox": [
+   95.04,
+   468.48,
+   499.2,
+   539.04
+  ],
+  "sim": 0.734,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:573d2c4cf926": {
+  "page": 169,
+  "bbox": [
+   96.48,
+   420.48,
+   499.2,
+   502.56
+  ],
+  "sim": 0.974,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e1877975471c": {
+  "page": 169,
+  "bbox": [
+   95.52,
+   385.92,
+   446.88,
+   463.2
+  ],
+  "sim": 0.946,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:623db7e4f856": {
+  "page": 169,
+  "bbox": [
+   96.0,
+   624.0,
+   436.32,
+   716.64
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:98e516c497b1": {
+  "page": 175,
+  "bbox": [
+   93.6,
+   67.68,
+   461.76,
+   153.6
+  ],
+  "sim": 0.87,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:17d0d71542b4": {
+  "page": 174,
+  "bbox": [
+   96.0,
+   240.48,
+   497.76,
+   311.04
+  ],
+  "sim": 0.989,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b1e5064b3077": {
+  "page": 175,
+  "bbox": [
+   94.56,
+   395.52,
+   500.64,
+   487.2
+  ],
+  "sim": 0.923,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:16dcb619c8aa": {
+  "page": 175,
+  "bbox": [
+   94.56,
+   395.52,
+   500.64,
+   487.2
+  ],
+  "sim": 0.957,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ec76919ac995": {
+  "page": 175,
+  "bbox": [
+   94.56,
+   499.2,
+   500.64,
+   549.6
+  ],
+  "sim": 0.941,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:90a7e3531313": {
+  "page": 175,
+  "bbox": [
+   94.56,
+   326.88,
+   500.64,
+   416.16
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:82dd5bc91e46": {
+  "page": 175,
+  "bbox": [
+   95.52,
+   628.32,
+   499.2,
+   693.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:3f4727fe61ec": {
+  "page": 175,
+  "bbox": [
+   95.52,
+   613.92,
+   499.68,
+   658.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:765d8445d315": {
+  "page": 175,
+  "bbox": [
+   96.0,
+   677.76,
+   376.8,
+   758.4
+  ],
+  "sim": 0.721,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:687746b07fa8": {
+  "page": 176,
+  "bbox": [
+   97.44,
+   600.48,
+   497.28,
+   670.08
+  ],
+  "sim": 0.966,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4c2b8fd4c6c4": {
+  "page": 176,
+  "bbox": [
+   97.92,
+   501.6,
+   471.36,
+   560.64
+  ],
+  "sim": 0.825,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b6b3a0901437": {
+  "page": 176,
+  "bbox": [
+   97.92,
+   501.6,
+   471.36,
+   560.64
+  ],
+  "sim": 0.75,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b2d2324bd005": {
+  "page": 176,
+  "bbox": [
+   120.96,
+   519.36,
+   471.36,
+   567.36
+  ],
+  "sim": 0.583,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8052567b18b2": {
+  "page": 177,
+  "bbox": [
+   101.28,
+   251.04,
+   507.36,
+   383.52
+  ],
+  "sim": 0.976,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1b57f5c94943": {
+  "page": 178,
+  "bbox": [
+   96.0,
+   461.76,
+   498.24,
+   520.8
+  ],
+  "sim": 0.794,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:33cf8e501c56": {
+  "page": 178,
+  "bbox": [
+   120.0,
+   380.64,
+   443.04,
+   479.04
+  ],
+  "sim": 0.685,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:469187671c31": {
+  "page": 177,
+  "bbox": [
+   101.28,
+   461.28,
+   506.4,
+   518.88
+  ],
+  "sim": 0.448,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:8bb81c9ab4db": {
+  "page": 178,
+  "bbox": [
+   96.0,
+   461.76,
+   498.24,
+   520.8
+  ],
+  "sim": 0.794,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f9f1c1d17d7f": {
+  "page": 178,
+  "bbox": [
+   96.96,
+   577.44,
+   418.08,
+   691.68
+  ],
+  "sim": 0.707,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a3730acec181": {
+  "page": 178,
+  "bbox": [
+   96.96,
+   577.44,
+   418.08,
+   691.68
+  ],
+  "sim": 0.68,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e21eb576c839": {
+  "page": 181,
+  "bbox": [
+   65.28,
+   129.12,
+   524.64,
+   210.72
+  ],
+  "sim": 0.422,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:93642982bd09": {
+  "page": 183,
+  "bbox": [
+   60.0,
+   342.72,
+   532.8,
+   396.48
+  ],
+  "sim": 0.964,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:aca39cb5f1e9": {
+  "page": 183,
+  "bbox": [
+   132.48,
+   379.2,
+   532.8,
+   446.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:96cf4412c28e": {
+  "page": 186,
+  "bbox": [
+   65.76,
+   93.12,
+   527.52,
+   175.2
+  ],
+  "sim": 0.554,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e0efb1db9093": {
+  "page": 184,
+  "bbox": [
+   211.68,
+   76.32,
+   498.24,
+   102.24
+  ],
+  "sim": 0.826,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b4314598484e": {
+  "page": 187,
+  "bbox": [
+   68.64,
+   89.76,
+   525.6,
+   161.28
+  ],
+  "sim": 0.532,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b5d7cbf95c80": {
+  "page": 180,
+  "bbox": [
+   59.04,
+   93.12,
+   464.64,
+   173.28
+  ],
+  "sim": 0.433,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:13462b612d35": {
+  "page": 188,
+  "bbox": [
+   63.84,
+   553.44,
+   462.24,
+   613.92
+  ],
+  "sim": 0.414,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:13b525eb663d": {
+  "page": 181,
+  "bbox": [
+   101.28,
+   79.68,
+   524.64,
+   147.36
+  ],
+  "sim": 0.489,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:02e62ff68e82": {
+  "page": 185,
+  "bbox": [
+   64.8,
+   412.8,
+   529.92,
+   473.28
+  ],
+  "sim": 0.532,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a56137618d66": {
+  "page": 185,
+  "bbox": [
+   64.8,
+   412.8,
+   529.92,
+   489.12
+  ],
+  "sim": 0.47,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:d8137f4fcdf5": {
+  "page": 186,
+  "bbox": [
+   65.76,
+   92.64,
+   527.52,
+   158.88
+  ],
+  "sim": 0.696,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:48a955ad9f8a": {
+  "page": 196,
+  "bbox": [
+   68.16,
+   426.24,
+   466.56,
+   494.4
+  ],
+  "sim": 0.909,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:eeb0b379672a": {
+  "page": 196,
+  "bbox": [
+   67.68,
+   408.0,
+   466.56,
+   476.16
+  ],
+  "sim": 0.889,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:750cfa0e425f": {
+  "page": 196,
+  "bbox": [
+   68.64,
+   569.28,
+   467.04,
+   637.44
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8f1133e62623": {
+  "page": 196,
+  "bbox": [
+   68.64,
+   693.12,
+   360.48,
+   747.36
+  ],
+  "sim": 0.569,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6732d4c3ef31": {
+  "page": 196,
+  "bbox": [
+   68.64,
+   693.12,
+   360.48,
+   747.36
+  ],
+  "sim": 0.569,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:52fc7f0806a5": {
+  "page": 198,
+  "bbox": [
+   95.04,
+   66.72,
+   495.36,
+   140.16
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:03ac717df8ad": {
+  "page": 197,
+  "bbox": [
+   96.96,
+   653.76,
+   499.2,
+   718.08
+  ],
+  "sim": 0.947,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:de077f18ea9b": {
+  "page": 198,
+  "bbox": [
+   95.04,
+   386.4,
+   497.28,
+   451.2
+  ],
+  "sim": 0.661,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:37d2e8ec69de": {
+  "page": 198,
+  "bbox": [
+   95.04,
+   66.72,
+   495.36,
+   140.16
+  ],
+  "sim": 0.512,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4a7c903757c3": {
+  "page": 198,
+  "bbox": [
+   95.04,
+   66.72,
+   495.36,
+   140.16
+  ],
+  "sim": 0.641,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2e16e3733b74": {
+  "page": 197,
+  "bbox": [
+   96.0,
+   182.4,
+   498.24,
+   253.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f543778e2dca": {
+  "page": 199,
+  "bbox": [
+   173.76,
+   147.84,
+   482.88,
+   208.8
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:08ec62d0090f": {
+  "page": 199,
+  "bbox": [
+   174.72,
+   308.16,
+   431.04,
+   338.88
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1924ae28ba20": {
+  "page": 199,
+  "bbox": [
+   175.2,
+   326.4,
+   429.6,
+   368.16
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d973b1ea25b7": {
+  "page": 199,
+  "bbox": [
+   94.56,
+   113.28,
+   501.12,
+   166.08
+  ],
+  "sim": 0.925,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:453d155ac8c1": {
+  "page": 199,
+  "bbox": [
+   119.52,
+   565.44,
+   483.84,
+   652.8
+  ],
+  "sim": 0.743,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8b68fd39353b": {
+  "page": 199,
+  "bbox": [
+   132.48,
+   633.6,
+   469.44,
+   717.12
+  ],
+  "sim": 0.671,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cab532c657f7": {
+  "page": 199,
+  "bbox": [
+   95.52,
+   465.12,
+   463.68,
+   510.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:83c2c131dbb7": {
+  "page": 201,
+  "bbox": [
+   128.64,
+   72.0,
+   538.08,
+   132.0
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c668d1625a7f": {
+  "page": 201,
+  "bbox": [
+   129.6,
+   154.56,
+   537.6,
+   199.2
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9badd20ec011": {
+  "page": 201,
+  "bbox": [
+   130.08,
+   235.2,
+   538.56,
+   298.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ee06d2c8665f": {
+  "page": 201,
+  "bbox": [
+   128.64,
+   72.0,
+   538.08,
+   132.0
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7c71411c648f": {
+  "page": 200,
+  "bbox": [
+   82.08,
+   671.52,
+   490.08,
+   732.96
+  ],
+  "sim": 0.93,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:024fbd7f3a65": {
+  "page": 200,
+  "bbox": [
+   82.56,
+   323.52,
+   489.12,
+   450.24
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:07bc8beb6eb3": {
+  "page": 204,
+  "bbox": [
+   62.4,
+   359.04,
+   461.76,
+   430.08
+  ],
+  "sim": 0.608,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9d05ed032ffc": {
+  "page": 204,
+  "bbox": [
+   62.4,
+   339.84,
+   461.28,
+   411.84
+  ],
+  "sim": 0.925,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:037734b20787": {
+  "page": 199,
+  "bbox": [
+   119.52,
+   565.44,
+   483.84,
+   652.8
+  ],
+  "sim": 0.633,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:77df374499c7": {
+  "page": 205,
+  "bbox": [
+   130.08,
+   406.56,
+   535.2,
+   489.6
+  ],
+  "sim": 0.65,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9e52c482ab92": {
+  "page": 199,
+  "bbox": [
+   119.52,
+   565.44,
+   483.84,
+   652.8
+  ],
+  "sim": 0.472,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:d43cc5010fad": {
+  "page": 199,
+  "bbox": [
+   119.52,
+   565.44,
+   483.84,
+   652.8
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1330c78496af": {
+  "page": 208,
+  "bbox": [
+   119.52,
+   204.48,
+   496.8,
+   251.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c501a0a202ae": {
+  "page": 208,
+  "bbox": [
+   96.48,
+   291.36,
+   496.32,
+   357.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f825fde52dc8": {
+  "page": 208,
+  "bbox": [
+   96.96,
+   360.48,
+   496.8,
+   449.28
+  ],
+  "sim": 0.942,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:017479764fe1": {
+  "page": 199,
+  "bbox": [
+   132.48,
+   633.6,
+   469.44,
+   717.12
+  ],
+  "sim": 0.512,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f043b59032fc": {
+  "page": 209,
+  "bbox": [
+   126.24,
+   238.56,
+   539.04,
+   300.48
+  ],
+  "sim": 0.935,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:996fe6ca3e72": {
+  "page": 203,
+  "bbox": [
+   128.64,
+   434.88,
+   534.72,
+   502.08
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:340b8e193297": {
+  "page": 208,
+  "bbox": [
+   96.48,
+   312.96,
+   496.32,
+   374.88
+  ],
+  "sim": 0.596,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:762019c7acf9": {
+  "page": 208,
+  "bbox": [
+   96.48,
+   291.36,
+   496.32,
+   357.6
+  ],
+  "sim": 0.46,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:61a7dd6589f0": {
+  "page": 209,
+  "bbox": [
+   127.2,
+   276.48,
+   539.52,
+   340.8
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:2197bdff88cf": {
+  "page": 205,
+  "bbox": [
+   130.08,
+   406.56,
+   535.2,
+   489.6
+  ],
+  "sim": 0.553,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f7939317320d": {
+  "page": 209,
+  "bbox": [
+   126.24,
+   238.56,
+   539.04,
+   300.48
+  ],
+  "sim": 0.957,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1aff10e84beb": {
+  "page": 218,
+  "bbox": [
+   58.08,
+   160.8,
+   344.16,
+   217.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:81443c285eae": {
+  "page": 218,
+  "bbox": [
+   58.08,
+   148.32,
+   360.48,
+   203.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c3735a18c22a": {
+  "page": 220,
+  "bbox": [
+   95.04,
+   616.8,
+   498.24,
+   685.92
+  ],
+  "sim": 0.685,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9d056599f469": {
+  "page": 221,
+  "bbox": [
+   95.52,
+   136.32,
+   462.24,
+   210.72
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4ae9f60599c8": {
+  "page": 218,
+  "bbox": [
+   80.16,
+   251.04,
+   416.16,
+   293.76
+  ],
+  "sim": 0.935,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:961956a3c794": {
+  "page": 217,
+  "bbox": [
+   94.08,
+   386.4,
+   502.08,
+   438.24
+  ],
+  "sim": 0.558,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:61beb5c69f07": {
+  "page": 217,
+  "bbox": [
+   94.08,
+   475.2,
+   502.08,
+   522.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e828e16a9c4b": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   228.96,
+   499.68,
+   319.2
+  ],
+  "sim": 0.673,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:170118ae7c97": {
+  "page": 218,
+  "bbox": [
+   71.04,
+   125.28,
+   360.48,
+   163.2
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1ec13dc15d45": {
+  "page": 217,
+  "bbox": [
+   93.12,
+   482.4,
+   502.08,
+   540.96
+  ],
+  "sim": 0.951,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:025270003dd0": {
+  "page": 218,
+  "bbox": [
+   54.24,
+   93.6,
+   416.64,
+   132.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:17353ec37cce": {
+  "page": 217,
+  "bbox": [
+   93.12,
+   704.64,
+   502.08,
+   755.04
+  ],
+  "sim": 0.94,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8ea506eec2cc": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   348.96,
+   502.56,
+   408.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1324a2f96269": {
+  "page": 220,
+  "bbox": [
+   94.56,
+   133.92,
+   498.24,
+   192.0
+  ],
+  "sim": 0.85,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:60e8f41da032": {
+  "page": 220,
+  "bbox": [
+   96.0,
+   690.72,
+   498.72,
+   759.36
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c291bc025578": {
+  "page": 220,
+  "bbox": [
+   117.12,
+   439.68,
+   499.2,
+   466.56
+  ],
+  "sim": 0.784,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7222e2d98de5": {
+  "page": 220,
+  "bbox": [
+   95.04,
+   469.44,
+   471.84,
+   540.0
+  ],
+  "sim": 0.966,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:51b771af44d8": {
+  "page": 220,
+  "bbox": [
+   120.0,
+   118.56,
+   498.72,
+   144.96
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:55e437fef1f8": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   415.68,
+   502.08,
+   462.24
+  ],
+  "sim": 0.976,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:bf93f9724bac": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   228.96,
+   499.68,
+   319.2
+  ],
+  "sim": 0.468,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:34a2ea4d9539": {
+  "page": 220,
+  "bbox": [
+   95.52,
+   605.28,
+   406.56,
+   670.08
+  ],
+  "sim": 0.778,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0eea6d1862a3": {
+  "page": 223,
+  "bbox": [
+   105.12,
+   526.08,
+   531.84,
+   698.4
+  ],
+  "sim": 0.964,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ce17658fd333": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   228.96,
+   499.68,
+   319.2
+  ],
+  "sim": 0.438,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:062274181c73": {
+  "page": 224,
+  "bbox": [
+   91.68,
+   80.16,
+   498.72,
+   152.16
+  ],
+  "sim": 0.944,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:31b081b79db4": {
+  "page": 224,
+  "bbox": [
+   91.68,
+   179.04,
+   502.08,
+   252.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:73b45c58481f": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   189.12,
+   499.68,
+   302.4
+  ],
+  "sim": 0.445,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:e90188cd8a63": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   228.96,
+   499.68,
+   319.2
+  ],
+  "sim": 0.158,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:b111a2991173": {
+  "page": 221,
+  "bbox": [
+   96.0,
+   228.96,
+   499.68,
+   319.2
+  ],
+  "sim": 0.441,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:50b123ba2c80": {
+  "page": 224,
+  "bbox": [
+   114.24,
+   204.48,
+   502.08,
+   257.76
+  ],
+  "sim": 0.397,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:b9820096ccc3": {
+  "page": 231,
+  "bbox": [
+   93.6,
+   325.44,
+   499.2,
+   395.04
+  ],
+  "sim": 0.389,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:0ebf85a4dd4e": {
+  "page": 228,
+  "bbox": [
+   55.2,
+   352.32,
+   466.56,
+   421.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ed068829a915": {
+  "page": 231,
+  "bbox": [
+   93.6,
+   325.44,
+   499.2,
+   395.04
+  ],
+  "sim": 0.438,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:cc7e7632ccd0": {
+  "page": 231,
+  "bbox": [
+   94.56,
+   247.2,
+   502.08,
+   299.04
+  ],
+  "sim": 0.495,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:9faeef2c020e": {
+  "page": 234,
+  "bbox": [
+   94.56,
+   624.48,
+   498.72,
+   732.96
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:005c91dbd789": {
+  "page": 232,
+  "bbox": [
+   55.2,
+   397.92,
+   375.36,
+   427.2
+  ],
+  "sim": 0.763,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7a38e7f2afa7": {
+  "page": 233,
+  "bbox": [
+   125.76,
+   712.32,
+   541.92,
+   773.76
+  ],
+  "sim": 0.551,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8f95e04633d7": {
+  "page": 234,
+  "bbox": [
+   94.56,
+   624.48,
+   498.72,
+   732.96
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9c71bd7cfa00": {
+  "page": 231,
+  "bbox": [
+   92.64,
+   656.64,
+   437.76,
+   726.72
+  ],
+  "sim": 0.388,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:b15aa9de773f": {
+  "page": 232,
+  "bbox": [
+   80.64,
+   364.32,
+   468.48,
+   393.12
+  ],
+  "sim": 0.852,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:81c9b13107b5": {
+  "page": 232,
+  "bbox": [
+   80.64,
+   433.44,
+   394.56,
+   461.28
+  ],
+  "sim": 0.852,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5c4c8c6caa5b": {
+  "page": 231,
+  "bbox": [
+   94.56,
+   247.2,
+   502.08,
+   299.04
+  ],
+  "sim": 0.443,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:a46c1631db50": {
+  "page": 233,
+  "bbox": [
+   125.76,
+   590.4,
+   542.4,
+   649.44
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f164eb7c55ce": {
+  "page": 236,
+  "bbox": [
+   78.72,
+   577.44,
+   424.32,
+   755.04
+  ],
+  "sim": 0.966,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ba0a85029882": {
+  "page": 237,
+  "bbox": [
+   127.68,
+   167.52,
+   508.8,
+   227.52
+  ],
+  "sim": 0.649,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a0cd2014476a": {
+  "page": 237,
+  "bbox": [
+   128.16,
+   444.48,
+   539.52,
+   515.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e547efc54dc3": {
+  "page": 237,
+  "bbox": [
+   181.44,
+   376.8,
+   484.8,
+   408.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:09adfb4ca22c": {
+  "page": 237,
+  "bbox": [
+   127.2,
+   224.64,
+   540.48,
+   286.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d8f02256d3cc": {
+  "page": 237,
+  "bbox": [
+   127.2,
+   212.16,
+   540.48,
+   267.84
+  ],
+  "sim": 0.931,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9d3addc9c9db": {
+  "page": 237,
+  "bbox": [
+   127.68,
+   287.04,
+   540.48,
+   355.68
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:78dd4eb98921": {
+  "page": 237,
+  "bbox": [
+   127.2,
+   224.64,
+   540.48,
+   286.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:94dbd10850dc": {
+  "page": 237,
+  "bbox": [
+   127.2,
+   211.68,
+   540.48,
+   251.52
+  ],
+  "sim": 0.897,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:4f9133817fb6": {
+  "page": 237,
+  "bbox": [
+   128.16,
+   384.48,
+   540.96,
+   441.12
+  ],
+  "sim": 0.935,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a6a500357727": {
+  "page": 237,
+  "bbox": [
+   127.68,
+   356.16,
+   505.44,
+   401.28
+  ],
+  "sim": 0.96,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:08bbb7a572d0": {
+  "page": 238,
+  "bbox": [
+   59.52,
+   262.08,
+   468.48,
+   326.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:73a48b571d3f": {
+  "page": 238,
+  "bbox": [
+   60.48,
+   161.76,
+   466.56,
+   223.68
+  ],
+  "sim": 0.541,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6722711e7ff7": {
+  "page": 238,
+  "bbox": [
+   60.0,
+   688.8,
+   471.84,
+   735.36
+  ],
+  "sim": 0.432,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:f5503a36c836": {
+  "page": 239,
+  "bbox": [
+   95.52,
+   161.28,
+   501.6,
+   230.88
+  ],
+  "sim": 0.455,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:842507d00af6": {
+  "page": 238,
+  "bbox": [
+   59.52,
+   252.0,
+   468.48,
+   294.24
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:dad69b9959e8": {
+  "page": 239,
+  "bbox": [
+   92.64,
+   678.72,
+   502.56,
+   726.24
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:85ec3f513674": {
+  "page": 239,
+  "bbox": [
+   92.64,
+   684.96,
+   503.04,
+   754.56
+  ],
+  "sim": 0.975,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5975575e7ebc": {
+  "page": 238,
+  "bbox": [
+   60.0,
+   693.12,
+   471.84,
+   745.44
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:52e543c6103f": {
+  "page": 238,
+  "bbox": [
+   60.48,
+   524.16,
+   470.4,
+   567.84
+  ],
+  "sim": 0.6,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b087c667e4af": {
+  "page": 239,
+  "bbox": [
+   93.12,
+   294.72,
+   502.56,
+   362.4
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f5c670ab2e59": {
+  "page": 237,
+  "bbox": [
+   151.68,
+   384.0,
+   540.96,
+   424.32
+  ],
+  "sim": 0.846,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:823a3c68b393": {
+  "page": 238,
+  "bbox": [
+   59.52,
+   252.0,
+   468.48,
+   294.24
+  ],
+  "sim": 0.8,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1e5a6c9c89cc": {
+  "page": 239,
+  "bbox": [
+   93.12,
+   344.16,
+   503.52,
+   416.16
+  ],
+  "sim": 0.439,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:25a198fb26d3": {
+  "page": 239,
+  "bbox": [
+   93.12,
+   318.72,
+   502.56,
+   384.96
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:c95106758bbf": {
+  "page": 235,
+  "bbox": [
+   93.12,
+   386.88,
+   503.52,
+   464.64
+  ],
+  "sim": 0.386,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:0eaebfc629af": {
+  "page": 238,
+  "bbox": [
+   123.36,
+   199.68,
+   468.48,
+   256.8
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:33c397105ea1": {
+  "page": 238,
+  "bbox": [
+   123.36,
+   199.68,
+   468.48,
+   256.8
+  ],
+  "sim": 0.92,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:9c8eea89ce5f": {
+  "page": 238,
+  "bbox": [
+   60.0,
+   693.12,
+   471.84,
+   745.44
+  ],
+  "sim": 0.524,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5fcd3afc5878": {
+  "page": 240,
+  "bbox": [
+   88.8,
+   521.28,
+   455.52,
+   571.2
+  ],
+  "sim": 0.7,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8b6bb2cd2448": {
+  "page": 240,
+  "bbox": [
+   88.8,
+   521.28,
+   455.52,
+   571.2
+  ],
+  "sim": 0.719,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6f4e5c789bed": {
+  "page": 235,
+  "bbox": [
+   93.12,
+   367.2,
+   503.52,
+   443.04
+  ],
+  "sim": 0.419,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:9c6455e22ce9": {
+  "page": 238,
+  "bbox": [
+   60.0,
+   693.12,
+   471.84,
+   745.44
+  ],
+  "sim": 0.783,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:0cbb66d01709": {
+  "page": 112,
+  "bbox": [
+   58.56,
+   683.52,
+   465.12,
+   744.96
+  ],
+  "sim": 0.324,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:484e0af86d9a": {
+  "page": 247,
+  "bbox": [
+   138.24,
+   643.68,
+   455.04,
+   738.72
+  ],
+  "sim": 0.474,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:811a8977702c": {
+  "page": 247,
+  "bbox": [
+   96.48,
+   77.76,
+   499.68,
+   144.0
+  ],
+  "sim": 0.894,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:328334c8fcd9": {
+  "page": 248,
+  "bbox": [
+   91.68,
+   107.52,
+   492.48,
+   157.44
+  ],
+  "sim": 0.931,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d3d6fc50639e": {
+  "page": 247,
+  "bbox": [
+   138.24,
+   643.68,
+   455.04,
+   738.72
+  ],
+  "sim": 0.627,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cd5845ca9530": {
+  "page": 247,
+  "bbox": [
+   96.0,
+   267.84,
+   500.16,
+   336.96
+  ],
+  "sim": 0.429,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:5aecf762169c": {
+  "page": 247,
+  "bbox": [
+   96.48,
+   415.2,
+   430.56,
+   487.68
+  ],
+  "sim": 0.554,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:750e2f7c51f0": {
+  "page": 247,
+  "bbox": [
+   96.0,
+   267.84,
+   500.16,
+   336.96
+  ],
+  "sim": 0.542,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1136ceb4d0cd": {
+  "page": 248,
+  "bbox": [
+   91.68,
+   168.48,
+   492.96,
+   253.44
+  ],
+  "sim": 0.96,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8932f3905d79": {
+  "page": 248,
+  "bbox": [
+   89.76,
+   576.48,
+   493.44,
+   645.6
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:6f6df13d2007": {
+  "page": 250,
+  "bbox": [
+   55.68,
+   130.08,
+   467.04,
+   200.16
+  ],
+  "sim": 0.967,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:b3a098c0d0d3": {
+  "page": 246,
+  "bbox": [
+   96.0,
+   564.0,
+   497.76,
+   635.04
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:db03bb0bca55": {
+  "page": 246,
+  "bbox": [
+   96.0,
+   564.0,
+   497.76,
+   635.04
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:8ac1438c8281": {
+  "page": 247,
+  "bbox": [
+   96.0,
+   250.08,
+   500.16,
+   298.56
+  ],
+  "sim": 0.565,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:efe223b401db": {
+  "page": 250,
+  "bbox": [
+   55.2,
+   495.84,
+   467.04,
+   587.04
+  ],
+  "sim": 0.358,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:69a52bb2c8a8": {
+  "page": 247,
+  "bbox": [
+   96.0,
+   250.08,
+   500.16,
+   298.56
+  ],
+  "sim": 0.759,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5c0dea591536": {
+  "page": 250,
+  "bbox": [
+   55.68,
+   111.36,
+   467.04,
+   182.88
+  ],
+  "sim": 0.432,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:7aff746ffe1a": {
+  "page": 250,
+  "bbox": [
+   55.68,
+   130.08,
+   467.04,
+   200.16
+  ],
+  "sim": 0.793,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:cf13780b1de6": {
+  "page": 250,
+  "bbox": [
+   55.68,
+   111.36,
+   467.04,
+   182.88
+  ],
+  "sim": 0.625,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:1ede1c10f517": {
+  "page": 260,
+  "bbox": [
+   63.84,
+   617.28,
+   470.4,
+   743.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d39bc2b56439": {
+  "page": 260,
+  "bbox": [
+   63.84,
+   617.28,
+   470.4,
+   743.52
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:542f726087b7": {
+  "page": 261,
+  "bbox": [
+   95.52,
+   578.4,
+   479.52,
+   633.12
+  ],
+  "sim": 0.361,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:68967ffd8221": {
+  "page": 261,
+  "bbox": [
+   95.04,
+   335.04,
+   498.72,
+   382.56
+  ],
+  "sim": 0.878,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:18c78799dd38": {
+  "page": 258,
+  "bbox": [
+   63.84,
+   391.68,
+   446.4,
+   475.68
+  ],
+  "sim": 0.952,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:bd59a9235081": {
+  "page": 261,
+  "bbox": [
+   95.52,
+   419.52,
+   498.72,
+   497.28
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ba5919d43b6a": {
+  "page": 261,
+  "bbox": [
+   95.52,
+   480.0,
+   498.72,
+   557.76
+  ],
+  "sim": 0.894,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:e09e547d2b47": {
+  "page": 262,
+  "bbox": [
+   159.36,
+   107.52,
+   430.08,
+   135.36
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5dfc123899e4": {
+  "page": 263,
+  "bbox": [
+   61.44,
+   186.24,
+   535.2,
+   240.0
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:da23dcc325a5": {
+  "page": 258,
+  "bbox": [
+   63.84,
+   391.68,
+   446.4,
+   475.68
+  ],
+  "sim": 0.638,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:f699db8d1836": {
+  "page": 263,
+  "bbox": [
+   131.52,
+   207.36,
+   535.2,
+   276.96
+  ],
+  "sim": 0.82,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:edaab1ca078a": {
+  "page": 262,
+  "bbox": [
+   92.64,
+   397.92,
+   497.28,
+   444.96
+  ],
+  "sim": 0.854,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:567da5bf7d13": {
+  "page": 263,
+  "bbox": [
+   132.48,
+   441.6,
+   534.72,
+   510.72
+  ],
+  "sim": 0.687,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:7de4fef8fa26": {
+  "page": 263,
+  "bbox": [
+   61.44,
+   186.24,
+   535.2,
+   240.0
+  ],
+  "sim": 0.529,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:baa032642027": {
+  "page": 263,
+  "bbox": [
+   132.0,
+   382.56,
+   534.72,
+   456.0
+  ],
+  "sim": 0.47,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:33f2bad5644d": {
+  "page": 261,
+  "bbox": [
+   96.0,
+   384.96,
+   499.68,
+   452.16
+  ],
+  "sim": 0.684,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:a81bf254f260": {
+  "page": 258,
+  "bbox": [
+   63.84,
+   391.68,
+   446.4,
+   475.68
+  ],
+  "sim": 0.808,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:5df7b9332292": {
+  "page": 258,
+  "bbox": [
+   63.84,
+   391.68,
+   446.4,
+   475.68
+  ],
+  "sim": 0.565,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:fb04f86f5cab": {
+  "page": 264,
+  "bbox": [
+   60.96,
+   277.92,
+   532.32,
+   331.68
+  ],
+  "sim": 0.516,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:d885172dcbeb": {
+  "page": 258,
+  "bbox": [
+   63.84,
+   391.68,
+   446.4,
+   475.68
+  ],
+  "sim": 0.615,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:05aec0d79fb4": {
+  "page": 261,
+  "bbox": [
+   96.0,
+   384.96,
+   499.68,
+   452.16
+  ],
+  "sim": 0.456,
+  "low_confidence": true
+ },
+ "gaoshu_xia:node:defd54c46ddc": {
+  "page": 258,
+  "bbox": [
+   63.84,
+   391.68,
+   446.4,
+   475.68
+  ],
+  "sim": 0.615,
+  "low_confidence": false
+ },
+ "gaoshu_xia:node:ca522a3567de": {
+  "page": 263,
+  "bbox": [
+   132.0,
+   382.56,
+   534.72,
+   456.0
+  ],
+  "sim": 0.367,
+  "low_confidence": true
+ }
+}

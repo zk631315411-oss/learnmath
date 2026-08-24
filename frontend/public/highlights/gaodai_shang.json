@@ -1,0 +1,8142 @@
+{
+ "gaodai_shang:node:6eaddbaae191": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   219.74,
+   1434.38,
+   407.6
+  ],
+  "sim": 0.975,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:60b340748849": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   412.15,
+   1433.25,
+   594.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2331166f7911": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   796.98,
+   1435.51,
+   981.43
+  ],
+  "sim": 0.878,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:786bb58e6613": {
+  "page": 27,
+  "bbox": [
+   168.29,
+   843.66,
+   1435.51,
+   1025.83
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2922308aa95f": {
+  "page": 27,
+  "bbox": [
+   170.54,
+   989.4,
+   1199.46,
+   1167.01
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:658653f3bdeb": {
+  "page": 27,
+  "bbox": [
+   170.54,
+   1083.9,
+   1433.25,
+   1262.65
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:46a893d0a07a": {
+  "page": 28,
+  "bbox": [
+   262.03,
+   1752.23,
+   1223.17,
+   1930.98
+  ],
+  "sim": 0.802,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b6ba17ab5f52": {
+  "page": 27,
+  "bbox": [
+   168.29,
+   843.66,
+   1435.51,
+   1025.83
+  ],
+  "sim": 0.633,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6e08508443e0": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   412.15,
+   1433.25,
+   594.32
+  ],
+  "sim": 0.516,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:3ad9098f08dd": {
+  "page": 26,
+  "bbox": [
+   168.29,
+   833.42,
+   1434.38,
+   1160.18
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fa829f29c6ba": {
+  "page": 27,
+  "bbox": [
+   168.29,
+   843.66,
+   1435.51,
+   1025.83
+  ],
+  "sim": 0.373,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:3a70f16da522": {
+  "page": 29,
+  "bbox": [
+   167.16,
+   1234.19,
+   1434.38,
+   1412.94
+  ],
+  "sim": 0.969,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ad92300666b9": {
+  "page": 27,
+  "bbox": [
+   168.29,
+   843.66,
+   1435.51,
+   1025.83
+  ],
+  "sim": 0.472,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:ee0ce2a042be": {
+  "page": 28,
+  "bbox": [
+   262.03,
+   1752.23,
+   1223.17,
+   1930.98
+  ],
+  "sim": 0.658,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8d35ee0f1a75": {
+  "page": 30,
+  "bbox": [
+   201.04,
+   1612.18,
+   1467.13,
+   1794.35
+  ],
+  "sim": 0.644,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bb7d0dda8f6a": {
+  "page": 30,
+  "bbox": [
+   201.04,
+   1612.18,
+   1467.13,
+   1794.35
+  ],
+  "sim": 0.66,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:73ca7ae1aa44": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   219.74,
+   1434.38,
+   407.6
+  ],
+  "sim": 0.386,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:441d883d19d8": {
+  "page": 31,
+  "bbox": [
+   172.8,
+   367.75,
+   1443.41,
+   552.2
+  ],
+  "sim": 0.932,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8fc14a1363e8": {
+  "page": 26,
+  "bbox": [
+   170.54,
+   396.21,
+   1436.64,
+   711.59
+  ],
+  "sim": 0.379,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:33ac007b11d1": {
+  "page": 31,
+  "bbox": [
+   172.8,
+   512.35,
+   1443.41,
+   696.79
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:46cc8306226f": {
+  "page": 27,
+  "bbox": [
+   169.41,
+   1611.05,
+   1435.51,
+   1792.08
+  ],
+  "sim": 0.527,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b2c135a44081": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   316.52,
+   1434.38,
+   503.24
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:feb78b0e6b02": {
+  "page": 27,
+  "bbox": [
+   167.16,
+   316.52,
+   1434.38,
+   503.24
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:704eece5b51671": {
+  "page": 33,
+  "bbox": [
+   160.38,
+   1124.89,
+   1428.73,
+   1305.91
+  ],
+  "sim": 0.938,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:16110f9cdffa68": {
+  "page": 35,
+  "bbox": [
+   166.03,
+   820.89,
+   1432.12,
+   1006.48
+  ],
+  "sim": 0.812,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:9b5fbf356a8a9c": {
+  "page": 36,
+  "bbox": [
+   189.74,
+   905.15,
+   1456.97,
+   1086.18
+  ],
+  "sim": 0.869,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ea36ccece22daa": {
+  "page": 240,
+  "bbox": [
+   192.0,
+   831.14,
+   1458.1,
+   1031.52
+  ],
+  "sim": 0.288,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:e94251c46028": {
+  "page": 39,
+  "bbox": [
+   546.64,
+   843.66,
+   1437.77,
+   1047.46
+  ],
+  "sim": 0.723,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:58b076d07a47": {
+  "page": 39,
+  "bbox": [
+   172.8,
+   1247.85,
+   1437.77,
+   1426.6
+  ],
+  "sim": 0.78,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:43e12594e245": {
+  "page": 39,
+  "bbox": [
+   171.67,
+   1392.44,
+   1436.64,
+   1523.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:194530acabb9": {
+  "page": 39,
+  "bbox": [
+   171.67,
+   1392.44,
+   1436.64,
+   1523.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6744908567e6": {
+  "page": 39,
+  "bbox": [
+   240.57,
+   1444.82,
+   1435.51,
+   1621.29
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d2c95ec84d72": {
+  "page": 39,
+  "bbox": [
+   240.57,
+   1489.22,
+   1437.77,
+   1669.11
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d8b0355395cc": {
+  "page": 39,
+  "bbox": [
+   177.32,
+   1538.18,
+   1437.77,
+   1715.79
+  ],
+  "sim": 0.914,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5dff64e28ffe": {
+  "page": 39,
+  "bbox": [
+   177.32,
+   1538.18,
+   1437.77,
+   1715.79
+  ],
+  "sim": 0.914,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:15e838fb4df0": {
+  "page": 39,
+  "bbox": [
+   176.19,
+   1778.41,
+   1441.15,
+   1960.58
+  ],
+  "sim": 0.849,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1c9af41612f7": {
+  "page": 39,
+  "bbox": [
+   176.19,
+   1778.41,
+   1441.15,
+   1960.58
+  ],
+  "sim": 0.974,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c5bed467bf3d9e": {
+  "page": 40,
+  "bbox": [
+   195.39,
+   1282.01,
+   1095.55,
+   1460.76
+  ],
+  "sim": 0.564,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:239d843f6c55bc": {
+  "page": 96,
+  "bbox": [
+   187.49,
+   226.57,
+   1189.29,
+   416.71
+  ],
+  "sim": 0.263,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:21ffb21a9cfa7c": {
+  "page": 405,
+  "bbox": [
+   245.09,
+   1459.62,
+   1074.09,
+   1632.68
+  ],
+  "sim": 0.287,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:647d099ad41b91": {
+  "page": 41,
+  "bbox": [
+   171.67,
+   933.61,
+   1031.17,
+   1069.1
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:165916139fce9e": {
+  "page": 240,
+  "bbox": [
+   192.0,
+   831.14,
+   1458.1,
+   1031.52
+  ],
+  "sim": 0.345,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:4edae0fb3a9269": {
+  "page": 41,
+  "bbox": [
+   170.54,
+   1833.06,
+   1442.28,
+   2020.92
+  ],
+  "sim": 0.967,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:3a855789dfb502": {
+  "page": 96,
+  "bbox": [
+   187.49,
+   226.57,
+   1189.29,
+   416.71
+  ],
+  "sim": 0.22,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:0a9f542d4c8aab": {
+  "page": 42,
+  "bbox": [
+   180.71,
+   1382.2,
+   1450.19,
+   1576.89
+  ],
+  "sim": 0.924,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ff5fbad3c23de4": {
+  "page": 42,
+  "bbox": [
+   248.47,
+   1486.94,
+   1172.35,
+   1674.8
+  ],
+  "sim": 0.739,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:72c454101d1364": {
+  "page": 243,
+  "bbox": [
+   164.9,
+   1100.98,
+   1412.92,
+   1280.87
+  ],
+  "sim": 0.246,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:5e462147156332": {
+  "page": 42,
+  "bbox": [
+   180.71,
+   1233.05,
+   1450.19,
+   1424.32
+  ],
+  "sim": 0.444,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:25f283add9dc03": {
+  "page": 39,
+  "bbox": [
+   172.8,
+   1584.86,
+   1437.77,
+   1767.03
+  ],
+  "sim": 0.808,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0cbb9024bddcd4": {
+  "page": 119,
+  "bbox": [
+   163.77,
+   371.17,
+   1428.73,
+   555.61
+  ],
+  "sim": 0.298,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:ba939b64fb7856": {
+  "page": 39,
+  "bbox": [
+   176.19,
+   1778.41,
+   1441.15,
+   1960.58
+  ],
+  "sim": 0.806,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:931759b13854": {
+  "page": 45,
+  "bbox": [
+   167.16,
+   1760.2,
+   722.84,
+   1866.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:58a998b1f0d1": {
+  "page": 46,
+  "bbox": [
+   198.78,
+   218.6,
+   1463.74,
+   408.74
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:94ee3cf80d26": {
+  "page": 46,
+  "bbox": [
+   199.91,
+   688.82,
+   1024.39,
+   843.66
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:23561f8efb81": {
+  "page": 46,
+  "bbox": [
+   198.78,
+   756.0,
+   1464.87,
+   943.86
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:3dd1e10064e1": {
+  "page": 46,
+  "bbox": [
+   198.78,
+   804.95,
+   1466.0,
+   996.23
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d041445177a6de": {
+  "page": 46,
+  "bbox": [
+   168.29,
+   955.24,
+   1466.0,
+   1247.85
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f5973a9ef48561": {
+  "page": 46,
+  "bbox": [
+   264.29,
+   1324.13,
+   1467.13,
+   1542.73
+  ],
+  "sim": 0.448,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:bb10496bb15c1f": {
+  "page": 46,
+  "bbox": [
+   264.29,
+   1324.13,
+   1467.13,
+   1542.73
+  ],
+  "sim": 0.686,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6e8074527f17": {
+  "page": 51,
+  "bbox": [
+   176.19,
+   1525.65,
+   1442.28,
+   1707.82
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a9190ecc84d3": {
+  "page": 51,
+  "bbox": [
+   176.19,
+   1525.65,
+   1442.28,
+   1707.82
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:afb76a395a2c": {
+  "page": 51,
+  "bbox": [
+   240.57,
+   999.65,
+   1176.87,
+   1174.98
+  ],
+  "sim": 0.394,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:066204e09ca3": {
+  "page": 51,
+  "bbox": [
+   247.35,
+   1864.94,
+   1442.28,
+   1941.23
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5ba696f0ee44": {
+  "page": 51,
+  "bbox": [
+   180.71,
+   1864.94,
+   1442.28,
+   1990.18
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:120f2ccd5991": {
+  "page": 52,
+  "bbox": [
+   190.87,
+   595.46,
+   1454.71,
+   767.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:cada2a4890b9": {
+  "page": 52,
+  "bbox": [
+   194.26,
+   1144.24,
+   1455.84,
+   1315.02
+  ],
+  "sim": 0.984,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:06c9cb700583": {
+  "page": 52,
+  "bbox": [
+   194.26,
+   1192.06,
+   1458.1,
+   1361.7
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:96eb7d86bcd4": {
+  "page": 52,
+  "bbox": [
+   195.39,
+   1282.01,
+   1458.1,
+   1460.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6725a2019f08": {
+  "page": 52,
+  "bbox": [
+   195.39,
+   1427.74,
+   1225.43,
+   1604.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a36e72b9701d": {
+  "page": 52,
+  "bbox": [
+   195.39,
+   1427.74,
+   1225.43,
+   1604.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2964fc3035bc": {
+  "page": 52,
+  "bbox": [
+   199.91,
+   1571.2,
+   1458.1,
+   1746.53
+  ],
+  "sim": 0.983,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1e19cf6561a9": {
+  "page": 52,
+  "bbox": [
+   199.91,
+   1667.97,
+   1458.1,
+   1844.45
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e3e6304bfe35": {
+  "page": 53,
+  "bbox": [
+   182.97,
+   957.52,
+   1446.8,
+   1091.87
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f20d8d4a1f9f": {
+  "page": 53,
+  "bbox": [
+   184.1,
+   1492.64,
+   1449.06,
+   1674.8
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0112bad3d4a0cc": {
+  "page": 53,
+  "bbox": [
+   185.23,
+   1590.55,
+   1449.06,
+   1866.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:12a5ccea910ec1": {
+  "page": 54,
+  "bbox": [
+   203.3,
+   128.66,
+   1189.29,
+   253.9
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e5540a5aef5075": {
+  "page": 54,
+  "bbox": [
+   177.32,
+   828.86,
+   1445.67,
+   1014.45
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:28d97b5dc0fa83": {
+  "page": 54,
+  "bbox": [
+   177.32,
+   918.81,
+   1443.41,
+   1113.5
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:4ddb29a30ec125": {
+  "page": 54,
+  "bbox": [
+   176.19,
+   1016.72,
+   1443.41,
+   1176.12
+  ],
+  "sim": 0.926,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ef9a2c49134e6a": {
+  "page": 54,
+  "bbox": [
+   176.19,
+   1239.88,
+   1156.54,
+   1423.19
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2def17a0597281": {
+  "page": 54,
+  "bbox": [
+   176.19,
+   1430.02,
+   1444.54,
+   1622.43
+  ],
+  "sim": 0.948,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5cda802f77d10c": {
+  "page": 54,
+  "bbox": [
+   242.83,
+   1789.8,
+   1267.22,
+   1908.21
+  ],
+  "sim": 0.943,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2407dc880f4866": {
+  "page": 55,
+  "bbox": [
+   161.51,
+   214.05,
+   1430.99,
+   405.32
+  ],
+  "sim": 0.964,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:03e2e7ae54cc97": {
+  "page": 55,
+  "bbox": [
+   229.27,
+   516.9,
+   1184.77,
+   667.19
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:05584d2324ee83": {
+  "page": 55,
+  "bbox": [
+   161.51,
+   828.86,
+   1428.73,
+   1022.42
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a477da319835": {
+  "page": 54,
+  "bbox": [
+   176.19,
+   1336.66,
+   1443.41,
+   1521.1
+  ],
+  "sim": 0.682,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b44af5383877": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.586,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:60ea3428e733": {
+  "page": 56,
+  "bbox": [
+   202.17,
+   1892.27,
+   1467.13,
+   2019.78
+  ],
+  "sim": 0.571,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:3e1e0b640d44": {
+  "page": 57,
+  "bbox": [
+   170.54,
+   848.22,
+   1442.28,
+   1111.22
+  ],
+  "sim": 0.468,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:b8c298660dce": {
+  "page": 57,
+  "bbox": [
+   170.54,
+   972.32,
+   1442.28,
+   1156.77
+  ],
+  "sim": 0.415,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:9c1a934f1b0e": {
+  "page": 57,
+  "bbox": [
+   169.41,
+   1784.11,
+   1278.52,
+   1975.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:43eb016d308b": {
+  "page": 58,
+  "bbox": [
+   186.36,
+   1436.85,
+   1451.32,
+   1624.71
+  ],
+  "sim": 0.932,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:86dff20e7d1e75": {
+  "page": 59,
+  "bbox": [
+   147.96,
+   412.15,
+   1415.18,
+   540.81
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bbb9d98c1c35a9": {
+  "page": 59,
+  "bbox": [
+   147.96,
+   412.15,
+   1415.18,
+   540.81
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:42967ee360389e": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1642.93,
+   1449.06,
+   1841.03
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ef2519297f1207": {
+  "page": 59,
+  "bbox": [
+   147.96,
+   1011.03,
+   1416.31,
+   1186.37
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0270ad91125f3a": {
+  "page": 59,
+  "bbox": [
+   147.96,
+   1011.03,
+   1416.31,
+   1186.37
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:93fe3ad711bf7d": {
+  "page": 60,
+  "bbox": [
+   201.04,
+   734.36,
+   1471.65,
+   915.39
+  ],
+  "sim": 0.905,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c7a87add3fa65e": {
+  "page": 60,
+  "bbox": [
+   205.56,
+   881.24,
+   1471.65,
+   1057.71
+  ],
+  "sim": 0.903,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:223ba2834079": {
+  "page": 61,
+  "bbox": [
+   159.25,
+   1363.98,
+   1426.47,
+   1550.7
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2e7d1bac6efb": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.432,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:761d613a8fd0": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.363,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:b4c084d6bf31": {
+  "page": 81,
+  "bbox": [
+   162.64,
+   1160.18,
+   1432.12,
+   1351.46
+  ],
+  "sim": 0.354,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:f08c0cae6b74": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.306,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:10870896e470": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.37,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:a55cf2965008": {
+  "page": 421,
+  "bbox": [
+   144.57,
+   758.27,
+   1411.79,
+   935.89
+  ],
+  "sim": 0.371,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:ab85311a86fb": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.308,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:5a29f9b659ea": {
+  "page": 61,
+  "bbox": [
+   158.12,
+   959.8,
+   1425.34,
+   1360.57
+  ],
+  "sim": 0.406,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:9e10a750032b": {
+  "page": 61,
+  "bbox": [
+   227.02,
+   872.13,
+   1241.25,
+   1137.41
+  ],
+  "sim": 0.714,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c03175484a18": {
+  "page": 60,
+  "bbox": [
+   201.04,
+   734.36,
+   1471.65,
+   915.39
+  ],
+  "sim": 0.364,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:dba707447d06": {
+  "page": 61,
+  "bbox": [
+   159.25,
+   1416.35,
+   1426.47,
+   1590.55
+  ],
+  "sim": 0.611,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:3161235d6295": {
+  "page": 61,
+  "bbox": [
+   159.25,
+   1416.35,
+   1426.47,
+   1590.55
+  ],
+  "sim": 0.607,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:89cc0f20cebe98": {
+  "page": 67,
+  "bbox": [
+   94.87,
+   988.26,
+   1362.09,
+   1168.15
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1bc0c55e54eb8a": {
+  "page": 67,
+  "bbox": [
+   94.87,
+   1033.8,
+   1362.09,
+   1217.11
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:95bd714b7a0ab4": {
+  "page": 67,
+  "bbox": [
+   94.87,
+   1081.62,
+   1362.09,
+   1264.93
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:10dc725be780b6": {
+  "page": 67,
+  "bbox": [
+   92.61,
+   1428.88,
+   1360.97,
+   1606.49
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:40c22ba0f4c319": {
+  "page": 68,
+  "bbox": [
+   178.45,
+   841.39,
+   1446.8,
+   978.01
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:6522a4cc13de07": {
+  "page": 68,
+  "bbox": [
+   241.7,
+   790.15,
+   1446.8,
+   929.06
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:57aecbdd9edffe": {
+  "page": 68,
+  "bbox": [
+   175.06,
+   1867.22,
+   1444.54,
+   2051.66
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f19627598269": {
+  "page": 70,
+  "bbox": [
+   222.5,
+   1787.52,
+   1490.85,
+   1973.1
+  ],
+  "sim": 0.983,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0f4fc1a168cd": {
+  "page": 71,
+  "bbox": [
+   193.13,
+   133.21,
+   1433.25,
+   301.72
+  ],
+  "sim": 0.933,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1ea38fe8b3ee": {
+  "page": 71,
+  "bbox": [
+   193.13,
+   407.6,
+   1459.23,
+   597.74
+  ],
+  "sim": 0.624,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7c0e60ffb97d": {
+  "page": 71,
+  "bbox": [
+   263.16,
+   1497.19,
+   1467.13,
+   1669.11
+  ],
+  "sim": 0.727,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:969cca5335d4": {
+  "page": 71,
+  "bbox": [
+   197.65,
+   1656.59,
+   1462.61,
+   1827.37
+  ],
+  "sim": 0.66,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e67fba36835e": {
+  "page": 71,
+  "bbox": [
+   198.78,
+   1833.06,
+   1464.87,
+   2016.37
+  ],
+  "sim": 0.853,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7a0d9951ba24": {
+  "page": 72,
+  "bbox": [
+   168.29,
+   257.31,
+   1437.77,
+   397.35
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:eca61a388ccc": {
+  "page": 72,
+  "bbox": [
+   167.16,
+   941.58,
+   1112.49,
+   1123.75
+  ],
+  "sim": 0.511,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:dceb7693f2ba": {
+  "page": 71,
+  "bbox": [
+   197.65,
+   1656.59,
+   1462.61,
+   1827.37
+  ],
+  "sim": 0.533,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6ff18e23e81f": {
+  "page": 72,
+  "bbox": [
+   170.54,
+   1182.95,
+   1441.15,
+   1317.3
+  ],
+  "sim": 0.931,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:29de3137bd56": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1696.44,
+   1449.06,
+   1893.41
+  ],
+  "sim": 0.508,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6f2016f2b04d": {
+  "page": 72,
+  "bbox": [
+   168.29,
+   358.64,
+   1435.51,
+   541.95
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ef4d479f77ff": {
+  "page": 68,
+  "bbox": [
+   177.32,
+   538.53,
+   1445.67,
+   727.53
+  ],
+  "sim": 0.632,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6b605a131f7d": {
+  "page": 68,
+  "bbox": [
+   245.09,
+   393.94,
+   1443.41,
+   576.11
+  ],
+  "sim": 0.375,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:241cc33c65d048": {
+  "page": 76,
+  "bbox": [
+   237.18,
+   549.92,
+   1382.42,
+   636.45
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ccbe2375f190d6": {
+  "page": 76,
+  "bbox": [
+   240.57,
+   1003.06,
+   1233.34,
+   1107.81
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a860bba6cc6dbd": {
+  "page": 77,
+  "bbox": [
+   222.5,
+   141.18,
+   1401.62,
+   263.0
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:3f0080d1dca7c0": {
+  "page": 77,
+  "bbox": [
+   228.15,
+   840.25,
+   675.4,
+   947.27
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ef4d479f77ff29": {
+  "page": 78,
+  "bbox": [
+   215.72,
+   133.21,
+   1075.22,
+   259.59
+  ],
+  "sim": 0.575,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:376f4577bce715": {
+  "page": 78,
+  "bbox": [
+   189.74,
+   557.89,
+   1459.23,
+   684.27
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7ea86a15c80167": {
+  "page": 78,
+  "bbox": [
+   189.74,
+   557.89,
+   1459.23,
+   684.27
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:475d97d5e0f431": {
+  "page": 78,
+  "bbox": [
+   255.25,
+   1502.88,
+   1121.53,
+   1693.02
+  ],
+  "sim": 0.73,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:114cba17f127ec": {
+  "page": 78,
+  "bbox": [
+   192.0,
+   1695.3,
+   1461.48,
+   1833.06
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:6c745621b3c4a5": {
+  "page": 75,
+  "bbox": [
+   190.87,
+   1788.66,
+   1460.36,
+   1977.66
+  ],
+  "sim": 0.68,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:21b7d4f7278539": {
+  "page": 75,
+  "bbox": [
+   192.0,
+   261.87,
+   1461.48,
+   448.59
+  ],
+  "sim": 0.739,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5f3abea886d24f": {
+  "page": 75,
+  "bbox": [
+   190.87,
+   1837.62,
+   1460.36,
+   2022.06
+  ],
+  "sim": 0.652,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:36002cc233fef5": {
+  "page": 75,
+  "bbox": [
+   192.0,
+   261.87,
+   1461.48,
+   448.59
+  ],
+  "sim": 0.7,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5ab2757f0b9e2d": {
+  "page": 74,
+  "bbox": [
+   222.5,
+   554.47,
+   1490.85,
+   741.19
+  ],
+  "sim": 0.481,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:89c1cc783e1c3b": {
+  "page": 75,
+  "bbox": [
+   190.87,
+   1788.66,
+   1460.36,
+   1977.66
+  ],
+  "sim": 0.708,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1f9437046c34af": {
+  "page": 74,
+  "bbox": [
+   222.5,
+   507.79,
+   1490.85,
+   694.51
+  ],
+  "sim": 0.426,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:24cb49b0fa9a2b": {
+  "page": 82,
+  "bbox": [
+   194.26,
+   522.59,
+   1467.13,
+   710.45
+  ],
+  "sim": 0.887,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:6efdf7f0ca37dc": {
+  "page": 75,
+  "bbox": [
+   192.0,
+   261.87,
+   1461.48,
+   448.59
+  ],
+  "sim": 0.363,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:8b428742a7f5": {
+  "page": 86,
+  "bbox": [
+   204.43,
+   1304.78,
+   1468.26,
+   1491.5
+  ],
+  "sim": 0.891,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:55a559b451f2": {
+  "page": 86,
+  "bbox": [
+   202.17,
+   1634.96,
+   1468.26,
+   1828.51
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:86a135405d80": {
+  "page": 86,
+  "bbox": [
+   204.43,
+   1304.78,
+   1468.26,
+   1491.5
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:cc523f775ead": {
+  "page": 86,
+  "bbox": [
+   201.04,
+   949.55,
+   1469.39,
+   1131.72
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e09b2da11ffe": {
+  "page": 87,
+  "bbox": [
+   175.06,
+   1226.22,
+   1440.03,
+   1406.11
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2b87a1c8238d09": {
+  "page": 87,
+  "bbox": [
+   171.67,
+   1324.13,
+   1440.03,
+   1597.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d3d2c08ff15101": {
+  "page": 88,
+  "bbox": [
+   194.26,
+   405.32,
+   1463.74,
+   593.18
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ef216811c0bc87": {
+  "page": 89,
+  "bbox": [
+   172.8,
+   1755.64,
+   1441.15,
+   1930.98
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ab7bfd3ccd8c51": {
+  "page": 89,
+  "bbox": [
+   172.8,
+   1755.64,
+   1441.15,
+   1930.98
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b387a2eea989": {
+  "page": 91,
+  "bbox": [
+   171.67,
+   212.91,
+   1443.41,
+   399.63
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:972d71192d42": {
+  "page": 91,
+  "bbox": [
+   173.93,
+   473.64,
+   1443.41,
+   619.37
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bf748e656339": {
+  "page": 91,
+  "bbox": [
+   162.64,
+   532.84,
+   1440.03,
+   710.45
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2055faf5e442": {
+  "page": 91,
+  "bbox": [
+   171.67,
+   894.9,
+   1440.03,
+   1086.18
+  ],
+  "sim": 0.664,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:103d42293ebe": {
+  "page": 92,
+  "bbox": [
+   184.1,
+   216.32,
+   1450.19,
+   350.67
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:59c8fe0c294f": {
+  "page": 54,
+  "bbox": [
+   176.19,
+   1430.02,
+   1444.54,
+   1622.43
+  ],
+  "sim": 0.28,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:56e3204a1ff7": {
+  "page": 92,
+  "bbox": [
+   258.64,
+   1193.2,
+   981.48,
+   1301.36
+  ],
+  "sim": 0.375,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:17c91e08da0fc0": {
+  "page": 92,
+  "bbox": [
+   188.62,
+   1285.42,
+   771.4,
+   1556.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7d352db03e0856": {
+  "page": 92,
+  "bbox": [
+   257.51,
+   1795.49,
+   1014.23,
+   1885.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7959067c588ea0": {
+  "page": 93,
+  "bbox": [
+   156.99,
+   326.76,
+   1421.95,
+   492.99
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:fb0d406395bd55": {
+  "page": 93,
+  "bbox": [
+   223.63,
+   1452.79,
+   985.99,
+   1614.46
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:50da44231572c3": {
+  "page": 93,
+  "bbox": [
+   223.63,
+   1452.79,
+   985.99,
+   1614.46
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0f77a4d88c3130": {
+  "page": 93,
+  "bbox": [
+   466.46,
+   1812.57,
+   928.39,
+   1951.47
+  ],
+  "sim": 0.8,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:45307ec77c8da8": {
+  "page": 55,
+  "bbox": [
+   162.64,
+   777.63,
+   1428.73,
+   972.32
+  ],
+  "sim": 0.439,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:e1e03933749505": {
+  "page": 98,
+  "bbox": [
+   485.66,
+   1608.77,
+   1312.4,
+   1690.74
+  ],
+  "sim": 0.427,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:09197db990b41b": {
+  "page": 98,
+  "bbox": [
+   485.66,
+   1608.77,
+   1312.4,
+   1690.74
+  ],
+  "sim": 0.405,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:a195639d23fa48": {
+  "page": 99,
+  "bbox": [
+   160.38,
+   153.7,
+   1402.75,
+   270.97
+  ],
+  "sim": 0.929,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:87c14a42fdd12b": {
+  "page": 99,
+  "bbox": [
+   166.03,
+   1332.1,
+   1432.12,
+   1513.13
+  ],
+  "sim": 0.468,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:16ee02b8422b07": {
+  "page": 99,
+  "bbox": [
+   162.64,
+   662.64,
+   1432.12,
+   844.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5c70d989f3d61b": {
+  "page": 99,
+  "bbox": [
+   169.41,
+   959.8,
+   1433.25,
+   1129.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:6d54de511d909c": {
+  "page": 99,
+  "bbox": [
+   166.03,
+   1376.5,
+   1251.41,
+   1559.81
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a08ec21c7faa77": {
+  "page": 405,
+  "bbox": [
+   238.31,
+   1123.75,
+   1351.93,
+   1302.5
+  ],
+  "sim": 0.258,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:40888c400ad0eb": {
+  "page": 97,
+  "bbox": [
+   158.12,
+   1478.97,
+   1423.08,
+   1662.28
+  ],
+  "sim": 0.714,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2fcefde60edb00": {
+  "page": 97,
+  "bbox": [
+   158.12,
+   1340.07,
+   1423.08,
+   1522.24
+  ],
+  "sim": 0.361,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:5e61ee168b276f": {
+  "page": 95,
+  "bbox": [
+   162.64,
+   1299.08,
+   1430.99,
+   1478.97
+  ],
+  "sim": 0.526,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f1a01da834eeba": {
+  "page": 97,
+  "bbox": [
+   158.12,
+   1340.07,
+   1423.08,
+   1522.24
+  ],
+  "sim": 0.653,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:43c8bad691b31e": {
+  "page": 97,
+  "bbox": [
+   153.6,
+   861.88,
+   1032.3,
+   1045.19
+  ],
+  "sim": 0.478,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:b741836df9ab": {
+  "page": 103,
+  "bbox": [
+   232.66,
+   1842.17,
+   1136.21,
+   2027.75
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:767bd11cf4a6": {
+  "page": 104,
+  "bbox": [
+   230.4,
+   134.35,
+   1058.28,
+   265.28
+  ],
+  "sim": 0.485,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:eb129789a47a": {
+  "page": 104,
+  "bbox": [
+   205.56,
+   602.29,
+   1473.91,
+   792.43
+  ],
+  "sim": 0.893,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:823cf7a551d8": {
+  "page": 102,
+  "bbox": [
+   185.23,
+   1047.46,
+   1451.32,
+   1227.36
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:35bb9ffcf4b8": {
+  "page": 103,
+  "bbox": [
+   161.51,
+   1416.35,
+   1427.6,
+   1608.77
+  ],
+  "sim": 0.986,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4cf43123027e": {
+  "page": 104,
+  "bbox": [
+   203.3,
+   744.61,
+   1473.91,
+   927.92
+  ],
+  "sim": 0.826,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:de55117c70f0": {
+  "page": 104,
+  "bbox": [
+   208.94,
+   1029.25,
+   1328.21,
+   1217.11
+  ],
+  "sim": 0.609,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e8e5a2a46c7b": {
+  "page": 104,
+  "bbox": [
+   208.94,
+   1842.17,
+   1473.91,
+   2028.89
+  ],
+  "sim": 0.719,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b4dda3805866": {
+  "page": 102,
+  "bbox": [
+   185.23,
+   1144.24,
+   1450.19,
+   1324.13
+  ],
+  "sim": 0.538,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:87a54420583f": {
+  "page": 102,
+  "bbox": [
+   185.23,
+   1144.24,
+   1450.19,
+   1324.13
+  ],
+  "sim": 0.632,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8e7e2dc3f1a4": {
+  "page": 103,
+  "bbox": [
+   161.51,
+   1416.35,
+   1427.6,
+   1608.77
+  ],
+  "sim": 0.485,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:df8e8ff5d688": {
+  "page": 104,
+  "bbox": [
+   210.07,
+   1699.85,
+   1092.16,
+   1882.02
+  ],
+  "sim": 0.833,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5b7216ce452174": {
+  "page": 106,
+  "bbox": [
+   178.45,
+   144.6,
+   1443.41,
+   357.5
+  ],
+  "sim": 0.969,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d08dd287e9307b": {
+  "page": 107,
+  "bbox": [
+   155.86,
+   1028.11,
+   1425.34,
+   1164.73
+  ],
+  "sim": 0.897,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ea1d39d2644580": {
+  "page": 107,
+  "bbox": [
+   155.86,
+   1028.11,
+   1425.34,
+   1164.73
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:dff9f6cbf22fb4": {
+  "page": 107,
+  "bbox": [
+   158.12,
+   1123.75,
+   1425.34,
+   1255.82
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:dd76ed8d084b13": {
+  "page": 107,
+  "bbox": [
+   161.51,
+   1788.66,
+   1429.86,
+   1970.83
+  ],
+  "sim": 0.921,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8839d87df7a3bc": {
+  "page": 107,
+  "bbox": [
+   161.51,
+   1836.48,
+   1434.38,
+   2023.2
+  ],
+  "sim": 0.594,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d0660c1d771216": {
+  "page": 107,
+  "bbox": [
+   161.51,
+   1836.48,
+   1434.38,
+   2023.2
+  ],
+  "sim": 0.429,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:a5a87399f323a7": {
+  "page": 104,
+  "bbox": [
+   208.94,
+   1797.77,
+   1472.78,
+   1979.94
+  ],
+  "sim": 0.636,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:16eb30256d1768": {
+  "page": 108,
+  "bbox": [
+   204.43,
+   1215.97,
+   1471.65,
+   1402.69
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9bfe5d912db0": {
+  "page": 110,
+  "bbox": [
+   198.78,
+   527.15,
+   1467.13,
+   712.73
+  ],
+  "sim": 0.943,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:60a83e5e6d8c": {
+  "page": 110,
+  "bbox": [
+   198.78,
+   724.12,
+   1466.0,
+   910.84
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4e2c29e6d561": {
+  "page": 110,
+  "bbox": [
+   201.04,
+   1499.47,
+   1468.26,
+   1680.5
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:118a2ce37b6f": {
+  "page": 111,
+  "bbox": [
+   297.04,
+   144.6,
+   1409.53,
+   268.7
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:71ea90bd6b54": {
+  "page": 111,
+  "bbox": [
+   292.52,
+   508.93,
+   1362.09,
+   705.9
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:de8ebe9d5cae": {
+  "page": 111,
+  "bbox": [
+   292.52,
+   758.27,
+   1048.11,
+   956.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:317314593e9f": {
+  "page": 111,
+  "bbox": [
+   233.79,
+   708.18,
+   1046.98,
+   904.01
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fcf472238f50": {
+  "page": 111,
+  "bbox": [
+   291.39,
+   1006.48,
+   1216.4,
+   1205.72
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:374602cf4d96": {
+  "page": 111,
+  "bbox": [
+   231.53,
+   1407.25,
+   1224.3,
+   1599.66
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:07cbc63d5fe3": {
+  "page": 111,
+  "bbox": [
+   232.66,
+   1106.67,
+   1412.92,
+   1302.5
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d5e7f7a964a1": {
+  "page": 111,
+  "bbox": [
+   292.52,
+   508.93,
+   1362.09,
+   705.9
+  ],
+  "sim": 0.783,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c060aea61d2f": {
+  "page": 111,
+  "bbox": [
+   292.52,
+   508.93,
+   1362.09,
+   705.9
+  ],
+  "sim": 0.804,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:eacd793c673e5a": {
+  "page": 113,
+  "bbox": [
+   160.38,
+   145.73,
+   1400.5,
+   265.28
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:85041c12033700": {
+  "page": 113,
+  "bbox": [
+   160.38,
+   145.73,
+   1400.5,
+   265.28
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:48cf1d24ec21f7": {
+  "page": 112,
+  "bbox": [
+   177.32,
+   422.4,
+   1444.54,
+   602.29
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8d35bbe006642e": {
+  "page": 113,
+  "bbox": [
+   245.09,
+   1189.78,
+   766.88,
+   1370.81
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:91aa2a1a3fc306": {
+  "page": 113,
+  "bbox": [
+   167.16,
+   1328.69,
+   1429.86,
+   1463.03
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c9800cb1fba822": {
+  "page": 114,
+  "bbox": [
+   188.62,
+   568.14,
+   1456.97,
+   743.47
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d7e9cf727f9c95": {
+  "page": 114,
+  "bbox": [
+   194.26,
+   1320.72,
+   1408.4,
+   1509.72
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1d1a755d9cb4ee": {
+  "page": 114,
+  "bbox": [
+   192.0,
+   1559.81,
+   1180.26,
+   1748.81
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e1e67dbee2dd8e": {
+  "page": 112,
+  "bbox": [
+   177.32,
+   372.31,
+   1444.54,
+   555.61
+  ],
+  "sim": 0.805,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:48f76bc0e11513": {
+  "page": 111,
+  "bbox": [
+   290.26,
+   1655.45,
+   1430.99,
+   1867.22
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a0a7d7e45c584a": {
+  "page": 112,
+  "bbox": [
+   179.58,
+   467.94,
+   1444.54,
+   652.39
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:892329b80673cf": {
+  "page": 112,
+  "bbox": [
+   179.58,
+   467.94,
+   1444.54,
+   652.39
+  ],
+  "sim": 0.521,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d512feab9db7fb": {
+  "page": 110,
+  "bbox": [
+   198.78,
+   724.12,
+   1466.0,
+   910.84
+  ],
+  "sim": 0.44,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:25662749fd1155": {
+  "page": 101,
+  "bbox": [
+   182.97,
+   1548.43,
+   1451.32,
+   1779.55
+  ],
+  "sim": 0.521,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7f05ccc5f2b7a4": {
+  "page": 114,
+  "bbox": [
+   192.0,
+   1559.81,
+   1180.26,
+   1748.81
+  ],
+  "sim": 0.647,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:29a0f6ece7d34d": {
+  "page": 111,
+  "bbox": [
+   290.26,
+   1655.45,
+   1430.99,
+   1867.22
+  ],
+  "sim": 0.75,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f1789cb9615150": {
+  "page": 114,
+  "bbox": [
+   192.0,
+   1418.63,
+   1468.26,
+   1605.35
+  ],
+  "sim": 0.629,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8eaeabe4bb77": {
+  "page": 120,
+  "bbox": [
+   193.13,
+   218.6,
+   1467.13,
+   409.88
+  ],
+  "sim": 0.912,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c18c554afa5f": {
+  "page": 120,
+  "bbox": [
+   193.13,
+   218.6,
+   1467.13,
+   409.88
+  ],
+  "sim": 0.75,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1ef71816132d": {
+  "page": 120,
+  "bbox": [
+   196.52,
+   1186.37,
+   905.8,
+   1300.22
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:81a82c8cf966": {
+  "page": 120,
+  "bbox": [
+   194.26,
+   1452.79,
+   1463.74,
+   1639.51
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0446a5a7867a": {
+  "page": 120,
+  "bbox": [
+   260.9,
+   1598.52,
+   1462.61,
+   1738.56
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:56de5051848f": {
+  "page": 120,
+  "bbox": [
+   193.13,
+   218.6,
+   1467.13,
+   409.88
+  ],
+  "sim": 0.696,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e32b4a223275": {
+  "page": 120,
+  "bbox": [
+   193.13,
+   218.6,
+   1467.13,
+   409.88
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:cb9e277a207b": {
+  "page": 121,
+  "bbox": [
+   181.84,
+   1660.0,
+   1441.15,
+   1789.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5af15ef8ec19": {
+  "page": 121,
+  "bbox": [
+   246.22,
+   1706.68,
+   1188.16,
+   1885.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b36f523f915f": {
+  "page": 121,
+  "bbox": [
+   247.35,
+   1846.73,
+   1287.55,
+   2027.75
+  ],
+  "sim": 0.708,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bbf2bcbc8bf3": {
+  "page": 117,
+  "bbox": [
+   181.84,
+   1505.16,
+   1450.19,
+   1695.3
+  ],
+  "sim": 0.649,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5984b0f13ee4": {
+  "page": 120,
+  "bbox": [
+   194.26,
+   1935.53,
+   1462.61,
+   2028.89
+  ],
+  "sim": 0.733,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:54ba6f80acff": {
+  "page": 120,
+  "bbox": [
+   194.26,
+   1452.79,
+   1463.74,
+   1639.51
+  ],
+  "sim": 0.786,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:74b96a7c05b7cd": {
+  "page": 122,
+  "bbox": [
+   185.23,
+   1468.73,
+   1392.59,
+   1743.12
+  ],
+  "sim": 0.92,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b4e34ad5ff9741": {
+  "page": 240,
+  "bbox": [
+   192.0,
+   884.65,
+   1458.1,
+   1080.48
+  ],
+  "sim": 0.372,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:d2a689d3584f3f": {
+  "page": 123,
+  "bbox": [
+   161.51,
+   605.71,
+   1428.73,
+   787.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:31c244bc849ffc": {
+  "page": 123,
+  "bbox": [
+   155.86,
+   835.69,
+   1429.86,
+   1026.97
+  ],
+  "sim": 0.94,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ba820b830bd2b6": {
+  "page": 123,
+  "bbox": [
+   160.38,
+   1023.55,
+   1430.99,
+   1218.25
+  ],
+  "sim": 0.583,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:cde59e3c1321cc": {
+  "page": 123,
+  "bbox": [
+   159.25,
+   1313.88,
+   1428.73,
+   1501.75
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2329edff73789d": {
+  "page": 123,
+  "bbox": [
+   163.77,
+   1505.16,
+   1428.73,
+   1687.33
+  ],
+  "sim": 0.887,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:02f4fd5b5ed02c": {
+  "page": 123,
+  "bbox": [
+   162.64,
+   1598.52,
+   1432.12,
+   1786.38
+  ],
+  "sim": 0.846,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e42f70af3b0f18": {
+  "page": 124,
+  "bbox": [
+   199.91,
+   141.18,
+   1468.26,
+   360.92
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d5d5da82b622be": {
+  "page": 124,
+  "bbox": [
+   202.17,
+   541.95,
+   1469.39,
+   677.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8a05990cc37314": {
+  "page": 124,
+  "bbox": [
+   201.04,
+   771.94,
+   1469.39,
+   952.97
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e10ae6bb80213f": {
+  "page": 124,
+  "bbox": [
+   203.3,
+   1100.98,
+   1469.39,
+   1277.45
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bbf716f9ef83a7": {
+  "page": 124,
+  "bbox": [
+   203.3,
+   1282.01,
+   1470.52,
+   1461.9
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:156793457ed5da": {
+  "page": 124,
+  "bbox": [
+   201.04,
+   1510.85,
+   1473.91,
+   1704.41
+  ],
+  "sim": 0.904,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0e877c2c4c305b": {
+  "page": 123,
+  "bbox": [
+   160.38,
+   487.3,
+   1418.57,
+   639.86
+  ],
+  "sim": 0.815,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:10c480f87c97f6": {
+  "page": 123,
+  "bbox": [
+   160.38,
+   508.93,
+   1427.6,
+   691.1
+  ],
+  "sim": 0.632,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:55ce474229caea": {
+  "page": 240,
+  "bbox": [
+   192.0,
+   831.14,
+   1458.1,
+   1031.52
+  ],
+  "sim": 0.277,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:544207661c0668": {
+  "page": 240,
+  "bbox": [
+   193.13,
+   940.44,
+   1461.48,
+   1135.13
+  ],
+  "sim": 0.372,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:0eb9e29ffcc3c6": {
+  "page": 124,
+  "bbox": [
+   202.17,
+   541.95,
+   1469.39,
+   677.44
+  ],
+  "sim": 0.737,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:031f0e4c190c43": {
+  "page": 124,
+  "bbox": [
+   201.04,
+   637.59,
+   1469.39,
+   818.62
+  ],
+  "sim": 0.579,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:232aabcf593d5e": {
+  "page": 122,
+  "bbox": [
+   248.47,
+   223.16,
+   1445.67,
+   411.02
+  ],
+  "sim": 0.842,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7de0d40adc7f4c": {
+  "page": 121,
+  "bbox": [
+   168.29,
+   224.29,
+   1426.47,
+   452.0
+  ],
+  "sim": 0.731,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f2112d33441388": {
+  "page": 123,
+  "bbox": [
+   161.51,
+   1790.94,
+   1430.99,
+   1976.52
+  ],
+  "sim": 0.395,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:844a794111f5": {
+  "page": 127,
+  "bbox": [
+   173.93,
+   1834.2,
+   1420.83,
+   2026.62
+  ],
+  "sim": 0.877,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8bc6ea5e8db6": {
+  "page": 128,
+  "bbox": [
+   193.13,
+   506.65,
+   1461.48,
+   644.42
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:dacd16ae1588": {
+  "page": 128,
+  "bbox": [
+   259.77,
+   141.18,
+   1458.1,
+   359.78
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:596c271aabf6": {
+  "page": 128,
+  "bbox": [
+   220.24,
+   140.04,
+   1458.1,
+   310.82
+  ],
+  "sim": 0.792,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b2517d4e1391": {
+  "page": 128,
+  "bbox": [
+   192.0,
+   603.43,
+   1461.48,
+   785.6
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:672e508f2ddc": {
+  "page": 128,
+  "bbox": [
+   193.13,
+   744.61,
+   1455.84,
+   926.78
+  ],
+  "sim": 0.717,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:89b9e4c56343": {
+  "page": 128,
+  "bbox": [
+   194.26,
+   1086.18,
+   1456.97,
+   1270.62
+  ],
+  "sim": 0.915,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8393c193999c": {
+  "page": 128,
+  "bbox": [
+   194.26,
+   1135.13,
+   1120.4,
+   1315.02
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f84ab296e6b2": {
+  "page": 128,
+  "bbox": [
+   193.13,
+   1321.85,
+   1458.1,
+   1457.34
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:3bd405a67471": {
+  "page": 128,
+  "bbox": [
+   193.13,
+   1513.13,
+   1460.36,
+   1694.16
+  ],
+  "sim": 0.913,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:82bcb6b82e49": {
+  "page": 128,
+  "bbox": [
+   195.39,
+   1748.81,
+   1187.03,
+   1928.7
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:372e3e779420": {
+  "page": 129,
+  "bbox": [
+   168.29,
+   154.84,
+   1428.73,
+   319.93
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6db26b82feb9": {
+  "page": 129,
+  "bbox": [
+   169.41,
+   668.33,
+   1434.38,
+   847.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d9a4b8dfbef2": {
+  "page": 129,
+  "bbox": [
+   169.41,
+   668.33,
+   1434.38,
+   847.08
+  ],
+  "sim": 0.9,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d8ef0d65e929": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 0.909,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7f4e6cdc66af": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   996.23,
+   1438.9,
+   1180.67
+  ],
+  "sim": 0.88,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ab5e8714708afb": {
+  "page": 129,
+  "bbox": [
+   171.67,
+   1283.14,
+   1220.92,
+   1514.27
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:dcc85d99742ca3": {
+  "page": 129,
+  "bbox": [
+   177.32,
+   1518.82,
+   1442.28,
+   1704.41
+  ],
+  "sim": 0.849,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d740deac61d286": {
+  "page": 129,
+  "bbox": [
+   179.58,
+   1759.06,
+   1447.93,
+   1991.32
+  ],
+  "sim": 0.817,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f87d980754f526": {
+  "page": 129,
+  "bbox": [
+   179.58,
+   1759.06,
+   1447.93,
+   1991.32
+  ],
+  "sim": 0.978,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c3f23c4b7cbd93": {
+  "page": 127,
+  "bbox": [
+   156.99,
+   274.39,
+   1421.95,
+   457.7
+  ],
+  "sim": 0.933,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:686fab122e0c86": {
+  "page": 130,
+  "bbox": [
+   179.58,
+   762.83,
+   1373.39,
+   892.62
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e0eb8268655dc2": {
+  "page": 130,
+  "bbox": [
+   184.1,
+   1563.23,
+   1188.16,
+   1653.17
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:80e926015e1959": {
+  "page": 129,
+  "bbox": [
+   177.32,
+   1518.82,
+   1442.28,
+   1704.41
+  ],
+  "sim": 0.402,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:4241fabcebd4": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ba3cac82cdb4": {
+  "page": 131,
+  "bbox": [
+   169.41,
+   1790.94,
+   1437.77,
+   1978.8
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fa769523ae60": {
+  "page": 132,
+  "bbox": [
+   188.62,
+   226.57,
+   1454.71,
+   409.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4d0a2b73c0bd": {
+  "page": 133,
+  "bbox": [
+   161.51,
+   717.29,
+   1429.86,
+   852.77
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:be4adbe1ceb4": {
+  "page": 133,
+  "bbox": [
+   164.9,
+   1110.08,
+   1433.25,
+   1293.39
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c946bfca79b6": {
+  "page": 132,
+  "bbox": [
+   188.62,
+   226.57,
+   1454.71,
+   409.88
+  ],
+  "sim": 0.882,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ab85433bd4db": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 0.68,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:de8759e18e67": {
+  "page": 132,
+  "bbox": [
+   188.62,
+   274.39,
+   1455.84,
+   458.84
+  ],
+  "sim": 0.778,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0434b94022cf": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 0.657,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fe82b1dcccd0": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 0.657,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ac9e09a910bb": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 0.657,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7e73ebfb7b11": {
+  "page": 133,
+  "bbox": [
+   161.51,
+   717.29,
+   1429.86,
+   852.77
+  ],
+  "sim": 0.889,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ddaf988b5567": {
+  "page": 129,
+  "bbox": [
+   170.54,
+   761.69,
+   1433.25,
+   894.9
+  ],
+  "sim": 0.833,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0a9908b8dcab": {
+  "page": 132,
+  "bbox": [
+   188.62,
+   274.39,
+   1455.84,
+   458.84
+  ],
+  "sim": 0.731,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:70ab914ff624": {
+  "page": 132,
+  "bbox": [
+   188.62,
+   274.39,
+   1455.84,
+   458.84
+  ],
+  "sim": 0.78,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:06645c7a8449": {
+  "page": 132,
+  "bbox": [
+   188.62,
+   148.01,
+   1454.71,
+   362.06
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bacbb7039377": {
+  "page": 129,
+  "bbox": [
+   177.32,
+   1613.32,
+   1442.28,
+   1798.91
+  ],
+  "sim": 0.545,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:072c191d95c0": {
+  "page": 129,
+  "bbox": [
+   172.8,
+   948.41,
+   1438.9,
+   1132.86
+  ],
+  "sim": 0.643,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:673f9c96ecb040": {
+  "page": 135,
+  "bbox": [
+   189.74,
+   1706.68,
+   1458.1,
+   1887.71
+  ],
+  "sim": 0.946,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:27c6460b2028ff": {
+  "page": 136,
+  "bbox": [
+   177.32,
+   812.92,
+   1446.8,
+   989.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:57ca69133d0c70": {
+  "page": 136,
+  "bbox": [
+   246.22,
+   1384.47,
+   1407.27,
+   1511.99
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d86937a02423ea": {
+  "page": 134,
+  "bbox": [
+   193.13,
+   660.36,
+   1458.1,
+   835.69
+  ],
+  "sim": 0.797,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e71a6f8ecbb121": {
+  "page": 137,
+  "bbox": [
+   153.6,
+   652.39,
+   849.33,
+   799.26
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1aeef4c083ada5": {
+  "page": 137,
+  "bbox": [
+   160.38,
+   1358.29,
+   1425.34,
+   1545.01
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:72838419d26849": {
+  "page": 137,
+  "bbox": [
+   155.86,
+   1456.2,
+   1427.6,
+   1650.9
+  ],
+  "sim": 0.852,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8b9fbd4c752eca": {
+  "page": 137,
+  "bbox": [
+   158.12,
+   1837.62,
+   1426.47,
+   2020.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:55a540c8afb646": {
+  "page": 134,
+  "bbox": [
+   197.65,
+   1322.99,
+   1460.36,
+   1501.75
+  ],
+  "sim": 0.556,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:4246440a1fe5b4": {
+  "page": 133,
+  "bbox": [
+   166.03,
+   1646.34,
+   1434.38,
+   1825.09
+  ],
+  "sim": 0.562,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:3a2557cedf2e45": {
+  "page": 137,
+  "bbox": [
+   158.12,
+   1260.37,
+   1425.34,
+   1447.09
+  ],
+  "sim": 0.462,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:5115700ee6d1d4": {
+  "page": 134,
+  "bbox": [
+   197.65,
+   1322.99,
+   1460.36,
+   1501.75
+  ],
+  "sim": 0.512,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d5e14140c56e": {
+  "page": 141,
+  "bbox": [
+   166.03,
+   1319.58,
+   1433.25,
+   1448.23
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6ec21368d2bc": {
+  "page": 141,
+  "bbox": [
+   169.41,
+   1657.73,
+   1430.99,
+   1835.34
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fdf293eef521": {
+  "page": 141,
+  "bbox": [
+   167.16,
+   1800.05,
+   1434.38,
+   1979.94
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7dcb63ae93042d": {
+  "page": 142,
+  "bbox": [
+   194.26,
+   215.19,
+   1462.61,
+   498.68
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:675d6615762597": {
+  "page": 142,
+  "bbox": [
+   195.39,
+   866.44,
+   1467.13,
+   1048.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a4a7e0473301c6": {
+  "page": 142,
+  "bbox": [
+   202.17,
+   1880.88,
+   1298.85,
+   2022.06
+  ],
+  "sim": 0.959,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d79e5f59b8a61b": {
+  "page": 143,
+  "bbox": [
+   152.47,
+   223.16,
+   1418.57,
+   404.18
+  ],
+  "sim": 0.976,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0c27212aacfff0": {
+  "page": 143,
+  "bbox": [
+   149.08,
+   457.7,
+   1425.34,
+   647.83
+  ],
+  "sim": 0.764,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c8635c8d8d8c67": {
+  "page": 143,
+  "bbox": [
+   149.08,
+   508.93,
+   1425.34,
+   693.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a47f55101682e4": {
+  "page": 143,
+  "bbox": [
+   156.99,
+   1428.88,
+   1031.17,
+   1607.63
+  ],
+  "sim": 0.373,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:297a68a2a5aa63": {
+  "page": 144,
+  "bbox": [
+   204.43,
+   325.62,
+   1471.65,
+   499.82
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:707412e3b8eff1": {
+  "page": 144,
+  "bbox": [
+   275.58,
+   551.06,
+   1357.58,
+   732.09
+  ],
+  "sim": 0.474,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:07513cfe23be1e": {
+  "page": 141,
+  "bbox": [
+   223.63,
+   299.44,
+   1420.83,
+   409.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b5d76da3e4c7": {
+  "page": 145,
+  "bbox": [
+   166.03,
+   1124.89,
+   1432.12,
+   1256.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:229945462900": {
+  "page": 145,
+  "bbox": [
+   166.03,
+   1170.43,
+   1429.86,
+   1352.6
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:758fcd52a8a3": {
+  "page": 145,
+  "bbox": [
+   163.77,
+   1458.48,
+   1132.82,
+   1592.83
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c925a6c21f27": {
+  "page": 145,
+  "bbox": [
+   169.41,
+   1700.99,
+   1435.51,
+   1837.62
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d96ec45a6636": {
+  "page": 146,
+  "bbox": [
+   189.74,
+   229.99,
+   1456.97,
+   421.26
+  ],
+  "sim": 0.66,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e361c2338f81": {
+  "page": 146,
+  "bbox": [
+   189.74,
+   280.08,
+   1456.97,
+   472.5
+  ],
+  "sim": 0.897,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:57e4e3c371bd": {
+  "page": 146,
+  "bbox": [
+   192.0,
+   480.47,
+   1145.24,
+   716.15
+  ],
+  "sim": 0.815,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2474ee6c8009": {
+  "page": 145,
+  "bbox": [
+   169.41,
+   1700.99,
+   1435.51,
+   1837.62
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:75f34d020c6e": {
+  "page": 146,
+  "bbox": [
+   196.52,
+   674.02,
+   1462.61,
+   811.79
+  ],
+  "sim": 0.795,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:76b02e23e02b": {
+  "page": 147,
+  "bbox": [
+   180.71,
+   1401.55,
+   1445.67,
+   1586.0
+  ],
+  "sim": 0.485,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:a5c2e1e21a1071": {
+  "page": 148,
+  "bbox": [
+   176.19,
+   319.93,
+   1445.67,
+   598.88
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f202b7cffbf031": {
+  "page": 146,
+  "bbox": [
+   196.52,
+   769.66,
+   1462.61,
+   958.66
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:9838a158d8d913": {
+  "page": 148,
+  "bbox": [
+   185.23,
+   1609.91,
+   1449.06,
+   1789.8
+  ],
+  "sim": 0.919,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a85711b42814fb": {
+  "page": 148,
+  "bbox": [
+   184.1,
+   1749.95,
+   1452.45,
+   1936.67
+  ],
+  "sim": 0.868,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2340b0eb5796c7": {
+  "page": 146,
+  "bbox": [
+   196.52,
+   726.39,
+   1460.36,
+   908.56
+  ],
+  "sim": 0.606,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:37524e221f6ab0": {
+  "page": 149,
+  "bbox": [
+   164.9,
+   515.76,
+   1427.6,
+   693.38
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ae559c23d04979": {
+  "page": 149,
+  "bbox": [
+   163.77,
+   941.58,
+   1430.99,
+   1118.05
+  ],
+  "sim": 0.688,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a6eb78aaa6d605": {
+  "page": 149,
+  "bbox": [
+   163.77,
+   1033.8,
+   1430.99,
+   1214.83
+  ],
+  "sim": 0.607,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:76a33f28762626": {
+  "page": 149,
+  "bbox": [
+   167.16,
+   1514.27,
+   1076.35,
+   1671.39
+  ],
+  "sim": 0.653,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:86b8fe502e271b": {
+  "page": 149,
+  "bbox": [
+   169.41,
+   1751.09,
+   1054.89,
+   1927.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:0a55db6e0e7ceb": {
+  "page": 150,
+  "bbox": [
+   180.71,
+   136.63,
+   1446.8,
+   306.27
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:549c845b889b29": {
+  "page": 150,
+  "bbox": [
+   181.84,
+   461.11,
+   1444.54,
+   644.42
+  ],
+  "sim": 0.985,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:751d9cbb1cc0ff": {
+  "page": 150,
+  "bbox": [
+   182.97,
+   1198.89,
+   1446.8,
+   1333.24
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:6d7274480dd6ba": {
+  "page": 150,
+  "bbox": [
+   185.23,
+   1350.32,
+   1449.06,
+   1530.21
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d6ad9bab45eb99": {
+  "page": 150,
+  "bbox": [
+   182.97,
+   1689.61,
+   1451.32,
+   1871.77
+  ],
+  "sim": 0.559,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6b044507d619": {
+  "page": 152,
+  "bbox": [
+   187.49,
+   1192.06,
+   1454.71,
+   1330.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:97802c48e16c": {
+  "page": 152,
+  "bbox": [
+   187.49,
+   1244.43,
+   1454.71,
+   1376.5
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:34a16eaf5d38": {
+  "page": 152,
+  "bbox": [
+   187.49,
+   1247.85,
+   1218.66,
+   1430.02
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:08bf130f0326": {
+  "page": 152,
+  "bbox": [
+   187.49,
+   1828.51,
+   1458.1,
+   1968.55
+  ],
+  "sim": 0.907,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6df5b06d5384": {
+  "page": 152,
+  "bbox": [
+   187.49,
+   1192.06,
+   1454.71,
+   1330.96
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:be18a31a443a": {
+  "page": 153,
+  "bbox": [
+   164.9,
+   1120.33,
+   1428.73,
+   1312.75
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ec068d0c8847": {
+  "page": 153,
+  "bbox": [
+   161.51,
+   285.78,
+   1425.34,
+   480.47
+  ],
+  "sim": 0.904,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:83887fb8bfeb": {
+  "page": 153,
+  "bbox": [
+   163.77,
+   553.33,
+   1424.21,
+   738.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c7c5b14fd111": {
+  "page": 153,
+  "bbox": [
+   166.03,
+   1382.2,
+   1428.73,
+   1575.75
+  ],
+  "sim": 0.605,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:06f0fd7d469462": {
+  "page": 153,
+  "bbox": [
+   167.16,
+   1486.94,
+   1126.04,
+   1770.44
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:280be289af1132": {
+  "page": 154,
+  "bbox": [
+   190.87,
+   819.75,
+   1054.89,
+   978.01
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:08a2965b90917c": {
+  "page": 154,
+  "bbox": [
+   196.52,
+   1540.46,
+   1459.23,
+   1727.18
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e4a13d3459f2f2": {
+  "page": 154,
+  "bbox": [
+   197.65,
+   1644.06,
+   1401.62,
+   1823.95
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:56a020d342ec1e": {
+  "page": 155,
+  "bbox": [
+   168.29,
+   276.67,
+   1359.84,
+   464.53
+  ],
+  "sim": 0.897,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:4d8615fa9b8e73": {
+  "page": 155,
+  "bbox": [
+   163.77,
+   1139.69,
+   1432.12,
+   1271.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:899a627a6324d7": {
+  "page": 155,
+  "bbox": [
+   167.16,
+   1430.02,
+   1436.64,
+   1612.18
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:16fd75e198520d": {
+  "page": 155,
+  "bbox": [
+   167.16,
+   1473.28,
+   1436.64,
+   1655.45
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7e8fc989050448": {
+  "page": 160,
+  "bbox": [
+   194.26,
+   818.62,
+   1456.97,
+   1007.62
+  ],
+  "sim": 0.756,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b22fedf57c459e": {
+  "page": 160,
+  "bbox": [
+   189.74,
+   428.09,
+   1455.84,
+   613.68
+  ],
+  "sim": 0.942,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c9b96faa2c14ff": {
+  "page": 160,
+  "bbox": [
+   194.26,
+   818.62,
+   1456.97,
+   1007.62
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5f1e083dd9dc92": {
+  "page": 160,
+  "bbox": [
+   194.26,
+   818.62,
+   1456.97,
+   1007.62
+  ],
+  "sim": 0.857,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1279e2a01bae93": {
+  "page": 161,
+  "bbox": [
+   220.24,
+   421.26,
+   693.47,
+   604.57
+  ],
+  "sim": 0.51,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:16dbcf52c57cfd": {
+  "page": 161,
+  "bbox": [
+   160.38,
+   1349.18,
+   1284.16,
+   1543.87
+  ],
+  "sim": 0.933,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:9a0302d3b92e2d": {
+  "page": 161,
+  "bbox": [
+   160.38,
+   1398.14,
+   1228.82,
+   1591.69
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:4e0348264932ef": {
+  "page": 161,
+  "bbox": [
+   160.38,
+   1502.88,
+   1424.21,
+   1687.33
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b3184e8223a300": {
+  "page": 161,
+  "bbox": [
+   158.12,
+   1599.66,
+   1426.47,
+   1787.52
+  ],
+  "sim": 0.956,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:4744f21fb8dda9": {
+  "page": 160,
+  "bbox": [
+   269.93,
+   1167.01,
+   1127.17,
+   1348.04
+  ],
+  "sim": 0.465,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:4ff6747cc4537d": {
+  "page": 161,
+  "bbox": [
+   158.12,
+   1694.16,
+   1426.47,
+   1882.02
+  ],
+  "sim": 0.596,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ef55740161b3c8": {
+  "page": 160,
+  "bbox": [
+   189.74,
+   480.47,
+   1455.84,
+   660.36
+  ],
+  "sim": 0.78,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c47d2e7ee28d6f": {
+  "page": 158,
+  "bbox": [
+   271.06,
+   275.53,
+   1010.84,
+   447.45
+  ],
+  "sim": 0.8,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b14d5d02d84e": {
+  "page": 163,
+  "bbox": [
+   171.67,
+   1215.97,
+   1436.64,
+   1535.9
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d1fdf7829ba9": {
+  "page": 163,
+  "bbox": [
+   173.93,
+   1598.52,
+   1077.48,
+   1780.69
+  ],
+  "sim": 0.983,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:45ea5899b2de": {
+  "page": 163,
+  "bbox": [
+   177.32,
+   1795.49,
+   1121.53,
+   1976.52
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fc1b084ee96f": {
+  "page": 163,
+  "bbox": [
+   177.32,
+   1843.31,
+   1440.03,
+   2028.89
+  ],
+  "sim": 0.963,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0cd9ca0bb6a4": {
+  "page": 164,
+  "bbox": [
+   249.6,
+   456.56,
+   1306.75,
+   586.35
+  ],
+  "sim": 0.975,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7e634705c721": {
+  "page": 165,
+  "bbox": [
+   160.38,
+   753.72,
+   1285.29,
+   872.13
+  ],
+  "sim": 0.638,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f664f9c7af56": {
+  "page": 165,
+  "bbox": [
+   230.4,
+   923.36,
+   1429.86,
+   1087.31
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2866b0c5f369": {
+  "page": 165,
+  "bbox": [
+   225.89,
+   1673.67,
+   1432.12,
+   1802.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:10ff03e1b96b": {
+  "page": 164,
+  "bbox": [
+   193.13,
+   1740.84,
+   1460.36,
+   1924.15
+  ],
+  "sim": 0.351,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:06594fef698d": {
+  "page": 164,
+  "bbox": [
+   186.36,
+   218.6,
+   1453.58,
+   352.95
+  ],
+  "sim": 0.558,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:76a60fd390ea": {
+  "page": 163,
+  "bbox": [
+   177.32,
+   1843.31,
+   1440.03,
+   2028.89
+  ],
+  "sim": 0.439,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:590f14f2574a": {
+  "page": 163,
+  "bbox": [
+   177.32,
+   1843.31,
+   1440.03,
+   2028.89
+  ],
+  "sim": 0.54,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bb9a93aac622": {
+  "page": 164,
+  "bbox": [
+   186.36,
+   218.6,
+   1453.58,
+   352.95
+  ],
+  "sim": 0.688,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e883b1b92c8c": {
+  "page": 163,
+  "bbox": [
+   171.67,
+   1354.87,
+   1436.64,
+   1583.72
+  ],
+  "sim": 0.447,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:e0dae70b579d": {
+  "page": 165,
+  "bbox": [
+   225.89,
+   1710.1,
+   1432.12,
+   1846.73
+  ],
+  "sim": 0.481,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:bb8790f7bc87": {
+  "page": 164,
+  "bbox": [
+   249.6,
+   408.74,
+   1306.75,
+   543.09
+  ],
+  "sim": 0.56,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:229a20888112": {
+  "page": 164,
+  "bbox": [
+   249.6,
+   456.56,
+   1306.75,
+   586.35
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:792ffb69776c": {
+  "page": 164,
+  "bbox": [
+   249.6,
+   408.74,
+   1045.85,
+   497.55
+  ],
+  "sim": 0.571,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:faf429234d2b": {
+  "page": 164,
+  "bbox": [
+   186.36,
+   218.6,
+   1453.58,
+   352.95
+  ],
+  "sim": 0.689,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:77ca97e509c9": {
+  "page": 169,
+  "bbox": [
+   179.58,
+   322.21,
+   1444.54,
+   514.62
+  ],
+  "sim": 0.361,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:eb432e62dd63": {
+  "page": 165,
+  "bbox": [
+   163.77,
+   421.26,
+   1432.12,
+   602.29
+  ],
+  "sim": 0.567,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:54dacf56b9fc": {
+  "page": 165,
+  "bbox": [
+   163.77,
+   421.26,
+   1432.12,
+   602.29
+  ],
+  "sim": 0.557,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1b8c01fc117352": {
+  "page": 170,
+  "bbox": [
+   177.32,
+   668.33,
+   998.42,
+   753.72
+  ],
+  "sim": 0.957,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b8a6907c4d58f1": {
+  "page": 193,
+  "bbox": [
+   169.41,
+   815.2,
+   1170.09,
+   996.23
+  ],
+  "sim": 0.236,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:1fb99e1f7de0e2": {
+  "page": 170,
+  "bbox": [
+   179.58,
+   1247.85,
+   1447.93,
+   1443.68
+  ],
+  "sim": 0.953,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:fc6ee67ba8a166": {
+  "page": 171,
+  "bbox": [
+   233.79,
+   883.51,
+   1250.28,
+   1066.82
+  ],
+  "sim": 0.386,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:2e337a9378b7f1": {
+  "page": 171,
+  "bbox": [
+   166.03,
+   834.56,
+   1250.28,
+   967.77
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:f767699ba8b296": {
+  "page": 171,
+  "bbox": [
+   164.9,
+   1459.62,
+   1435.51,
+   1548.43
+  ],
+  "sim": 0.906,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:3dea0876e9034e": {
+  "page": 169,
+  "bbox": [
+   180.71,
+   1059.99,
+   1444.54,
+   1247.85
+  ],
+  "sim": 0.452,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:b4b68bc7920dfa": {
+  "page": 171,
+  "bbox": [
+   171.67,
+   1759.06,
+   876.44,
+   1941.23
+  ],
+  "sim": 0.929,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:98421ebb45870e": {
+  "page": 172,
+  "bbox": [
+   186.36,
+   487.3,
+   1017.62,
+   572.69
+  ],
+  "sim": 0.952,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:cce9047473b3": {
+  "page": 178,
+  "bbox": [
+   203.3,
+   726.39,
+   1213.01,
+   955.24
+  ],
+  "sim": 0.953,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:74457758cb8f": {
+  "page": 178,
+  "bbox": [
+   204.43,
+   868.71,
+   1472.78,
+   1047.46
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:efef3f1913ff": {
+  "page": 178,
+  "bbox": [
+   204.43,
+   1480.11,
+   1472.78,
+   1708.96
+  ],
+  "sim": 0.955,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b9592922148b": {
+  "page": 179,
+  "bbox": [
+   150.21,
+   155.98,
+   1415.18,
+   367.75
+  ],
+  "sim": 0.977,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7429dc80ef66": {
+  "page": 240,
+  "bbox": [
+   192.0,
+   831.14,
+   1458.1,
+   1031.52
+  ],
+  "sim": 0.25,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:f14feb6a14b5": {
+  "page": 179,
+  "bbox": [
+   224.76,
+   1231.91,
+   1428.73,
+   1460.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8e05f3b18eb3": {
+  "page": 179,
+  "bbox": [
+   224.76,
+   1231.91,
+   1428.73,
+   1460.76
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7d1a0e694419": {
+  "page": 179,
+  "bbox": [
+   163.77,
+   1620.15,
+   1429.86,
+   1772.72
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:25a611a7df3c": {
+  "page": 179,
+  "bbox": [
+   566.97,
+   1184.09,
+   1428.73,
+   1278.59
+  ],
+  "sim": 0.439,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:dfc7823d6883": {
+  "page": 179,
+  "bbox": [
+   566.97,
+   1184.09,
+   1428.73,
+   1278.59
+  ],
+  "sim": 0.938,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d3ea9963362d": {
+  "page": 179,
+  "bbox": [
+   227.02,
+   1506.3,
+   938.56,
+   1689.61
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e77cb1c0d8cb": {
+  "page": 57,
+  "bbox": [
+   166.03,
+   1642.93,
+   1449.06,
+   1841.03
+  ],
+  "sim": 0.379,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:f8f6a6a1b2eb": {
+  "page": 180,
+  "bbox": [
+   190.87,
+   1674.8,
+   1459.23,
+   1908.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fa89d0d8e8b4": {
+  "page": 180,
+  "bbox": [
+   190.87,
+   1601.94,
+   1459.23,
+   1763.61
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:80d8373cb35e": {
+  "page": 178,
+  "bbox": [
+   204.43,
+   868.71,
+   1472.78,
+   1047.46
+  ],
+  "sim": 0.735,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:13cab840d009": {
+  "page": 178,
+  "bbox": [
+   204.43,
+   154.84,
+   1468.26,
+   366.61
+  ],
+  "sim": 0.625,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:46fcfe12385f": {
+  "page": 179,
+  "bbox": [
+   163.77,
+   1682.77,
+   1429.86,
+   1893.41
+  ],
+  "sim": 0.686,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2b186000eb20": {
+  "page": 179,
+  "bbox": [
+   163.77,
+   1662.28,
+   1429.86,
+   1819.4
+  ],
+  "sim": 0.622,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:67340f41f754": {
+  "page": 178,
+  "bbox": [
+   204.43,
+   154.84,
+   1468.26,
+   366.61
+  ],
+  "sim": 0.56,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:093bf4f1f984": {
+  "page": 178,
+  "bbox": [
+   204.43,
+   868.71,
+   1472.78,
+   1047.46
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9f9f491e8bab": {
+  "page": 188,
+  "bbox": [
+   178.45,
+   1748.81,
+   1443.41,
+   1928.7
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:02bb297512f0": {
+  "page": 189,
+  "bbox": [
+   229.27,
+   158.26,
+   1402.75,
+   325.62
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6fac516ae479": {
+  "page": 189,
+  "bbox": [
+   161.51,
+   876.68,
+   1072.96,
+   1016.72
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9bccfe575958": {
+  "page": 190,
+  "bbox": [
+   188.62,
+   1920.73,
+   1458.1,
+   2010.68
+  ],
+  "sim": 0.707,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4ff616d1144f": {
+  "page": 189,
+  "bbox": [
+   230.4,
+   929.06,
+   1072.96,
+   1111.22
+  ],
+  "sim": 0.852,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:23f220e13e90": {
+  "page": 189,
+  "bbox": [
+   230.4,
+   929.06,
+   1072.96,
+   1111.22
+  ],
+  "sim": 0.351,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:fdbc2959756f": {
+  "page": 186,
+  "bbox": [
+   229.27,
+   480.47,
+   1409.53,
+   596.6
+  ],
+  "sim": 0.351,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:a61621e4dd06": {
+  "page": 188,
+  "bbox": [
+   240.57,
+   466.8,
+   1414.05,
+   644.42
+  ],
+  "sim": 0.516,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1ced1ec1b109": {
+  "page": 421,
+  "bbox": [
+   144.57,
+   710.45,
+   1411.79,
+   889.21
+  ],
+  "sim": 0.407,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:a8b78b939f64": {
+  "page": 202,
+  "bbox": [
+   197.65,
+   973.46,
+   1464.87,
+   1159.04
+  ],
+  "sim": 0.583,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bd02fa305edf": {
+  "page": 296,
+  "bbox": [
+   187.49,
+   1784.11,
+   1453.58,
+   1961.72
+  ],
+  "sim": 0.192,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:e47a0fc00d09": {
+  "page": 202,
+  "bbox": [
+   197.65,
+   1020.14,
+   1443.41,
+   1209.14
+  ],
+  "sim": 0.941,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:56ce1a0c2404": {
+  "page": 203,
+  "bbox": [
+   245.09,
+   629.62,
+   1449.06,
+   763.97
+  ],
+  "sim": 0.78,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7ef3c1e9a97b": {
+  "page": 203,
+  "bbox": [
+   179.58,
+   289.19,
+   1000.68,
+   477.05
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5c830b97310b": {
+  "page": 203,
+  "bbox": [
+   249.6,
+   1430.02,
+   1205.1,
+   1611.05
+  ],
+  "sim": 0.659,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:539b163ad32b": {
+  "page": 203,
+  "bbox": [
+   181.84,
+   1719.21,
+   1452.45,
+   1901.38
+  ],
+  "sim": 0.836,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e2f2aadb209d": {
+  "page": 204,
+  "bbox": [
+   172.8,
+   656.94,
+   1107.97,
+   823.17
+  ],
+  "sim": 0.558,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:11cef93b0549": {
+  "page": 204,
+  "bbox": [
+   238.31,
+   935.89,
+   1351.93,
+   1116.92
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:10ad168d91a7": {
+  "page": 204,
+  "bbox": [
+   238.31,
+   935.89,
+   1351.93,
+   1116.92
+  ],
+  "sim": 0.719,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fbc8affc1b71": {
+  "page": 204,
+  "bbox": [
+   246.22,
+   1905.93,
+   1324.82,
+   1985.63
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0d24429776a0": {
+  "page": 204,
+  "bbox": [
+   177.32,
+   1521.1,
+   1441.15,
+   1698.71
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:80c7b201cd74": {
+  "page": 204,
+  "bbox": [
+   172.8,
+   152.57,
+   1435.51,
+   323.35
+  ],
+  "sim": 0.643,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7a1a53191014": {
+  "page": 204,
+  "bbox": [
+   175.06,
+   980.29,
+   1351.93,
+   1165.87
+  ],
+  "sim": 0.476,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:60efac5323a4": {
+  "page": 216,
+  "bbox": [
+   192.0,
+   321.07,
+   1459.23,
+   712.73
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6314a3b5a577": {
+  "page": 216,
+  "bbox": [
+   190.87,
+   679.71,
+   1460.36,
+   857.33
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:79697299873e": {
+  "page": 216,
+  "bbox": [
+   199.91,
+   1154.49,
+   1460.36,
+   1315.02
+  ],
+  "sim": 0.394,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:8549aff37852": {
+  "page": 243,
+  "bbox": [
+   164.9,
+   1100.98,
+   1412.92,
+   1280.87
+  ],
+  "sim": 0.162,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:fed800db70dd": {
+  "page": 217,
+  "bbox": [
+   170.54,
+   1600.8,
+   1438.9,
+   1785.24
+  ],
+  "sim": 0.906,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:93ae10010fc1": {
+  "page": 217,
+  "bbox": [
+   169.41,
+   1794.35,
+   1201.72,
+   1932.12
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e9105eda7261": {
+  "page": 218,
+  "bbox": [
+   179.58,
+   274.39,
+   1447.93,
+   461.11
+  ],
+  "sim": 0.97,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f9c2eb72767f": {
+  "page": 218,
+  "bbox": [
+   182.97,
+   617.09,
+   1451.32,
+   800.4
+  ],
+  "sim": 0.573,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7ed629a9a333": {
+  "page": 218,
+  "bbox": [
+   184.1,
+   1001.92,
+   1452.45,
+   1187.51
+  ],
+  "sim": 0.54,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:33cbd1d61460": {
+  "page": 218,
+  "bbox": [
+   189.74,
+   1743.12,
+   1454.71,
+   1927.56
+  ],
+  "sim": 0.775,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:dee022f9b8ea": {
+  "page": 216,
+  "bbox": [
+   197.65,
+   1061.13,
+   1460.36,
+   1237.6
+  ],
+  "sim": 0.494,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:019a2d42fed3": {
+  "page": 216,
+  "bbox": [
+   197.65,
+   1061.13,
+   1460.36,
+   1237.6
+  ],
+  "sim": 0.536,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c46f9aee7e3b": {
+  "page": 96,
+  "bbox": [
+   189.74,
+   1046.33,
+   1412.92,
+   1234.19
+  ],
+  "sim": 0.325,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:c7c71661e72e": {
+  "page": 296,
+  "bbox": [
+   187.49,
+   1784.11,
+   1453.58,
+   1961.72
+  ],
+  "sim": 0.515,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b89699666029": {
+  "page": 218,
+  "bbox": [
+   182.97,
+   617.09,
+   1451.32,
+   800.4
+  ],
+  "sim": 0.411,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:bb18d1c899e6": {
+  "page": 236,
+  "bbox": [
+   201.04,
+   1258.1,
+   909.19,
+   1436.85
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:375cf2f26671": {
+  "page": 234,
+  "bbox": [
+   233.79,
+   224.29,
+   1440.03,
+   406.46
+  ],
+  "sim": 0.654,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9a79b33a84fe": {
+  "page": 237,
+  "bbox": [
+   156.99,
+   1518.82,
+   1424.21,
+   1712.38
+  ],
+  "sim": 0.458,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:ad2c82828d5c": {
+  "page": 237,
+  "bbox": [
+   222.5,
+   1106.67,
+   1219.79,
+   1308.19
+  ],
+  "sim": 0.545,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9b622c6d992e": {
+  "page": 237,
+  "bbox": [
+   155.86,
+   1722.62,
+   1172.35,
+   1884.3
+  ],
+  "sim": 0.63,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e639a2ab1cfb": {
+  "page": 237,
+  "bbox": [
+   156.99,
+   1825.09,
+   1428.73,
+   1930.98
+  ],
+  "sim": 0.898,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0c0f75c1abc6": {
+  "page": 238,
+  "bbox": [
+   263.16,
+   615.95,
+   1467.13,
+   746.89
+  ],
+  "sim": 0.821,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:20ac3118d0c8": {
+  "page": 238,
+  "bbox": [
+   263.16,
+   663.77,
+   1428.73,
+   859.6
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1e0d2aa59f2f": {
+  "page": 238,
+  "bbox": [
+   198.78,
+   971.18,
+   1382.42,
+   1033.8
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4fa13101ad9f": {
+  "page": 238,
+  "bbox": [
+   201.04,
+   1096.42,
+   1298.85,
+   1319.58
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d79540cd199f": {
+  "page": 238,
+  "bbox": [
+   202.17,
+   1571.2,
+   1467.13,
+   1746.53
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c793b9115ae0": {
+  "page": 238,
+  "bbox": [
+   203.3,
+   1664.56,
+   1466.0,
+   1844.45
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:72c80ff04251": {
+  "page": 238,
+  "bbox": [
+   202.17,
+   1614.46,
+   1467.13,
+   1794.35
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c18d411024db": {
+  "page": 238,
+  "bbox": [
+   202.17,
+   1805.74,
+   1467.13,
+   1985.63
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:17f774382bb2": {
+  "page": 238,
+  "bbox": [
+   202.17,
+   1760.2,
+   1467.13,
+   1936.67
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e39c5120129d": {
+  "page": 238,
+  "bbox": [
+   202.17,
+   1476.7,
+   1467.13,
+   1654.31
+  ],
+  "sim": 0.562,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c5cbcdf01da3": {
+  "page": 238,
+  "bbox": [
+   202.17,
+   1614.46,
+   1467.13,
+   1794.35
+  ],
+  "sim": 0.581,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fdfba4aa6102": {
+  "page": 238,
+  "bbox": [
+   197.65,
+   1428.88,
+   1156.54,
+   1556.4
+  ],
+  "sim": 0.833,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b1b6ba065bee": {
+  "page": 251,
+  "bbox": [
+   161.51,
+   596.6,
+   1430.99,
+   785.6
+  ],
+  "sim": 0.958,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6f155f36bbc4": {
+  "page": 251,
+  "bbox": [
+   156.99,
+   1156.77,
+   1426.47,
+   1354.87
+  ],
+  "sim": 0.603,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d2dbd2942a35": {
+  "page": 251,
+  "bbox": [
+   156.99,
+   992.81,
+   1426.47,
+   1252.4
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e4072e4e000f": {
+  "page": 251,
+  "bbox": [
+   156.99,
+   1156.77,
+   1426.47,
+   1354.87
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:854c3935b9bb": {
+  "page": 251,
+  "bbox": [
+   158.12,
+   1256.96,
+   1424.21,
+   1448.23
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:dcfefeb287a1": {
+  "page": 251,
+  "bbox": [
+   159.25,
+   1406.11,
+   1423.08,
+   1596.24
+  ],
+  "sim": 0.707,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ac8916acba9a": {
+  "page": 251,
+  "bbox": [
+   155.86,
+   1850.14,
+   1421.95,
+   2014.09
+  ],
+  "sim": 0.983,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:aea696ef4182": {
+  "page": 251,
+  "bbox": [
+   155.86,
+   1954.89,
+   1421.95,
+   2108.59
+  ],
+  "sim": 0.95,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5caf21e2750d": {
+  "page": 252,
+  "bbox": [
+   232.66,
+   539.67,
+   1086.51,
+   724.12
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:71d819792e0c": {
+  "page": 252,
+  "bbox": [
+   233.79,
+   833.42,
+   1140.73,
+   1022.42
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:04e436bca908": {
+  "page": 253,
+  "bbox": [
+   107.3,
+   157.12,
+   1371.13,
+   379.14
+  ],
+  "sim": 0.746,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d18a338b15b5": {
+  "page": 253,
+  "bbox": [
+   106.17,
+   495.27,
+   853.85,
+   678.57
+  ],
+  "sim": 0.683,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:482008136786": {
+  "page": 253,
+  "bbox": [
+   106.17,
+   1814.85,
+   1373.39,
+   1951.47
+  ],
+  "sim": 0.983,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ce13e2776715": {
+  "page": 253,
+  "bbox": [
+   106.17,
+   1612.18,
+   1314.66,
+   1803.46
+  ],
+  "sim": 0.472,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:b3673f3d8039": {
+  "page": 253,
+  "bbox": [
+   100.52,
+   1293.39,
+   1371.13,
+   1386.75
+  ],
+  "sim": 0.483,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:c223fe475fcd": {
+  "page": 266,
+  "bbox": [
+   195.39,
+   1699.85,
+   1458.1,
+   1879.74
+  ],
+  "sim": 0.694,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8a29023db21a": {
+  "page": 267,
+  "bbox": [
+   143.44,
+   557.89,
+   1410.66,
+   742.33
+  ],
+  "sim": 0.944,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c136ff7b6e06": {
+  "page": 267,
+  "bbox": [
+   208.94,
+   702.48,
+   1236.73,
+   884.65
+  ],
+  "sim": 0.794,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:77faa8063177": {
+  "page": 267,
+  "bbox": [
+   144.57,
+   897.18,
+   955.5,
+   1048.6
+  ],
+  "sim": 0.727,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d10c3194b65a": {
+  "page": 267,
+  "bbox": [
+   141.18,
+   1392.44,
+   1411.79,
+   1574.61
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:07e93f8c4f62": {
+  "page": 267,
+  "bbox": [
+   141.18,
+   1392.44,
+   1411.79,
+   1574.61
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:95f1476891ab": {
+  "page": 267,
+  "bbox": [
+   147.96,
+   1588.28,
+   1412.92,
+   1765.89
+  ],
+  "sim": 0.915,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4992e53bc8ea": {
+  "page": 267,
+  "bbox": [
+   147.96,
+   1681.64,
+   1412.92,
+   1864.94
+  ],
+  "sim": 0.974,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d884283c4bec": {
+  "page": 268,
+  "bbox": [
+   198.78,
+   135.49,
+   1000.68,
+   365.47
+  ],
+  "sim": 0.692,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:af3a63795079": {
+  "page": 268,
+  "bbox": [
+   195.39,
+   522.59,
+   1463.74,
+   700.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f397421f5482": {
+  "page": 271,
+  "bbox": [
+   163.77,
+   297.16,
+   1430.99,
+   481.61
+  ],
+  "sim": 0.717,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0765b4cfbd3b": {
+  "page": 271,
+  "bbox": [
+   163.77,
+   226.57,
+   1430.99,
+   385.97
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7bd7ca7db50e": {
+  "page": 271,
+  "bbox": [
+   231.53,
+   445.17,
+   1405.01,
+   627.34
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:eae067cc5e07": {
+  "page": 271,
+  "bbox": [
+   164.9,
+   832.28,
+   1432.12,
+   1013.31
+  ],
+  "sim": 0.541,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1128db33eb0f": {
+  "page": 271,
+  "bbox": [
+   168.29,
+   1466.45,
+   1433.25,
+   1598.52
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a3b1c0e7db98": {
+  "page": 271,
+  "bbox": [
+   172.8,
+   1854.7,
+   1437.77,
+   2033.45
+  ],
+  "sim": 0.831,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:60935ea16feb": {
+  "page": 271,
+  "bbox": [
+   172.8,
+   1854.7,
+   1437.77,
+   2033.45
+  ],
+  "sim": 0.774,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c80ec85ad434": {
+  "page": 272,
+  "bbox": [
+   199.91,
+   368.89,
+   1468.26,
+   507.79
+  ],
+  "sim": 0.636,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2f07655efc09": {
+  "page": 276,
+  "bbox": [
+   256.38,
+   1663.42,
+   1423.08,
+   1843.31
+  ],
+  "sim": 0.398,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:52739e85ff35": {
+  "page": 276,
+  "bbox": [
+   186.36,
+   1327.55,
+   1452.45,
+   1507.44
+  ],
+  "sim": 0.483,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:088d91f191e5": {
+  "page": 275,
+  "bbox": [
+   171.67,
+   1609.91,
+   1444.54,
+   1803.46
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e1adc99048aa": {
+  "page": 278,
+  "bbox": [
+   188.62,
+   911.98,
+   1455.84,
+   1096.42
+  ],
+  "sim": 0.953,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:54006f6371f3": {
+  "page": 276,
+  "bbox": [
+   344.48,
+   233.4,
+   969.05,
+   412.15
+  ],
+  "sim": 0.533,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:132e988f8731": {
+  "page": 278,
+  "bbox": [
+   189.74,
+   1550.7,
+   1459.23,
+   1688.47
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6ad83b168676": {
+  "page": 278,
+  "bbox": [
+   190.87,
+   1844.45,
+   1461.48,
+   1982.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5d51f5f1f9e3": {
+  "page": 275,
+  "bbox": [
+   172.8,
+   1708.96,
+   1444.54,
+   1891.13
+  ],
+  "sim": 0.8,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ea4a489f1cbf": {
+  "page": 279,
+  "bbox": [
+   168.29,
+   1849.0,
+   1438.9,
+   2028.89
+  ],
+  "sim": 0.854,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:748d57e3525e": {
+  "page": 275,
+  "bbox": [
+   171.67,
+   1609.91,
+   1444.54,
+   1803.46
+  ],
+  "sim": 0.778,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:34284edbf3f8": {
+  "page": 275,
+  "bbox": [
+   171.67,
+   1609.91,
+   1444.54,
+   1803.46
+  ],
+  "sim": 0.481,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:1de9b3f3b430": {
+  "page": 278,
+  "bbox": [
+   188.62,
+   911.98,
+   1455.84,
+   1096.42
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7414f152d994": {
+  "page": 275,
+  "bbox": [
+   171.67,
+   1609.91,
+   1444.54,
+   1803.46
+  ],
+  "sim": 0.588,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b3e0953110df": {
+  "page": 275,
+  "bbox": [
+   171.67,
+   1609.91,
+   1444.54,
+   1803.46
+  ],
+  "sim": 0.505,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f5be89a00ffa": {
+  "page": 286,
+  "bbox": [
+   203.3,
+   445.17,
+   1470.52,
+   676.3
+  ],
+  "sim": 0.664,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:eb0900d713ea": {
+  "page": 286,
+  "bbox": [
+   203.3,
+   445.17,
+   1470.52,
+   676.3
+  ],
+  "sim": 0.909,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:af7144f4ab91": {
+  "page": 286,
+  "bbox": [
+   201.04,
+   833.42,
+   1471.65,
+   1017.86
+  ],
+  "sim": 0.783,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:44c17f271218": {
+  "page": 286,
+  "bbox": [
+   206.69,
+   1026.97,
+   1471.65,
+   1206.86
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:19ba497991b3": {
+  "page": 286,
+  "bbox": [
+   271.06,
+   1266.07,
+   1037.95,
+   1455.06
+  ],
+  "sim": 0.829,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:21f574dd09a9": {
+  "page": 286,
+  "bbox": [
+   272.19,
+   1511.99,
+   1463.74,
+   1697.58
+  ],
+  "sim": 0.938,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a724c0dee58e": {
+  "page": 286,
+  "bbox": [
+   673.14,
+   1852.42,
+   1476.17,
+   1941.23
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:51a0fe1807c5": {
+  "page": 287,
+  "bbox": [
+   158.12,
+   666.05,
+   1420.83,
+   847.08
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:362cbfa18c3c": {
+  "page": 287,
+  "bbox": [
+   161.51,
+   955.24,
+   1425.34,
+   1132.86
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ec21262cf085": {
+  "page": 287,
+  "bbox": [
+   159.25,
+   477.05,
+   1180.26,
+   654.67
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:855112c7a6b0": {
+  "page": 287,
+  "bbox": [
+   160.38,
+   1140.83,
+   1430.99,
+   1278.59
+  ],
+  "sim": 0.642,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6c67e80788c7": {
+  "page": 287,
+  "bbox": [
+   161.51,
+   1242.16,
+   1429.86,
+   1374.23
+  ],
+  "sim": 0.895,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4f1fe0dfd5ad": {
+  "page": 291,
+  "bbox": [
+   176.19,
+   1267.2,
+   1269.48,
+   1449.37
+  ],
+  "sim": 0.88,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:531026ac1ba4": {
+  "page": 291,
+  "bbox": [
+   176.19,
+   1267.2,
+   1269.48,
+   1449.37
+  ],
+  "sim": 0.896,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ceaa11062f77": {
+  "page": 291,
+  "bbox": [
+   178.45,
+   1558.67,
+   1442.28,
+   1737.42
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:33a5552cceef": {
+  "page": 292,
+  "bbox": [
+   197.65,
+   145.73,
+   991.64,
+   267.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a6abd367dcfe": {
+  "page": 292,
+  "bbox": [
+   178.45,
+   915.39,
+   1444.54,
+   1095.28
+  ],
+  "sim": 0.456,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:24fd61dbcf09": {
+  "page": 292,
+  "bbox": [
+   173.93,
+   526.01,
+   1442.28,
+   705.9
+  ],
+  "sim": 0.846,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f2967eb1e2ef": {
+  "page": 292,
+  "bbox": [
+   176.19,
+   1107.81,
+   1446.8,
+   1296.81
+  ],
+  "sim": 0.938,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:adb3ed9db2b5": {
+  "page": 292,
+  "bbox": [
+   176.19,
+   1209.14,
+   1446.8,
+   1391.31
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:36ca838aae7b": {
+  "page": 292,
+  "bbox": [
+   212.33,
+   1406.11,
+   1444.54,
+   1589.41
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:dc131b2339f2": {
+  "page": 292,
+  "bbox": [
+   181.84,
+   1842.17,
+   1450.19,
+   2032.31
+  ],
+  "sim": 0.923,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e282d2e748bf": {
+  "page": 293,
+  "bbox": [
+   171.67,
+   1552.98,
+   1227.69,
+   1687.33
+  ],
+  "sim": 0.569,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b39bce1ef660": {
+  "page": 293,
+  "bbox": [
+   173.93,
+   1826.23,
+   1442.28,
+   2007.26
+  ],
+  "sim": 0.797,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0f63adda66d8": {
+  "page": 293,
+  "bbox": [
+   173.93,
+   1826.23,
+   1442.28,
+   2007.26
+  ],
+  "sim": 0.789,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8511cf466e92": {
+  "page": 304,
+  "bbox": [
+   206.69,
+   686.54,
+   1475.04,
+   824.31
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:cf31e6dfe33a": {
+  "page": 304,
+  "bbox": [
+   205.56,
+   832.28,
+   1475.04,
+   968.9
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:dc964db41d07": {
+  "page": 304,
+  "bbox": [
+   207.82,
+   1025.83,
+   1476.17,
+   1212.55
+  ],
+  "sim": 0.908,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7d4cb895988b": {
+  "page": 304,
+  "bbox": [
+   206.69,
+   1414.08,
+   1477.3,
+   1603.08
+  ],
+  "sim": 0.582,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c7ff640c2bcb": {
+  "page": 305,
+  "bbox": [
+   164.9,
+   804.95,
+   1427.6,
+   982.57
+  ],
+  "sim": 0.979,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d7f7b1f7d851": {
+  "page": 305,
+  "bbox": [
+   164.9,
+   949.55,
+   1427.6,
+   1077.07
+  ],
+  "sim": 0.968,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d5fcf3fae423": {
+  "page": 305,
+  "bbox": [
+   167.16,
+   1231.91,
+   1430.99,
+   1410.66
+  ],
+  "sim": 0.984,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c80ca183fdba": {
+  "page": 315,
+  "bbox": [
+   153.6,
+   1539.32,
+   999.55,
+   1719.21
+  ],
+  "sim": 0.489,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:0962569c717a": {
+  "page": 316,
+  "bbox": [
+   221.37,
+   137.76,
+   1004.06,
+   257.31
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d071989686a9": {
+  "page": 316,
+  "bbox": [
+   197.65,
+   141.18,
+   1464.87,
+   356.37
+  ],
+  "sim": 0.909,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b627a8ff13c5": {
+  "page": 316,
+  "bbox": [
+   197.65,
+   268.7,
+   1464.87,
+   459.97
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:f1175b0a4a4f": {
+  "page": 316,
+  "bbox": [
+   202.17,
+   773.07,
+   1464.87,
+   910.84
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:c442afec3f94": {
+  "page": 316,
+  "bbox": [
+   202.17,
+   1079.34,
+   1466.0,
+   1211.42
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:601eaa4569fb": {
+  "page": 317,
+  "bbox": [
+   144.57,
+   748.03,
+   1417.44,
+   951.83
+  ],
+  "sim": 0.473,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:46e5800f4bca": {
+  "page": 317,
+  "bbox": [
+   216.85,
+   1228.49,
+   1392.59,
+   1309.33
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:ff7e8477b968": {
+  "page": 317,
+  "bbox": [
+   151.34,
+   1478.97,
+   1418.57,
+   1670.25
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:18d99b8b405c": {
+  "page": 337,
+  "bbox": [
+   147.96,
+   1488.08,
+   1417.44,
+   1607.63
+  ],
+  "sim": 0.964,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a5d024f780b2": {
+  "page": 337,
+  "bbox": [
+   150.21,
+   1815.98,
+   1416.31,
+   1945.78
+  ],
+  "sim": 0.917,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fa1e84282f8d": {
+  "page": 337,
+  "bbox": [
+   146.83,
+   840.25,
+   1410.66,
+   1161.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7e16729e0cc0": {
+  "page": 338,
+  "bbox": [
+   204.43,
+   392.8,
+   1468.26,
+   526.01
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:def2d41dc607": {
+  "page": 338,
+  "bbox": [
+   202.17,
+   721.84,
+   1470.52,
+   857.33
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6a083bc96dad": {
+  "page": 338,
+  "bbox": [
+   203.3,
+   957.52,
+   1468.26,
+   1137.41
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:fce1a0d47099": {
+  "page": 338,
+  "bbox": [
+   202.17,
+   623.92,
+   1470.52,
+   759.41
+  ],
+  "sim": 0.931,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:5445fac7dce9": {
+  "page": 338,
+  "bbox": [
+   198.78,
+   1103.25,
+   1467.13,
+   1283.14
+  ],
+  "sim": 0.902,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:8c5ddc68be7b": {
+  "page": 338,
+  "bbox": [
+   202.17,
+   1437.99,
+   1470.52,
+   1617.88
+  ],
+  "sim": 0.973,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:752421662202": {
+  "page": 338,
+  "bbox": [
+   207.82,
+   1673.67,
+   1471.65,
+   1850.14
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:e868524c96bc": {
+  "page": 338,
+  "bbox": [
+   207.82,
+   1720.35,
+   1473.91,
+   1897.96
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:29c757ab982b": {
+  "page": 338,
+  "bbox": [
+   276.71,
+   1959.44,
+   1477.3,
+   2047.11
+  ],
+  "sim": 0.684,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1fd291bef1b1": {
+  "page": 338,
+  "bbox": [
+   206.69,
+   1242.16,
+   1475.04,
+   1424.32
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d53a0250b2ea": {
+  "page": 339,
+  "bbox": [
+   159.25,
+   342.7,
+   1428.73,
+   518.04
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4e0348264932": {
+  "page": 339,
+  "bbox": [
+   162.64,
+   478.19,
+   1425.34,
+   660.36
+  ],
+  "sim": 0.809,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:16c79a0bae7f": {
+  "page": 340,
+  "bbox": [
+   189.74,
+   1889.99,
+   1454.71,
+   2039.14
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:62d9d5647b06": {
+  "page": 338,
+  "bbox": [
+   203.3,
+   1007.62,
+   1468.26,
+   1187.51
+  ],
+  "sim": 0.447,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:aab1f4b87546": {
+  "page": 338,
+  "bbox": [
+   202.17,
+   1571.2,
+   1470.52,
+   1755.64
+  ],
+  "sim": 0.783,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9c728b72da29": {
+  "page": 338,
+  "bbox": [
+   202.17,
+   1483.53,
+   1470.52,
+   1658.87
+  ],
+  "sim": 0.862,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0cc2b4530c41": {
+  "page": 336,
+  "bbox": [
+   198.78,
+   1123.75,
+   1463.74,
+   1206.86
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0f36a6bb0704": {
+  "page": 338,
+  "bbox": [
+   207.82,
+   1673.67,
+   1471.65,
+   1850.14
+  ],
+  "sim": 0.744,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:26398ffa83cc": {
+  "page": 338,
+  "bbox": [
+   207.82,
+   1720.35,
+   1473.91,
+   1897.96
+  ],
+  "sim": 0.87,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5fd33ad9a01234": {
+  "page": 342,
+  "bbox": [
+   189.74,
+   1118.05,
+   1454.71,
+   1393.58
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d5e4926697e7e2": {
+  "page": 343,
+  "bbox": [
+   152.47,
+   711.59,
+   1425.34,
+   848.22
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:039faa9f81bfeb": {
+  "page": 343,
+  "bbox": [
+   159.25,
+   1600.8,
+   1425.34,
+   1785.24
+  ],
+  "sim": 0.979,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7c1d247f7d4b3a": {
+  "page": 343,
+  "bbox": [
+   156.99,
+   1698.71,
+   1425.34,
+   1883.16
+  ],
+  "sim": 0.974,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8af3bb6399c745": {
+  "page": 344,
+  "bbox": [
+   274.45,
+   1571.2,
+   1467.13,
+   1740.84
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8139b04797cc8a": {
+  "page": 240,
+  "bbox": [
+   192.0,
+   831.14,
+   1458.1,
+   1031.52
+  ],
+  "sim": 0.419,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:8c1833df0e6727": {
+  "page": 342,
+  "bbox": [
+   193.13,
+   915.39,
+   1460.36,
+   1104.39
+  ],
+  "sim": 0.462,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:82267ecb7ed66a": {
+  "page": 340,
+  "bbox": [
+   188.62,
+   1071.37,
+   1450.19,
+   1244.43
+  ],
+  "sim": 0.793,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:768f7c50d9a679": {
+  "page": 340,
+  "bbox": [
+   188.62,
+   1071.37,
+   1450.19,
+   1244.43
+  ],
+  "sim": 0.791,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2b8d3ff5c82b28": {
+  "page": 341,
+  "bbox": [
+   153.6,
+   215.19,
+   1420.83,
+   406.46
+  ],
+  "sim": 0.621,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:50b8a53db26d0e": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1732.87,
+   1430.99,
+   1924.15
+  ],
+  "sim": 0.377,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:920336db9e0808": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1233.05,
+   1425.34,
+   1369.67
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bbf00415dfafef": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1271.76,
+   1425.34,
+   1418.63
+  ],
+  "sim": 0.517,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:3c49e3a54a081f": {
+  "page": 193,
+  "bbox": [
+   169.41,
+   815.2,
+   1170.09,
+   996.23
+  ],
+  "sim": 0.426,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:aa04c267986fa3": {
+  "page": 341,
+  "bbox": [
+   219.11,
+   511.21,
+   1379.04,
+   704.76
+  ],
+  "sim": 0.806,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b957ca84923874": {
+  "page": 340,
+  "bbox": [
+   184.1,
+   1162.46,
+   1450.19,
+   1341.21
+  ],
+  "sim": 0.778,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:caf03f8bc33f41": {
+  "page": 385,
+  "bbox": [
+   167.16,
+   418.99,
+   1438.9,
+   609.12
+  ],
+  "sim": 0.397,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:fed422ea56f519": {
+  "page": 341,
+  "bbox": [
+   153.6,
+   141.18,
+   1420.83,
+   357.5
+  ],
+  "sim": 0.421,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:cfb5f37c11508f": {
+  "page": 340,
+  "bbox": [
+   188.62,
+   1071.37,
+   1450.19,
+   1244.43
+  ],
+  "sim": 0.52,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:16fdaf6e595745": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1271.76,
+   1425.34,
+   1418.63
+  ],
+  "sim": 0.448,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:0d813c99e4125b": {
+  "page": 341,
+  "bbox": [
+   219.11,
+   462.25,
+   1309.01,
+   658.08
+  ],
+  "sim": 0.523,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:290166e006db78": {
+  "page": 341,
+  "bbox": [
+   153.6,
+   265.28,
+   1420.83,
+   452.0
+  ],
+  "sim": 0.625,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:68c4512b86f7e1": {
+  "page": 340,
+  "bbox": [
+   187.49,
+   1301.36,
+   1450.19,
+   1481.25
+  ],
+  "sim": 0.58,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:77fb8a0ca1e991": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1271.76,
+   1425.34,
+   1418.63
+  ],
+  "sim": 0.457,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:df0e504a85615f": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1732.87,
+   1430.99,
+   1924.15
+  ],
+  "sim": 0.655,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:9d501b43bb24c0": {
+  "page": 341,
+  "bbox": [
+   158.12,
+   1732.87,
+   1430.99,
+   1924.15
+  ],
+  "sim": 0.516,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6037c2c3b8f2": {
+  "page": 354,
+  "bbox": [
+   213.46,
+   1248.99,
+   1478.43,
+   1420.91
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2fcb5ae8c977": {
+  "page": 355,
+  "bbox": [
+   168.29,
+   518.04,
+   1435.51,
+   650.11
+  ],
+  "sim": 0.889,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:810292aa6324": {
+  "page": 354,
+  "bbox": [
+   215.72,
+   1849.0,
+   1482.94,
+   1982.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:06fe51d47d0d": {
+  "page": 355,
+  "bbox": [
+   231.53,
+   150.29,
+   1402.75,
+   267.56
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:60ee9ad41a13": {
+  "page": 355,
+  "bbox": [
+   170.54,
+   1327.55,
+   1435.51,
+   1506.3
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:2f1d55751bb6": {
+  "page": 355,
+  "bbox": [
+   170.54,
+   1327.55,
+   1435.51,
+   1506.3
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:abf206084e0b": {
+  "page": 355,
+  "bbox": [
+   170.54,
+   1374.23,
+   1435.51,
+   1555.26
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:30396a377292": {
+  "page": 355,
+  "bbox": [
+   176.19,
+   1616.74,
+   931.78,
+   1793.21
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9ac2cb679df4": {
+  "page": 356,
+  "bbox": [
+   195.39,
+   424.68,
+   953.24,
+   602.29
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:04aff3d2587d": {
+  "page": 356,
+  "bbox": [
+   195.39,
+   150.29,
+   1455.84,
+   458.84
+  ],
+  "sim": 0.57,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:16ec0b8d90f0": {
+  "page": 356,
+  "bbox": [
+   196.52,
+   569.27,
+   1458.1,
+   748.03
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:02d32f039207": {
+  "page": 356,
+  "bbox": [
+   196.52,
+   1368.54,
+   1462.61,
+   1547.29
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:16165c835a26": {
+  "page": 356,
+  "bbox": [
+   263.16,
+   1558.67,
+   725.1,
+   1739.7
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6d07b3c3919e": {
+  "page": 353,
+  "bbox": [
+   150.21,
+   1502.88,
+   1417.44,
+   1687.33
+  ],
+  "sim": 0.786,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:96cc365df37c": {
+  "page": 356,
+  "bbox": [
+   196.52,
+   1365.12,
+   1466.0,
+   1500.61
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:a2a169929b49": {
+  "page": 356,
+  "bbox": [
+   215.72,
+   148.01,
+   1455.84,
+   411.02
+  ],
+  "sim": 0.5,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9fe4a857d0f2": {
+  "page": 356,
+  "bbox": [
+   202.17,
+   1900.24,
+   1464.87,
+   2031.17
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:058431a465b95d": {
+  "page": 357,
+  "bbox": [
+   172.8,
+   1625.85,
+   972.44,
+   1790.94
+  ],
+  "sim": 0.692,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b34fccc76a1b95": {
+  "page": 357,
+  "bbox": [
+   172.8,
+   1625.85,
+   972.44,
+   1790.94
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:4f338c0aa9c185": {
+  "page": 357,
+  "bbox": [
+   171.67,
+   1756.78,
+   1436.64,
+   1934.39
+  ],
+  "sim": 0.977,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:b6158808002d23": {
+  "page": 357,
+  "bbox": [
+   172.8,
+   1625.85,
+   972.44,
+   1790.94
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2cf34180d136ad": {
+  "page": 358,
+  "bbox": [
+   190.87,
+   144.6,
+   1259.32,
+   359.78
+  ],
+  "sim": 0.9,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2d98bcdb548736": {
+  "page": 358,
+  "bbox": [
+   193.13,
+   270.97,
+   1458.1,
+   454.28
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:47c203e3f15f26": {
+  "page": 358,
+  "bbox": [
+   192.0,
+   507.79,
+   1459.23,
+   689.96
+  ],
+  "sim": 0.962,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d179881d20fada": {
+  "page": 356,
+  "bbox": [
+   190.87,
+   1095.28,
+   1080.87,
+   1162.46
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ad1ac5aae6c72a": {
+  "page": 359,
+  "bbox": [
+   144.57,
+   613.68,
+   1366.61,
+   749.16
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:dfaf780b34f035": {
+  "page": 359,
+  "bbox": [
+   143.44,
+   1145.38,
+   1411.79,
+   1336.66
+  ],
+  "sim": 0.882,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:be61b87d42ea46": {
+  "page": 359,
+  "bbox": [
+   145.7,
+   1289.98,
+   1411.79,
+   1477.84
+  ],
+  "sim": 0.754,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:700e47bfd430c2": {
+  "page": 359,
+  "bbox": [
+   144.57,
+   1616.74,
+   1414.05,
+   1798.91
+  ],
+  "sim": 0.931,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:7e8dec84eda71d": {
+  "page": 359,
+  "bbox": [
+   145.7,
+   1289.98,
+   1411.79,
+   1477.84
+  ],
+  "sim": 0.87,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:fb5b76754a1f14": {
+  "page": 359,
+  "bbox": [
+   145.7,
+   1243.29,
+   1411.79,
+   1427.74
+  ],
+  "sim": 0.667,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:441a4c9dbd1620": {
+  "page": 359,
+  "bbox": [
+   143.44,
+   315.38,
+   1017.62,
+   508.93
+  ],
+  "sim": 0.561,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2e8ac13c020221": {
+  "page": 355,
+  "bbox": [
+   171.67,
+   1140.83,
+   1437.77,
+   1319.58
+  ],
+  "sim": 0.478,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:fc1b62ff88877a": {
+  "page": 356,
+  "bbox": [
+   196.52,
+   617.09,
+   1458.1,
+   795.85
+  ],
+  "sim": 0.621,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bad7cf5f5f80fa": {
+  "page": 356,
+  "bbox": [
+   196.52,
+   617.09,
+   1458.1,
+   795.85
+  ],
+  "sim": 0.725,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d02e588a1644ae": {
+  "page": 359,
+  "bbox": [
+   144.57,
+   1001.92,
+   1411.79,
+   1186.37
+  ],
+  "sim": 0.579,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:66ef7c440d085f": {
+  "page": 358,
+  "bbox": [
+   192.0,
+   463.39,
+   1459.23,
+   648.97
+  ],
+  "sim": 0.453,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:e6267bc36542c8": {
+  "page": 356,
+  "bbox": [
+   195.39,
+   228.85,
+   1455.84,
+   505.52
+  ],
+  "sim": 0.39,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:69a983576563cd": {
+  "page": 358,
+  "bbox": [
+   193.13,
+   270.97,
+   1458.1,
+   454.28
+  ],
+  "sim": 0.875,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e62d3632d305ac": {
+  "page": 356,
+  "bbox": [
+   196.52,
+   617.09,
+   1458.1,
+   795.85
+  ],
+  "sim": 0.495,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:eda0df963b73": {
+  "page": 362,
+  "bbox": [
+   177.32,
+   1444.82,
+   1445.67,
+   1631.54
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0d7881cc6626": {
+  "page": 362,
+  "bbox": [
+   177.32,
+   1444.82,
+   1445.67,
+   1631.54
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7873303fc252": {
+  "page": 363,
+  "bbox": [
+   224.76,
+   318.79,
+   827.87,
+   496.41
+  ],
+  "sim": 0.896,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:9cc532b104e0": {
+  "page": 363,
+  "bbox": [
+   160.38,
+   457.7,
+   1423.08,
+   637.59
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:698a0e71a91d": {
+  "page": 363,
+  "bbox": [
+   225.89,
+   699.07,
+   877.57,
+   875.54
+  ],
+  "sim": 0.827,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:0db31db2afd7": {
+  "page": 363,
+  "bbox": [
+   162.64,
+   980.29,
+   1424.21,
+   1111.22
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:541d43dd9571": {
+  "page": 363,
+  "bbox": [
+   156.99,
+   1124.89,
+   1421.95,
+   1303.64
+  ],
+  "sim": 0.971,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:058b7adad1af": {
+  "page": 364,
+  "bbox": [
+   195.39,
+   793.57,
+   1461.48,
+   979.15
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:1b0fe3a5abf4": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   983.71,
+   1460.36,
+   1168.15
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bc995493105a": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   935.89,
+   1461.48,
+   1120.33
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:7f730772e959": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   935.89,
+   1461.48,
+   1120.33
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:d0a3072a6dbb": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   935.89,
+   1461.48,
+   1120.33
+  ],
+  "sim": 0.98,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:bfbfb8653f38": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   1079.34,
+   1464.87,
+   1263.79
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:174aefd982cb": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   1079.34,
+   1464.87,
+   1263.79
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:909d6b2fe64a": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   1079.34,
+   1464.87,
+   1263.79
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:4ba67a2e43cc": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   1079.34,
+   1464.87,
+   1263.79
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:47becc249ba1": {
+  "page": 364,
+  "bbox": [
+   262.03,
+   1269.48,
+   1021.01,
+   1452.79
+  ],
+  "sim": 0.91,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:68a182004658": {
+  "page": 361,
+  "bbox": [
+   178.45,
+   1475.56,
+   1447.93,
+   1654.31
+  ],
+  "sim": 0.482,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:e56db3913720": {
+  "page": 364,
+  "bbox": [
+   197.65,
+   892.62,
+   1461.48,
+   1073.65
+  ],
+  "sim": 0.786,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:b9ca5015ca1f": {
+  "page": 363,
+  "bbox": [
+   156.99,
+   1168.15,
+   1425.34,
+   1350.32
+  ],
+  "sim": 0.644,
+  "low_confidence": false
+ },
+ "gaodai_shang:node:6c6c8c1be55f": {
+  "page": 362,
+  "bbox": [
+   182.97,
+   1590.55,
+   1449.06,
+   1784.11
+  ],
+  "sim": 0.44,
+  "low_confidence": true
+ },
+ "gaodai_shang:node:e811d2247697": {
+  "page": 360,
+  "bbox": [
+   211.2,
+   605.71,
+   1477.3,
+   748.03
+  ],
+  "sim": 0.458,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:3dca7095380a06": {
+  "page": 367,
+  "bbox": [
+   162.64,
+   273.25,
+   1433.25,
+   555.61
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5aaeeeb2be81fa": {
+  "page": 367,
+  "bbox": [
+   168.29,
+   563.58,
+   1353.06,
+   744.61
+  ],
+  "sim": 0.823,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2abc2d15d47c13": {
+  "page": 367,
+  "bbox": [
+   169.41,
+   947.27,
+   1157.67,
+   1123.75
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ea7df70b55e80a": {
+  "page": 367,
+  "bbox": [
+   171.67,
+   1875.19,
+   1437.77,
+   2033.45
+  ],
+  "sim": 0.58,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:aa9391792f29f2": {
+  "page": 368,
+  "bbox": [
+   186.36,
+   275.53,
+   1453.58,
+   440.62
+  ],
+  "sim": 0.905,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bfc807c6086848": {
+  "page": 368,
+  "bbox": [
+   189.74,
+   1258.1,
+   1456.97,
+   1436.85
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:97490c4b8645f9": {
+  "page": 369,
+  "bbox": [
+   152.47,
+   232.26,
+   1420.83,
+   418.99
+  ],
+  "sim": 0.676,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:94fb60d8670ef0": {
+  "page": 369,
+  "bbox": [
+   155.86,
+   872.13,
+   1425.34,
+   1017.86
+  ],
+  "sim": 0.493,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:38dac9162b76da": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1311.61,
+   1426.47,
+   1497.19
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:21ab2d12cc7258": {
+  "page": 369,
+  "bbox": [
+   152.47,
+   157.12,
+   1420.83,
+   370.03
+  ],
+  "sim": 0.771,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:a24fb5c3d5059b": {
+  "page": 368,
+  "bbox": [
+   192.0,
+   1703.27,
+   1458.1,
+   1880.88
+  ],
+  "sim": 0.83,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:9ac287a957e71b": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1311.61,
+   1426.47,
+   1497.19
+  ],
+  "sim": 0.651,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:55b7a491cab956": {
+  "page": 368,
+  "bbox": [
+   192.0,
+   1747.67,
+   1459.23,
+   1936.67
+  ],
+  "sim": 0.771,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:77156223fdb243": {
+  "page": 369,
+  "bbox": [
+   152.47,
+   282.36,
+   1417.44,
+   473.64
+  ],
+  "sim": 0.392,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:fea44fb24bf1af": {
+  "page": 367,
+  "bbox": [
+   162.64,
+   324.49,
+   1353.06,
+   603.43
+  ],
+  "sim": 0.882,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:22ad82763bbd2f": {
+  "page": 365,
+  "bbox": [
+   164.9,
+   1409.52,
+   1266.09,
+   1597.38
+  ],
+  "sim": 0.6,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:2054303c210d24": {
+  "page": 368,
+  "bbox": [
+   186.36,
+   146.87,
+   1453.58,
+   366.61
+  ],
+  "sim": 0.738,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:253a8ed56ba403": {
+  "page": 369,
+  "bbox": [
+   152.47,
+   232.26,
+   1420.83,
+   418.99
+  ],
+  "sim": 0.419,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:add4530268d4b4": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1311.61,
+   1426.47,
+   1497.19
+  ],
+  "sim": 0.967,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:d90fb03a48cb95": {
+  "page": 368,
+  "bbox": [
+   193.13,
+   1352.6,
+   1456.97,
+   1545.01
+  ],
+  "sim": 0.925,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ae14fb93994949": {
+  "page": 368,
+  "bbox": [
+   193.13,
+   1352.6,
+   1456.97,
+   1545.01
+  ],
+  "sim": 0.82,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e29f378edd5bb8": {
+  "page": 369,
+  "bbox": [
+   154.73,
+   425.82,
+   1170.09,
+   621.65
+  ],
+  "sim": 0.648,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:6890bfa3e1c3b1": {
+  "page": 369,
+  "bbox": [
+   154.73,
+   425.82,
+   1170.09,
+   621.65
+  ],
+  "sim": 0.676,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:1c516c5bb3816d": {
+  "page": 369,
+  "bbox": [
+   152.47,
+   157.12,
+   1420.83,
+   370.03
+  ],
+  "sim": 0.853,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:afefc9eb8e90df": {
+  "page": 368,
+  "bbox": [
+   194.26,
+   1842.17,
+   1459.23,
+   2034.59
+  ],
+  "sim": 0.63,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:badf9b2880a792": {
+  "page": 369,
+  "bbox": [
+   154.73,
+   380.28,
+   1229.95,
+   571.55
+  ],
+  "sim": 0.769,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:e8e29659b90868": {
+  "page": 368,
+  "bbox": [
+   192.0,
+   1747.67,
+   1459.23,
+   1936.67
+  ],
+  "sim": 0.714,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:72071d23f851ca": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1311.61,
+   1426.47,
+   1497.19
+  ],
+  "sim": 0.486,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:3b45b4c46ce8b9": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1311.61,
+   1426.47,
+   1497.19
+  ],
+  "sim": 0.356,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:fe49f2c8ca6d7e": {
+  "page": 365,
+  "bbox": [
+   225.89,
+   472.5,
+   1398.24,
+   661.5
+  ],
+  "sim": 0.618,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:c550861a050897": {
+  "page": 367,
+  "bbox": [
+   162.64,
+   324.49,
+   1353.06,
+   603.43
+  ],
+  "sim": 0.611,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:8b6396a4a618fc": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1311.61,
+   1426.47,
+   1497.19
+  ],
+  "sim": 0.402,
+  "low_confidence": true
+ },
+ "gaodai_shang:norm-app-node:d04ce25c3b350e": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1021.28,
+   1425.34,
+   1208.0
+  ],
+  "sim": 0.62,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bc919b8536ea51": {
+  "page": 369,
+  "bbox": [
+   158.12,
+   1021.28,
+   1425.34,
+   1208.0
+  ],
+  "sim": 0.578,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:73c2e4b5093386": {
+  "page": 368,
+  "bbox": [
+   186.36,
+   275.53,
+   1453.58,
+   440.62
+  ],
+  "sim": 0.837,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:33b61214cd461e": {
+  "page": 385,
+  "bbox": [
+   167.16,
+   467.94,
+   1438.9,
+   653.53
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:bbf5a346fddd40": {
+  "page": 385,
+  "bbox": [
+   167.16,
+   524.87,
+   1438.9,
+   702.48
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:5de68597c26cff": {
+  "page": 385,
+  "bbox": [
+   167.16,
+   1085.04,
+   1436.64,
+   1272.9
+  ],
+  "sim": 1.0,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:346374cbab3e2d": {
+  "page": 386,
+  "bbox": [
+   184.1,
+   1114.64,
+   1231.08,
+   1241.02
+  ],
+  "sim": 0.926,
+  "low_confidence": false
+ },
+ "gaodai_shang:norm-app-node:ce46e0b8620a15": {
+  "page": 387,
+  "bbox": [
+   173.93,
+   414.43,
+   1437.77,
+   603.43
+  ],
+  "sim": 0.808,
+  "low_confidence": false
+ }
+}

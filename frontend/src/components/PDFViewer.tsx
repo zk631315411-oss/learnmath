@@ -21,7 +21,7 @@ interface Props {
   onMarkerClick?: (marker: Marker) => void;
   hideToolbar?: boolean;
   onControlsChange?: (controls: PDFViewerControls | null) => void;
-  pageOverlay?: React.ReactNode;
+  pageOverlay?: React.ReactNode | ((ctx: { page: number; scale: number }) => React.ReactNode);
 }
 
 const VIEWER_HORIZONTAL_PADDING = 32;
@@ -382,7 +382,7 @@ function PDFViewerInner({ pdfUrl, textbookId, page, onPageRequest, mobile, marke
                   onMarkerClick={onMarkerClick}
                 />
               )}
-              {pageOverlay}
+              {typeof pageOverlay === 'function' ? pageOverlay({ page: currentPage, scale }) : pageOverlay}
             </div>
           </div>
         </div>

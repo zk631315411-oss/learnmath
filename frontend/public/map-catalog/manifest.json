@@ -24451,7 +24451,7 @@
     {
       "textbook_id": "gaodai_shang",
       "display_name": "高等代数（上册）丘维声",
-      "catalog_version": "gaodai_shang-4c58c0980b85ab6b",
+      "catalog_version": "gaodai_shang-0700e392da85493b",
       "index_path": "/map-catalog/gaodai_shang.index.json",
       "catalog_path": "/map-catalog/gaodai_shang.json",
       "chapters": [
@@ -24508,7 +24508,7 @@
     {
       "textbook_id": "gaodai_xia",
       "display_name": "高等代数（下册）丘维声",
-      "catalog_version": "gaodai_xia-0d1e8e1a5919af44",
+      "catalog_version": "gaodai_xia-cbe4994ff8cb2b09",
       "index_path": "/map-catalog/gaodai_xia.index.json",
       "catalog_path": "/map-catalog/gaodai_xia.json",
       "chapters": [
@@ -24557,7 +24557,7 @@
     {
       "textbook_id": "gaoshu_shang",
       "display_name": "高等数学（上册）黄立宏",
-      "catalog_version": "gaoshu_shang-df35a8af566a8cf5",
+      "catalog_version": "gaoshu_shang-2b8d5407f2ec7f7e",
       "index_path": "/map-catalog/gaoshu_shang.index.json",
       "catalog_path": "/map-catalog/gaoshu_shang.json",
       "chapters": [
@@ -24614,7 +24614,7 @@
     {
       "textbook_id": "gaoshu_xia",
       "display_name": "高等数学（下册）黄立宏",
-      "catalog_version": "gaoshu_xia-20db333754950504",
+      "catalog_version": "gaoshu_xia-268808e2e6ede225",
       "index_path": "/map-catalog/gaoshu_xia.index.json",
       "catalog_path": "/map-catalog/gaoshu_xia.json",
       "chapters": [

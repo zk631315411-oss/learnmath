@@ -1,70 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Check, ChevronDown, ChevronRight, Play, RefreshCw, Route } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronRight, Map as MapIcon, Play, RefreshCw, Route } from 'lucide-react';
 
 import type { ChapterMapItem, LearningMapNode, LearningStatus, NodeMapResponse } from '../services/api';
 import type { ChapterCatalogEdge } from '../catalog/types';
 import { splitChapterTitle } from '../utils/chapterTitle';
 import InlineMathText from './InlineMathText';
-import SectionLadder from './kg/SectionLadder';
-import NodeFocusCard from './kg/NodeFocusCard';
-import { sectionStatusSummary, stripMath, typeMeta } from './kg/shared';
+import SectionLadderPanel from './kg/SectionLadderPanel';
+import { sectionStatusSummary } from './kg/shared';
 
 // 浏览器回退恢复梯子：回退前展开的章节与小节写入模块级单例（MapHome 随视图切换会 remount，
 // hook state/ref 全部重置，只能挂在组件外存活）。应用只有一个地图实例，无需多 key。
 let lastExpandedMapChapter: string | null = null;
 let lastExpandedMapSection: { chapter: string; section: string } | null = null;
-
-/**
- * 节就地展开区（对齐 demo v3）：左侧纯概念梯子 + 右侧聚焦详情卡；
- * 节尾平铺「本节方法·题型」pill（蓝=方法 橙=题型，不上主干），点击同样出详情卡。
- */
-function InlineLadder({ chapter, section, edges, onContinueNode }: {
-  chapter: string;
-  section: NodeMapResponse['sections'][number];
-  edges: ChapterCatalogEdge[];
-  onContinueNode?: (chapter: string, node: LearningMapNode) => void;
-}) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const nodeById = new Map(section.nodes.map(node => [node.node_id, node]));
-  const selected = selectedId ? nodeById.get(selectedId) ?? null : null;
-  const methods = section.nodes.filter(node => node.type?.toLowerCase() === 'method').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const problems = section.nodes.filter(node => node.type?.toLowerCase() === 'problemclass').sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-  const handleJump = (nodeId: string) => setSelectedId(nodeId);
-  const handleStudy = (nodeId: string) => {
-    const node = nodeById.get(nodeId);
-    if (node && onContinueNode) onContinueNode(chapter, node);
-  };
-
-  return <div className="rounded-xl border border-[var(--lm-border)] bg-[var(--lm-surface)]">
-    <div className="flex flex-col items-start gap-3 lg:flex-row">
-      <div className="min-w-0 flex-1">
-        <SectionLadder section={section} edges={edges} selectedId={selectedId} onSelect={handleJump} />
-      </div>
-      <div className="w-full shrink-0 p-3 lg:sticky lg:top-0 lg:w-[300px]">
-        {selected
-          ? <NodeFocusCard node={selected} allNodes={section.nodes} edges={edges} onJump={handleJump} onStudy={handleStudy} onClose={() => setSelectedId(null)} />
-          : <div className="px-4 py-10 text-center text-[13px] text-[var(--lm-text-muted)]">点击左侧主干节点（圆点或名称文字）<br />看它的前置 / 题型 / 方法</div>}
-      </div>
-    </div>
-    {(methods.length > 0 || problems.length > 0) && <div className="border-t border-[var(--lm-border)] px-3 py-3">
-      <p className="mb-2 text-xs text-[var(--lm-text-muted)]">本节方法 · 题型：方法 {methods.length} · 题型 {problems.length}</p>
-      <div className="flex flex-wrap gap-2">
-        {methods.map(node => <PillTag key={node.node_id} node={node} kind="m" selected={selectedId === node.node_id} onSelect={handleJump} />)}
-        {problems.map(node => <PillTag key={node.node_id} node={node} kind="p" selected={selectedId === node.node_id} onSelect={handleJump} />)}
-      </div>
-    </div>}
-  </div>;
-}
-
-function PillTag({ node, kind, selected, onSelect }: { node: LearningMapNode; kind: 'm' | 'p'; selected: boolean; onSelect: (nodeId: string) => void }) {
-  const color = kind === 'm' ? 'var(--lm-type-method)' : 'var(--lm-type-problem)';
-  return <button type="button" onClick={() => onSelect(node.node_id)} title={`${typeMeta(node.type).label} · ${stripMath(node.name)}`}
-    className="rounded-full border px-3 py-1 text-xs transition hover:brightness-95"
-    style={selected ? { background: color, borderColor: color, color: '#fff' } : { borderColor: color, color, background: 'var(--lm-surface)' }}>
-    {stripMath(node.name)}
-  </button>;
-}
 
 interface TextbookOption { textbookId: string; name: string }
 
@@ -77,6 +24,8 @@ interface Props {
   loading: boolean;
   onContinue: (chapter: string, node?: LearningMapNode) => void;
   onContinueNode?: (chapter: string, node: LearningMapNode) => void;
+  /** 进入该章的地图页（整章梯子视图）。 */
+  onOpenChapter?: (chapter: string) => void;
   onRetry: () => void;
   onStartReading: () => void;
   textbookId: string;
@@ -97,7 +46,7 @@ function chapterNodes(response?: NodeMapResponse): LearningMapNode[] {
 
 export default function MapHome({
   textbookName, chapters, nodesByChapter, edgesByChapter, errors, loading,
-  onContinue, onContinueNode, onRetry,
+  onContinue, onContinueNode, onOpenChapter, onRetry,
   onStartReading, textbookId, textbooks, onTextbookChange, onEnsureChapterData,
   chapterExpandNonce,
 }: Props) {
@@ -250,6 +199,7 @@ export default function MapHome({
                   <span className={`hidden text-right text-xs sm:block ${statusClass}`}>{failed ? '加载失败 · 点击重试' : pending ? '详情准备中…' : statusSummary}</span>
                 </button>
                 {failed && <button type="button" data-testid="chapter-map-button" onClick={onRetry} className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--lm-border)] bg-[var(--lm-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300">重试</button>}
+                {!failed && onOpenChapter && <button type="button" data-testid="chapter-map-button" onClick={() => onOpenChapter(chapter.chapter)} aria-label={`打开${chapter.chapter}地图`} title="打开本章地图" className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-md border border-[var(--lm-border)] bg-[var(--lm-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:text-indigo-300"><MapIcon className="h-3.5 w-3.5" />地图</button>}
               </div>
               {expanded && <div className="pb-4 pl-12 pr-4">
                 {response?.sections.length ? <ul>{response.sections.map(section => {
@@ -267,7 +217,7 @@ export default function MapHome({
                         <Route className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
                       </span>
                     </button>
-                    {isSectionExpanded && <div className="pb-3 pl-5 pr-1"><InlineLadder chapter={chapter.chapter} section={section} edges={edgesByChapter[chapter.chapter] || []} onContinueNode={onContinueNode} /></div>}
+                    {isSectionExpanded && <div className="pb-3 pl-5 pr-1"><SectionLadderPanel chapter={chapter.chapter} section={section} edges={edgesByChapter[chapter.chapter] || []} onContinueNode={onContinueNode} /></div>}
                   </li>;
                 })}</ul> : <p className="py-2 text-xs text-slate-400">{pending ? '小节详情准备中…' : '点击展开小节查看概念梯子'}</p>}
               </div>}

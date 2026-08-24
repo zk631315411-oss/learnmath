@@ -38,3 +38,5 @@ research/
 patch-log.mjs
 test-meeting-command.mjs
 verify-log.mjs
+.tmp-qa/
+data/learning.db

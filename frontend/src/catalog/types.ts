@@ -31,6 +31,7 @@ export type CatalogNode = {
   section_node_id?: string | null;
   prerequisite_ids: string[];
   order: number;
+  page?: number | null;
 };
 
 export type CatalogNodeIndexItem = Pick<CatalogNode, 'node_id' | 'chapter' | 'section' | 'name' | 'order'>;
