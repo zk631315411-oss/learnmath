@@ -106,7 +106,7 @@ class Config:
     MANIM_RENDER_POLL_SECONDS: float = float(os.getenv("MANIM_RENDER_POLL_SECONDS", "0.5"))
     MANIM_MAX_QUEUE: int = int(os.getenv("MANIM_MAX_QUEUE", "2"))
     MANIM_MAX_SOURCE_BYTES: int = int(os.getenv("MANIM_MAX_SOURCE_BYTES", "120000"))
-    MANIM_MAX_DURATION_SECONDS: float = float(os.getenv("MANIM_MAX_DURATION_SECONDS", "12"))
+    MANIM_MAX_DURATION_SECONDS: float = float(os.getenv("MANIM_MAX_DURATION_SECONDS", "30"))
     MANIM_RENDER_TIMEOUT_SECONDS: int = int(os.getenv("MANIM_RENDER_TIMEOUT_SECONDS", "90"))
     MANIM_MAX_OUTPUT_BYTES: int = int(os.getenv("MANIM_MAX_OUTPUT_BYTES", "26214400"))
 

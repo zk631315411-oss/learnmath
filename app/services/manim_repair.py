@@ -24,6 +24,21 @@ def repair_artifact_once(artifact_id: str) -> None:
     try:
         if not llm_service.is_available():
             raise RuntimeError("LLM 服务不可用")
+        limit = config.MANIM_MAX_DURATION_SECONDS
+        is_overrun = str(artifact.get("error_code") or "") == "duration_exceeded"
+        if is_overrun:
+            # 超时不是渲染错误：视频能渲出来，只是实际时长超上限。
+            # 修复方向是压缩场景（减少 run_time/wait、合并冗余镜头），而非改逻辑。
+            task = (
+                f"下面场景能渲染但实际时长超过 {limit:.0f} 秒上限。请压缩它：优先缩短/删除 "
+                f"run_time、wait 时长和冗余镜头，保持核心教学意图不变，使实际时长降到 "
+                f"{limit:.0f} 秒以内。\n"
+            )
+        else:
+            task = (
+                f"下面场景渲染失败。请最小修改修复它，并保持教学意图和不超过 "
+                f"{limit:.0f} 秒的动画。\n"
+            )
         response = llm_service.chat(
             [
                 {
@@ -37,9 +52,8 @@ def repair_artifact_once(artifact_id: str) -> None:
                 {
                     "role": "user",
                     "content": (
-                        "下面场景渲染失败。请最小修改修复它，并保持教学意图和不超过 "
-                        f"{float(artifact.get('duration_seconds') or 12):g} 秒的动画。\n"
-                        f"错误摘要：{str(artifact.get('error_message') or 'render failed')[-500:]}\n"
+                        task
+                        + f"错误摘要：{str(artifact.get('error_message') or 'render failed')[-500:]}\n"
                         "原始源码：\n```python\n"
                         f"{artifact['source_code']}\n```"
                     ),

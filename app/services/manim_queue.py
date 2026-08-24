@@ -105,7 +105,7 @@ def reconcile_artifact(artifact: dict) -> dict:
 
         code = str(result.get("error_code") or "render_failed")[:80]
         detail = str(result.get("error_message") or "动画渲染失败")[-500:]
-        retryable = code == "render_failed" and int(artifact.get("repair_count") or 0) < 1
+        retryable = code in {"render_failed", "duration_exceeded"} and int(artifact.get("repair_count") or 0) < 1
         return update_artifact(
             artifact["id"], status="repair_pending" if retryable else "failed", attempt=attempt,
             error_code=code, error_message=detail,
@@ -258,7 +258,7 @@ def _public_error_message(artifact: dict) -> str:
         "repair_failed": "动画自动修复后仍未能生成，可手动重试。",
         "repair_exhausted": "动画自动修复次数已用完，可手动重试。",
         "timeout": "动画渲染超过 90 秒限制。",
-        "duration_exceeded": "动画时长超过 12 秒限制。",
+        "duration_exceeded": f"动画时长超过 {config.MANIM_MAX_DURATION_SECONDS:.0f} 秒限制。",
         "output_too_large": "动画文件超过大小限制。",
         "missing_output": "动画未生成有效视频。",
         "invalid_result": "动画渲染结果无效。",
