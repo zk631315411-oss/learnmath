@@ -38,7 +38,7 @@ def render_manim_artifact(
         source.write_text(source_code, encoding="utf-8")
         media.mkdir()
         command = [
-            "manim", "render", quality_flag, "--format", "mp4", "--disable_caching",
+            *_manim_invocation(), "render", quality_flag, "--format", "mp4", "--disable_caching",
             "--media_dir", str(media), str(source), "GeneratedScene",
         ]
         try:
@@ -90,6 +90,20 @@ class RenderFailure(RuntimeError):
     def __init__(self, code: str, message: str):
         super().__init__(message)
         self.code = code
+
+
+def _manim_invocation() -> list[str]:
+    """返回调用 manim 的命令前缀。
+
+    Windows 的 manim.exe 启动器在精简环境下常无法正确初始化其 Python 运行环境
+    （找不到用户站点目录里的依赖如 typing_extensions）。改为用当前 Python 直接
+    `-m manim` 调用更稳。仅当当前解释器能 import manim 时才用它，否则退回 manim 命令。
+    """
+    try:
+        import manim  # noqa: F401
+        return [sys.executable, "-m", "manim"]
+    except Exception:
+        return ["manim"]
 
 
 def run_spool_worker(*, once: bool = False) -> None:
@@ -272,13 +286,39 @@ def _extract_representative_frame(movie: Path, poster: Path) -> None:
 
 def _minimal_environment() -> dict[str, str]:
     allowed = {
-        "PATH", "LANG", "LC_ALL", "TZ", "HOME", "TMPDIR", "PYTHONPATH",
+        "PATH", "LANG", "LC_ALL", "TZ", "HOME", "TMPDIR", "PYTHONPATH", "PYTHONHOME",
+        # Windows 的 tempfile 认 TEMP/TMP（不是 TMPDIR）；缺了子进程会报
+        # "No usable temporary directory found"。SYSTEMROOT/USERPROFILE 同理，
+        # Windows 下部分库定位系统目录/字体缓存需要。
+        "TEMP", "TMP", "SYSTEMROOT", "USERPROFILE",
         "MANIM_SPOOL_DIR", "MANIM_RENDER_DIR", "MANIM_MAX_SOURCE_BYTES",
         "MANIM_MAX_DURATION_SECONDS", "MANIM_RENDER_TIMEOUT_SECONDS", "MANIM_MAX_OUTPUT_BYTES",
     }
     environment = {key: value for key, value in os.environ.items() if key in allowed}
-    environment.update({"PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1"})
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    # PYTHONNOUSERSITE=1 会禁用用户站点目录（%APPDATA%\...\site-packages）。
+    # Windows 上 pip 默认把 manim 及其依赖（typing_extensions 等）装进用户目录，
+    # 硬设该项会让 manim 子进程 import 失败。仅当禁用后 manim 命令仍能正常
+    # 启动（即 manim 不依赖用户站点目录）时才开启，否则保留用户站点以保证可用。
+    if _manim_runs_without_user_site():
+        environment["PYTHONNOUSERSITE"] = "1"
     return environment
+
+
+def _manim_runs_without_user_site() -> bool:
+    """探测 manim 命令在禁用用户站点目录时能否正常启动。"""
+    import subprocess as _sp
+    env = {key: value for key, value in os.environ.items()
+           if key in {"PATH", "SYSTEMROOT", "USERPROFILE", "TEMP", "TMP", "HOME"}}
+    env["PYTHONNOUSERSITE"] = "1"
+    try:
+        completed = _sp.run(
+            ["manim", "--version"],
+            capture_output=True, timeout=60, env=env, check=False,
+        )
+        return completed.returncode == 0
+    except Exception:
+        return False
 
 
 def main() -> None:
