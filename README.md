@@ -90,6 +90,23 @@ start.bat
 首次运行请先创建 venv 并安装依赖：`python -m venv venv && venv\Scripts\pip install -r requirements.txt`，
 再把 `.env.example` 复制为 `.env` 并填入真实的 `JWT_SECRET` 与 `QA_LLM_API_KEY`。
 
+#### 开发模式下启用 Manim 动画（可选）
+
+`start.bat` 只起后端和前端，**不含** Manim 渲染链路。开发模式要真渲染动画，需额外起三个进程（生产模式的 compose 会自动拉起，开发模式需手动）：
+
+```bat
+REM 1) 主机 Redis（开发后端默认连 127.0.0.1:6379）
+docker run -d --name learnmath-dev-redis -p 127.0.0.1:6379:6379 redis:7.4.5-alpine redis-server --save "" --appendonly no
+
+REM 2) Dispatcher：消费 Redis 队列 -> 写入渲染 spool（需 PYTHONPATH 指向项目根）
+set PYTHONPATH=%CD% && venv\Scripts\python -m scripts.run_manim_dispatcher
+
+REM 3) Spool worker：取 spool 任务 -> 调用 manim 渲染出 mp4
+venv\Scripts\python -m app.workers.manim_worker
+```
+
+前置：venv 内需安装 manim（`venv\Scripts\pip install manim`），worker 会以 `python -m manim` 自包含调用，不依赖系统 manim.exe。未启用时调用动画工具会优雅降级（回答正常完成，仅提示渲染服务不可用），不影响其余问答功能。
+
 ## 数据库
 
 SQLite 保存应用数据（默认 `data/learning.db`），Neo4j 保存教材知识图谱。SQLite 启动时自动建表（幂等）。
