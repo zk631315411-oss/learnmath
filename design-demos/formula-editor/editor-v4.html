@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>插入公式 · v4 MathLive 可视化框</title>
+<link rel="stylesheet" href="/node_modules/mathlive/mathlive-fonts.css">
+<link rel="stylesheet" href="/node_modules/mathlive/mathlive-static.css">
+<style>
+  :root {
+    --paper: #ece7da;
+    --paper-2: #f5f1e8;
+    --paper-3: #e3ddcf;
+    --line: #d9d3c4;
+    --ink: #2a2620;
+    --ink-2: #4a4339;
+    --ink-3: #9a9080;
+    --brand: #a0522d;
+    --brand-2: #8b4513;
+    --ok: #059669;
+    --r-sm: 4px; --r-md: 8px; --r-lg: 12px;
+    --ease: cubic-bezier(.22,1,.36,1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Source Serif 4', 'Songti SC', 'STSong', 'Noto Serif CJK SC', Georgia, serif;
+    background: var(--paper);
+    background-image: radial-gradient(rgb(74 67 57 / .045) 1px, transparent 1px);
+    background-size: 22px 22px;
+    color: var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px 16px;
+  }
+  button { font-family: inherit; }
+  button:focus { outline: none; }
+  button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .modal {
+    width: 560px; max-width: calc(100vw - 28px);
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 64px rgb(42 38 32 / .22), 0 2px 6px rgb(42 38 32 / .08);
+    overflow: hidden;
+    animation: in .3s var(--ease);
+  }
+  @keyframes in { from { opacity: 0; transform: translateY(8px) scale(.99); } }
+
+  .head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 16px 20px 10px;
+  }
+  .title { font-size: 16px; font-weight: 600; color: var(--ink); display: flex; align-items: baseline; gap: 9px; }
+  .title .glyph { color: var(--brand); font-style: italic; font-size: 19px; }
+  .close {
+    border: none; background: none; cursor: pointer; color: var(--ink-3);
+    width: 28px; height: 28px; border-radius: var(--r-md); font-size: 13px;
+    transition: background .15s, color .15s;
+  }
+  .close:hover { background: var(--paper-3); color: var(--ink); }
+
+  .body { padding: 6px 20px 16px; }
+
+  /* ===== 描述转写（辅助，收起为一行） ===== */
+  .nl-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .nl-box {
+    flex: 1; display: flex; align-items: center;
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .nl-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgb(160 82 45 / .13); }
+  .nl-box .spark { padding: 0 4px 0 11px; color: var(--brand); font-size: 12px; }
+  .nl-box input {
+    flex: 1; border: none; outline: none; background: none;
+    font: inherit; font-size: 13px; color: var(--ink); padding: 8px 10px 8px 4px;
+  }
+  .nl-box input::placeholder { color: var(--ink-3); font-style: italic; }
+  .btn-ghost {
+    border: 1px solid var(--brand); color: var(--brand); background: none;
+    border-radius: var(--r-md); padding: 0 14px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; transition: background .15s; white-space: nowrap;
+  }
+  .btn-ghost:hover { background: rgb(160 82 45 / .08); }
+  .btn-ghost:disabled { opacity: .5; cursor: wait; }
+  .nl-note { margin: -6px 0 12px; font-size: 11.5px; font-style: italic; color: var(--ink-3); }
+  .nl-note a { color: var(--brand); cursor: pointer; border-bottom: 1px dashed rgb(160 82 45 / .4); }
+
+  /* ===== MathLive 可视化公式框（核心） ===== */
+  .math-shell {
+    background: #fffdf7;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 4px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .math-shell:focus-within {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgb(160 82 45 / .13);
+  }
+  math-field {
+    display: block; width: 100%;
+    min-height: 64px;
+    padding: 12px 12px;
+    font-size: 20px;
+    color: var(--ink);
+    border: none; outline: none;
+    background: transparent;
+    border-radius: 6px;
+  }
+  math-field::part(placeholder) { color: var(--ink-3); font-style: italic; font-size: 14px; }
+  .math-tip {
+    padding: 6px 12px 8px;
+    font-size: 11.5px; font-style: italic; color: var(--ink-3);
+    border-top: 1px dashed var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .math-tip kbd {
+    font: inherit; font-style: normal; font-size: 11px;
+    border: 1px solid var(--line); border-radius: var(--r-sm);
+    padding: 0 5px; background: var(--paper); color: var(--ink-2);
+  }
+
+  /* ===== 符号带 ===== */
+  .assist { display: flex; align-items: center; gap: 2px; margin-top: 10px; flex-wrap: wrap; }
+  .glyph {
+    min-width: 34px; height: 32px; padding: 0 7px;
+    border: none; border-radius: var(--r-sm); background: none; cursor: pointer;
+    color: var(--ink-2); font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .12s, color .12s;
+  }
+  .glyph:hover { background: var(--paper-3); color: var(--brand); }
+  .assist .sep { width: 1px; height: 16px; background: var(--line); margin: 0 5px; }
+  .assist .corner { margin-left: auto; display: flex; gap: 2px; }
+  .corner .glyph { color: var(--ink-3); font-size: 12.5px; }
+  .corner .glyph:hover { color: var(--brand); }
+
+  /* ===== 底部 ===== */
+  .foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 20px; border-top: 1px solid var(--line); background: var(--paper);
+  }
+  .mode { display: inline-flex; gap: 2px; padding: 2px; background: var(--paper-3); border-radius: var(--r-md); }
+  .mode button {
+    border: none; background: none; cursor: pointer;
+    font-size: 11.5px; padding: 4px 10px; border-radius: 6px;
+    color: var(--ink-3); transition: all .14s;
+  }
+  .mode button.on { background: var(--paper-2); color: var(--ink); font-weight: 600; }
+  .foot-r { display: flex; align-items: center; gap: 12px; }
+  .fav { border: none; background: none; cursor: pointer; font-size: 12px; color: var(--ink-3); font-style: italic; transition: color .14s; }
+  .fav:hover { color: var(--brand); }
+  .btn-insert {
+    border: none; cursor: pointer; background: var(--brand); color: #faf5ec;
+    font-size: 13px; font-weight: 600; letter-spacing: .03em;
+    padding: 8px 20px; border-radius: var(--r-md);
+    transition: background .15s, transform .15s;
+  }
+  .btn-insert:hover { background: var(--brand-2); transform: translateY(-1px); }
+  .btn-insert:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+  .note {
+    position: fixed; left: 18px; bottom: 18px; max-width: 330px;
+    font-size: 11.5px; line-height: 1.7; color: var(--ink-3);
+    background: var(--paper-2); border: 1px solid var(--line);
+    border-radius: var(--r-md); padding: 10px 12px; font-style: italic;
+  }
+  .note b { color: var(--brand); font-style: normal; }
+</style>
+</head>
+<body>
+
+<div class="modal">
+  <div class="head">
+    <div class="title"><span class="glyph">∑</span>插入公式</div>
+    <button class="close" aria-label="关闭">✕</button>
+  </div>
+
+  <div class="body">
+    <!-- 描述转写：一行，按需触发 -->
+    <div class="nl-row">
+      <div class="nl-box">
+        <span class="spark">✦</span>
+        <input id="nlInput" placeholder="不会 LaTeX？先用中文描述" aria-label="用中文描述公式">
+      </div>
+      <button class="btn-ghost" id="convertBtn">转写</button>
+    </div>
+    <div class="nl-note">试试点 <a id="eg1">"x 趋于 0 时 sin x 除以 x 的极限"</a> —— 转写结果会填进下面接着改</div>
+
+    <!-- MathLive 可视化公式框 -->
+    <div class="math-shell">
+      <math-field id="mf" smart-mode smart-fence
+        placeholder="点这里输入公式 —— 敲 1/2、x^2、sqrt、int 会自动排版"></math-field>
+      <div class="math-tip">
+        <span>键入即排版；<kbd>Tab</kbd> 在空位间跳转</span>
+        <span id="latexEcho" style="font-style:normal;font-size:10.5px;opacity:.8"></span>
+      </div>
+    </div>
+
+    <!-- 符号带 -->
+    <div class="assist">
+      <button class="glyph" data-ins="\frac{#?}{#?}" title="分数">a/b</button>
+      <button class="glyph" data-ins="\sqrt{#?}" title="根式">√x</button>
+      <button class="glyph" data-ins="^{#?}" title="上标">x²</button>
+      <button class="glyph" data-ins="_{#?}" title="下标">xᵢ</button>
+      <span class="sep"></span>
+      <button class="glyph" data-ins="\lim_{x\to 0}" title="极限">lim</button>
+      <button class="glyph" data-ins="\int_{#?}^{#?}" title="积分">∫</button>
+      <button class="glyph" data-ins="\sum_{i=1}^{n}" title="求和">Σ</button>
+      <button class="glyph" data-ins="\partial" title="偏微分">∂</button>
+      <button class="glyph" data-ins="\infty" title="无穷">∞</button>
+      <button class="glyph" data-ins="\pi" title="π">π</button>
+      <div class="corner">
+        <button class="glyph" title="手写输入">✎ 手写</button>
+        <button class="glyph" title="常用公式">☰ 常用</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="mode" role="radiogroup" aria-label="显示方式">
+      <button class="on">自动</button><button>行内</button><button>独立</button>
+    </div>
+    <div class="foot-r">
+      <button class="fav">☆ 存为常用</button>
+      <button class="btn-insert" id="insertBtn" disabled>插入公式 →</button>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>v4 修正：</b>主输入区换成真 <b>MathLive</b> 可视化框——敲字符实时排版，复合结构（分式套根号套上标）可视化地"长"出来，不再是纯文本。转写降为顶部一行的辅助按钮，结果填回同一个框继续改。在主站服务（:5273）里跑，字体走本地包。
+</div>
+
+<script type="module">
+  import { MathfieldElement } from '/node_modules/mathlive/mathlive.min.mjs';
+
+  const mf = document.getElementById('mf');
+  const insertBtn = document.getElementById('insertBtn');
+  const latexEcho = document.getElementById('latexEcho');
+
+  // 配置：与项目 FormulaMathField 一致
+  mf.smartFence = true;
+  mf.smartMode = true;   // 1/2→分数、x^2→上标、sqrt→根号
+  mf.keybindings = [
+    ...mf.keybindings,
+    { key: 'tab', ifMode: 'math', command: 'moveToNextPlaceholder' },
+    { key: 'shift+tab', ifMode: 'math', command: 'moveToPreviousPlaceholder' },
+  ];
+
+  function syncState() {
+    const has = mf.value && mf.value.trim().length > 0;
+    insertBtn.disabled = !has;
+    // 回显生成的 LaTeX（让用户看到"背后"是什么，学习用）
+    latexEcho.textContent = has ? 'LaTeX: ' + mf.value.slice(0, 46) + (mf.value.length > 46 ? '…' : '') : '';
+  }
+  mf.addEventListener('input', syncState);
+  syncState();
+
+  // 符号带：插入到光标处（#? 是占位符，Tab 跳转）
+  document.querySelectorAll('.glyph[data-ins]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mf.focus();
+      mf.insert(btn.dataset.ins, { mode: 'math', selectionMode: 'placeholder' });
+      syncState();
+    });
+  });
+
+  // 描述转写（demo：本地映射模拟；真实版调后端 /api，1~4 秒）
+  const nlInput = document.getElementById('nlInput');
+  const convertBtn = document.getElementById('convertBtn');
+  const demoMap = [
+    [/极限/, '\\lim_{x \\to 0} \\frac{\\sin x}{x}'],
+    [/积分/, '\\int_0^1 x^2\\,dx'],
+    [/矩阵/, '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}'],
+  ];
+  function doConvert() {
+    const v = nlInput.value.trim();
+    if (!v) return;
+    convertBtn.disabled = true;
+    convertBtn.textContent = '转写中…';
+    setTimeout(() => {  // 模拟 1.5s LLM 延迟
+      const hit = demoMap.find(([re]) => re.test(v));
+      if (hit) {
+        mf.value = hit[1];          // 填回同一个 MathLive 框，可继续改
+        mf.focus();
+        syncState();
+      }
+      convertBtn.disabled = false;
+      convertBtn.textContent = '转写';
+    }, 1500);
+  }
+  convertBtn.addEventListener('click', doConvert);
+  nlInput.addEventListener('keydown', e => { if (e.key === 'Enter') doConvert(); });
+  document.getElementById('eg1').addEventListener('click', () => {
+    nlInput.value = 'x 趋于 0 时 sin x 除以 x 的极限';
+    doConvert();
+  });
+
+  // 显示方式
+  document.querySelectorAll('.mode button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.mode button').forEach(x => x.classList.toggle('on', x === b));
+  }));
+
+  mf.focus();
+</script>
+</body>
+</html>

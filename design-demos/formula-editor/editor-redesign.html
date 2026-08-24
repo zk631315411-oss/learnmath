@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>插入公式 · 重设计 demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+  /* === 与主站一致的暖纸设计令牌（摘自 frontend/src/index.css） === */
+  :root {
+    --lm-bg: #ece7da;
+    --lm-surface: #f5f1e8;
+    --lm-canvas: #e3ddcf;
+    --lm-border: #d9d3c4;
+    --lm-text: #4a4339;
+    --lm-text-strong: #2a2620;
+    --lm-text-muted: #9a9080;
+    --lm-brand: #a0522d;
+    --lm-brand-strong: #8b4513;
+    --lm-success: #059669;
+    --lm-radius-sm: 4px;
+    --lm-radius-md: 8px;
+    --lm-radius-lg: 12px;
+    --lm-shadow-panel: 0 1px 3px rgb(15 23 42 / 0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--lm-bg);
+    color: var(--lm-text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    /* 模拟主站页面背景纹理感 */
+    background-image: radial-gradient(rgb(74 67 57 / 0.04) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* === 弹窗外壳 === */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgb(42 38 32 / 0.42);
+    backdrop-filter: blur(2px);
+    display: none;
+  }
+  .modal {
+    width: 620px;
+    max-width: calc(100vw - 32px);
+    background: var(--lm-surface);
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-lg);
+    box-shadow: 0 12px 40px rgb(42 38 32 / 0.18), var(--lm-shadow-panel);
+    overflow: hidden;
+  }
+
+  /* === 头部 === */
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--lm-border);
+  }
+  .modal-title {
+    font-size: 15px; font-weight: 600; color: var(--lm-text-strong);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal-title::before {
+    content: '∑';
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: var(--lm-radius-sm);
+    background: color-mix(in srgb, var(--lm-brand) 12%, transparent);
+    color: var(--lm-brand); font-size: 13px; font-weight: 700;
+  }
+  .icon-btn {
+    width: 28px; height: 28px; border: none; border-radius: var(--lm-radius-md);
+    background: transparent; color: var(--lm-text-muted); cursor: pointer;
+    font-size: 15px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .icon-btn:hover { background: var(--lm-bg); color: var(--lm-text-strong); }
+
+  .modal-body { padding: 16px 20px 8px; }
+
+  /* === 描述转写区（弱化、紧凑） === */
+  .nl-row {
+    display: flex; gap: 8px; align-items: stretch;
+  }
+  .nl-input-wrap {
+    flex: 1; position: relative;
+    display: flex; align-items: center;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-md);
+    background: var(--lm-bg);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .nl-input-wrap:focus-within {
+    border-color: var(--lm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--lm-brand) 14%, transparent);
+  }
+  .nl-input-wrap .sparkle {
+    padding: 0 6px 0 10px; color: var(--lm-brand); font-size: 13px;
+  }
+  .nl-input {
+    flex: 1; border: none; outline: none; background: transparent;
+    padding: 8px 10px 8px 4px; font-size: 13px; color: var(--lm-text);
+  }
+  .nl-input::placeholder { color: var(--lm-text-muted); }
+  .btn-convert {
+    border: 1px solid var(--lm-brand);
+    background: transparent; color: var(--lm-brand);
+    border-radius: var(--lm-radius-md); padding: 0 14px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all .15s; white-space: nowrap;
+  }
+  .btn-convert:hover { background: color-mix(in srgb, var(--lm-brand) 10%, transparent); }
+  .nl-example {
+    margin-top: 6px; font-size: 12px; color: var(--lm-text-muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nl-example a {
+    color: var(--lm-brand); cursor: pointer; text-decoration: none;
+    border-bottom: 1px dashed color-mix(in srgb, var(--lm-brand) 45%, transparent);
+  }
+  .nl-example a:hover { color: var(--lm-brand-strong); border-bottom-style: solid; }
+
+  /* === 预览条（嵌入编辑区顶部，不单独占区） === */
+  .editor-shell {
+    margin-top: 14px;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-md);
+    background: #fffdf8;
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .editor-shell:focus-within {
+    border-color: var(--lm-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--lm-brand) 14%, transparent);
+  }
+  .preview-strip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    background: var(--lm-bg);
+    border-bottom: 1px dashed var(--lm-border);
+    font-size: 12px;
+  }
+  .preview-label {
+    color: var(--lm-text-muted); flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .preview-label::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--lm-success);
+  }
+  .preview-content { color: var(--lm-text); font-size: 14px; }
+  .preview-content .katex { font-size: 1.05em; }
+  .math-field {
+    min-height: 88px; padding: 14px 14px 12px;
+    font-size: 17px; color: var(--lm-text-strong);
+    position: relative; cursor: text;
+  }
+  .math-field .placeholder { color: var(--lm-text-muted); font-size: 14px; }
+  .math-field .caret-hint {
+    position: absolute; right: 10px; bottom: 8px;
+    font-size: 11px; color: var(--lm-text-muted);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  /* === 工具栏 === */
+  .toolbar {
+    margin-top: 12px;
+    display: flex; align-items: center; gap: 2px;
+    padding: 4px;
+    background: var(--lm-bg);
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-md);
+    flex-wrap: wrap;
+  }
+  .tool-btn {
+    min-width: 34px; height: 32px; padding: 0 7px;
+    border: none; border-radius: var(--lm-radius-sm);
+    background: transparent; color: var(--lm-text);
+    font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all .12s;
+  }
+  .tool-btn:hover { background: var(--lm-surface); color: var(--lm-brand); box-shadow: var(--lm-shadow-panel); }
+  .tool-btn .katex { font-size: 0.92em; }
+  .tool-sep { width: 1px; height: 18px; background: var(--lm-border); margin: 0 4px; }
+  .tool-more { color: var(--lm-text-muted); font-size: 12px; }
+
+  /* === 常用公式 === */
+  .section-label {
+    margin: 14px 0 8px;
+    font-size: 12px; font-weight: 500; color: var(--lm-text-muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--lm-border); }
+  .common-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .common-chip {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 9px 6px 7px;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-md);
+    background: var(--lm-surface);
+    cursor: pointer; transition: all .13s;
+  }
+  .common-chip:hover {
+    border-color: var(--lm-brand);
+    background: color-mix(in srgb, var(--lm-brand) 5%, var(--lm-surface));
+    transform: translateY(-1px);
+    box-shadow: var(--lm-shadow-panel);
+  }
+  .common-chip .formula { color: var(--lm-text-strong); font-size: 13px; }
+  .common-chip .name { font-size: 11px; color: var(--lm-text-muted); }
+  .common-chip:hover .name { color: var(--lm-brand); }
+
+  /* === 底部操作条 === */
+  .modal-foot {
+    margin-top: 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid var(--lm-border);
+    background: var(--lm-bg);
+  }
+  .seg {
+    display: inline-flex; padding: 2px;
+    background: var(--lm-canvas);
+    border-radius: var(--lm-radius-md);
+    border: 1px solid var(--lm-border);
+  }
+  .seg button {
+    border: none; background: transparent; cursor: pointer;
+    padding: 5px 12px; font-size: 12px; border-radius: 6px;
+    color: var(--lm-text-muted); transition: all .13s;
+  }
+  .seg button.active {
+    background: var(--lm-surface); color: var(--lm-text-strong);
+    font-weight: 500; box-shadow: var(--lm-shadow-panel);
+  }
+  .foot-right { display: flex; align-items: center; gap: 10px; }
+  .btn-fav {
+    border: none; background: transparent; cursor: pointer;
+    color: var(--lm-text-muted); font-size: 12px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 8px; border-radius: var(--lm-radius-md);
+    transition: all .13s;
+  }
+  .btn-fav:hover { color: var(--lm-brand); background: color-mix(in srgb, var(--lm-brand) 8%, transparent); }
+  .btn-insert {
+    border: none; cursor: pointer;
+    background: var(--lm-brand); color: #fdf9f3;
+    padding: 8px 20px; border-radius: var(--lm-radius-md);
+    font-size: 13px; font-weight: 600; letter-spacing: .02em;
+    transition: all .15s;
+    box-shadow: 0 1px 2px rgb(139 69 19 / 0.3);
+  }
+  .btn-insert:hover { background: var(--lm-brand-strong); transform: translateY(-1px); box-shadow: 0 3px 8px rgb(139 69 19 / 0.32); }
+  .btn-insert:active { transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">插入公式</div>
+    <button class="icon-btn" title="关闭">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <!-- 描述转写：紧凑一行 -->
+    <div class="nl-row">
+      <div class="nl-input-wrap">
+        <span class="sparkle">✦</span>
+        <input class="nl-input" placeholder="用自然语言描述，如：x 趋于 0 时 sin x 除以 x 的极限">
+      </div>
+      <button class="btn-convert">转换</button>
+    </div>
+    <div class="nl-example">试试 <a>“x 趋于 0 时 (sin x)² 除以 x”</a></div>
+
+    <!-- 编辑区：预览条 + 输入一体 -->
+    <div class="editor-shell">
+      <div class="preview-strip">
+        <span class="preview-label">预览</span>
+        <span class="preview-content" id="preview-katex"></span>
+      </div>
+      <div class="math-field">
+        <span class="placeholder">点击插入符号，或直接键入 LaTeX…</span>
+        <span class="caret-hint">⌨ 支持键盘输入</span>
+      </div>
+    </div>
+
+    <!-- 符号工具栏 -->
+    <div class="toolbar">
+      <button class="tool-btn" data-tex="\frac{a}{b}" title="分数"></button>
+      <button class="tool-btn" data-tex="\sqrt{x}" title="根式"></button>
+      <button class="tool-btn" data-tex="x^{2}" title="上标"></button>
+      <button class="tool-btn" data-tex="x_{i}" title="下标"></button>
+      <span class="tool-sep"></span>
+      <button class="tool-btn" data-tex="\lim_{x \to 0}" title="极限"></button>
+      <button class="tool-btn" data-tex="\int_{a}^{b}" title="积分"></button>
+      <button class="tool-btn" data-tex="\sum_{i=1}^{n}" title="求和"></button>
+      <button class="tool-btn" data-tex="\partial" title="偏微分"></button>
+      <span class="tool-sep"></span>
+      <button class="tool-btn" title="矩阵">▦</button>
+      <button class="tool-btn" title="手写">✎</button>
+      <button class="tool-btn tool-more" title="更多符号">▾</button>
+    </div>
+
+    <!-- 常用公式 -->
+    <div class="section-label">常用公式</div>
+    <div class="common-grid">
+      <div class="common-chip"><span class="formula" data-tex="\lim_{x\to 0}\frac{f(x)}{g(x)}"></span><span class="name">极限</span></div>
+      <div class="common-chip"><span class="formula" data-tex="\int_a^b f(x)\,dx"></span><span class="name">积分</span></div>
+      <div class="common-chip"><span class="formula" data-tex="\sum_{i=1}^n a_i"></span><span class="name">求和</span></div>
+      <div class="common-chip"><span class="formula" data-tex="\frac{d}{dx}f(x)"></span><span class="name">导数</span></div>
+      <div class="common-chip"><span class="formula" data-tex="\begin{pmatrix} a & b \\ c & d \end{pmatrix}"></span><span class="name">矩阵</span></div>
+      <div class="common-chip"><span class="formula" data-tex="\begin{vmatrix} a & b \\ c & d \end{vmatrix}"></span><span class="name">行列式</span></div>
+      <div class="common-chip"><span class="formula" data-tex="\vec{a}\cdot\vec{b}"></span><span class="name">向量点积</span></div>
+      <div class="common-chip"><span class="formula" data-tex="f(x)=\begin{cases} \square & \text{if } \square \\ \square & \text{otherwise} \end{cases}"></span><span class="name">分段函数</span></div>
+    </div>
+  </div>
+
+  <div class="modal-foot">
+    <div class="seg">
+      <button class="active">自动</button>
+      <button>行内</button>
+      <button>独立</button>
+    </div>
+    <div class="foot-right">
+      <button class="btn-fav">☆ 收藏</button>
+      <button class="btn-insert">插入公式</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script>
+  document.querySelectorAll('[data-tex]').forEach(el => {
+    try { katex.render(el.dataset.tex, el, { throwOnError: false }); } catch (e) {}
+  });
+  katex.render('\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1', document.getElementById('preview-katex'), { throwOnError: false });
+</script>
+</body>
+</html>
