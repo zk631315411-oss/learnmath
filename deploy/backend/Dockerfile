@@ -12,6 +12,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# 国内网络构建时默认走阿里云 PyPI 镜像；离线/海外环境可用
+# --build-arg PIP_INDEX_URL=... 覆盖，或置空回退官方源。
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 

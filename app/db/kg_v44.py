@@ -217,6 +217,44 @@ def list_kg_nodes(textbook_id: str, chapter: str) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+def list_kg_nodes_by_section(textbook_id: str, section_code: str) -> list[dict[str, Any]]:
+    """List core teaching nodes belonging to one section code (e.g. "2.1").
+
+    Node sections look like "2.1 $\\pmb{n}$ 元排列"（编号 + 空格 + 标题）；
+    用 "编号 + 空格" 前缀匹配，避免 "2.1" 误中 "2.10"。章导入节
+    （如 "第2章 行列式 导入"）编号不规则，不在本函数覆盖范围内。
+    """
+    clean = (textbook_id or "").strip()
+    code = (section_code or "").strip()
+    if not clean or not code:
+        return []
+    rows = _run(
+        """
+        MATCH (n:KGNode)
+        WHERE (n.textbook_id = $textbook_id OR n.node_id STARTS WITH $book_prefix)
+          AND n.type IN $types
+          AND (n.section = $code OR n.section STARTS WITH $code_prefix)
+        RETURN n.node_id AS node_id, n.name AS name, n.type AS type,
+               n.chapter AS chapter, n.section AS section,
+               n.line_start AS line_start
+        ORDER BY CASE
+                   WHEN n.order_hint IS NOT NULL AND toString(n.order_hint) <> ''
+                     THEN toFloat(n.order_hint)
+                   WHEN n.line_start IS NULL OR toString(n.line_start) = ''
+                     THEN 999999.0
+                   ELSE toFloat(n.line_start)
+                 END,
+                 n.name, n.node_id
+        LIMIT 40
+        """,
+        code=code,
+        code_prefix=f"{code} ",
+        types=CORE_TYPES,
+        **_scope_parameters(clean),
+    )
+    return [dict(row) for row in rows]
+
+
 def list_kg_edges(textbook_id: str) -> list[dict[str, Any]]:
     """List typed edges among core teaching nodes for one textbook."""
     clean = (textbook_id or "").strip()

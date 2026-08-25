@@ -26,6 +26,7 @@ from app.services.agents.one_shot_tool import run_one_shot_tool
 from app.services.agents.tools.report_turn_outcome import build_report_turn_outcome_tool
 from app.services.llm_service import llm_service
 from app.services.qa import evidence_reporting
+from app.services.qa.page_context import build_page_kg_context
 from app.services.learning.progress import project_user_progress
 from app.services.qa.contracts import QATurnInput
 from app.services.qa.prompt_builder import (
@@ -95,6 +96,24 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             )
         else:
             user_messages = build_user_message(question, history=turn_input.history)
+
+        # ---- 页内提问注入 KG 页上下文（当前位置 + 本页知识点清单）----
+        # 让「这页哪里没看懂」等笼统页内提问能用具体节点名调 KG；
+        # 页上下文构建失败返回空串，绝不阻断问答。
+        if turn_input.textbook_id and turn_input.page_number:
+            try:
+                page_kg_context = await run_in_threadpool(
+                    build_page_kg_context,
+                    turn_input.textbook_id,
+                    turn_input.page_number,
+                )
+            except Exception:
+                page_kg_context = ""
+            if page_kg_context and user_messages:
+                content = user_messages[0].get("content")
+                if isinstance(content, list):
+                    content.append({"type": "text", "text": page_kg_context})
+
         initial_messages: list[dict] = [
             {"role": "system", "content": system_prompt},
             *user_messages,
