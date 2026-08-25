@@ -49,7 +49,9 @@ def build_render_manim_tool(*, user_id: str, chat_id: str | None, client_turn_id
         description=(
             "当动态变化、空间关系或步骤过程能显著帮助理解时，生成一段教学示意动画。"
             "只有动画有明确教学收益才调用；定义题、简单计算和纯文字证明不要调用。"
-            "scene_code 必须是完整 Python Manim 场景，唯一类名为 GeneratedScene，"
+            "scene_code 必须是完整纯 Python Manim 源码（不要 markdown 代码围栏）："
+            "顶部 from manim import *，有且只有一个 class GeneratedScene(Scene) 直接继承 Scene"
+            "（不要写 manim.Scene 或 MovingCameraScene 等其他基类），"
             f"时长最多 {_MAX_DURATION:.0f} 秒。"
             "动画是教学示意，不等同证明或科学级仿真。"
         ),

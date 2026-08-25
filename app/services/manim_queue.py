@@ -7,6 +7,7 @@ import hmac
 import json
 import shutil
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
@@ -117,12 +118,29 @@ def reconcile_artifact(artifact: dict) -> dict:
         return artifact
 
     if not artifact.get("rq_job_id"):
+        # create_artifact 与 enqueue_artifact 回写 rq_job_id 之间有极短空窗；
+        # 超过宽限期仍为空说明投递从未发生，判失败以释放 MANIM_MAX_QUEUE 名额。
+        if _created_older_than(artifact, _ENQUEUE_GRACE_SECONDS):
+            return update_artifact(
+                artifact["id"], status="failed", error_code="dispatch_failed",
+                error_message="动画任务未能提交，请重试",
+            )
         return artifact
     try:
         from redis import Redis
+        from rq.exceptions import NoSuchJobError
         from rq.job import Job
 
-        job = Job.fetch(artifact["rq_job_id"], connection=Redis.from_url(config.MANIM_REDIS_URL))
+        connection = Redis.from_url(config.MANIM_REDIS_URL)
+        try:
+            job = Job.fetch(artifact["rq_job_id"], connection=connection)
+        except NoSuchJobError:
+            # Redis 不持久化，重启后队列任务丢失；artifact 不能永远滞留 queued，
+            # 否则还会被 MANIM_MAX_QUEUE 计数，堵死后续所有渲染。
+            return update_artifact(
+                artifact["id"], status="failed", error_code="dispatch_failed",
+                error_message="渲染任务已随服务重启失效，请重试",
+            )
         raw = job.get_status(refresh=True)
         status = getattr(raw, "value", str(raw)).lower()
         if status in {"failed", "stopped", "canceled", "cancelled"}:
@@ -138,6 +156,21 @@ def reconcile_artifact(artifact: dict) -> dict:
 # 后台对账间隔（秒）。渲染结果由无网络的 renderer 写入文件 spool，
 # 必须有人周期性把 results/ 回写到 SQLite，否则状态会滞留 queued/running。
 RECONCILE_INTERVAL_SECONDS = 2.0
+
+# queued 但 rq_job_id 为空的宽限期（秒）：覆盖 create_artifact → enqueue_artifact
+# 的正常时间差；超过才认定投递从未发生。
+_ENQUEUE_GRACE_SECONDS = 60.0
+
+
+def _created_older_than(artifact: dict, seconds: float) -> bool:
+    """created_at 为 SQLite CURRENT_TIMESTAMP（UTC，'%Y-%m-%d %H:%M:%S'）。"""
+    try:
+        created = datetime.strptime(
+            str(artifact.get("created_at") or ""), "%Y-%m-%d %H:%M:%S",
+        ).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return False
+    return datetime.now(timezone.utc) - created > timedelta(seconds=seconds)
 
 
 async def reconcile_active_artifacts_loop(stop_event) -> None:

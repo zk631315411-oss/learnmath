@@ -53,7 +53,12 @@ def validate_scene_source(source: str, *, max_bytes: int = 120_000) -> PolicyRes
         isinstance(base, ast.Name) and base.id == "Scene" for base in node.bases
     )]
     if len(scenes) != 1 or scenes[0].name != "GeneratedScene":
-        return PolicyResult(False, "invalid_scene", "必须定义唯一的 GeneratedScene(Scene)")
+        return PolicyResult(
+            False, "invalid_scene",
+            "必须定义唯一的 GeneratedScene(Scene)：类名恰为 GeneratedScene 且直接继承 Scene"
+            "（不接受 manim.Scene、MovingCameraScene 等其他基类写法），"
+            "scene_code 为纯 Python 源码，不要包裹 markdown 代码围栏",
+        )
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and (
             node.id.startswith("__") or node.id in FORBIDDEN_CALLS
