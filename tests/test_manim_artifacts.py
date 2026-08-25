@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.auth.jwt_handler import create_access_token
 from app.config import config
 from app.db.chat_history_db import delete_chat_history, migrate_user_id, save_chat_history
-from app.db.connection import init_db
+from app.db.connection import get_conn, init_db
 from app.db.manim_artifact_db import create_artifact, get_artifact, list_artifacts_for_chat, update_artifact
 from app.main import app
 from app.services.manim_policy import validate_scene_source
@@ -80,6 +80,13 @@ class PolicyTests(unittest.TestCase):
             "from manim import *\nclass GeneratedScene(Scene): pass\nclass Other(Scene): pass",
         ):
             self.assertEqual(validate_scene_source(source).code, "invalid_scene")
+
+    def test_invalid_scene_message_teaches_the_contract(self):
+        # 报错文案要把合约讲清楚（直接继承 Scene、无围栏），模型重试时才能改对
+        result = validate_scene_source("import manim\nclass GeneratedScene(manim.Scene): pass")
+        self.assertEqual(result.code, "invalid_scene")
+        self.assertIn("GeneratedScene", result.message)
+        self.assertIn("Scene", result.message)
 
 
 class ArtifactLifecycleTests(ManimTestCase):
@@ -204,6 +211,55 @@ class ArtifactApiTests(ManimTestCase):
         self.assertIsNone(validate_media_token(artifact["id"], valid + "x"))
         expired = _media_token(artifact["id"], "owner", ttl_seconds=-1)
         self.assertIsNone(validate_media_token(artifact["id"], expired))
+
+
+class ReconcileOrphanTests(ManimTestCase):
+    """僵尸 artifact 对账：RQ job 丢失（Redis 重启）或投递从未发生时必须判失败。
+
+    否则记录永久滞留 queued 并被 MANIM_MAX_QUEUE 计数，堵死后续所有渲染
+    （2026-08-26 本地部署实测复现：2 条 8-24 的僵尸任务 + 队列名额占满）。
+    """
+
+    def test_lost_rq_job_marks_failed(self):
+        from rq.exceptions import NoSuchJobError
+
+        artifact = update_artifact(self.create()["id"], rq_job_id="gone-job")
+        with patch("rq.job.Job.fetch", side_effect=NoSuchJobError("gone")):
+            updated = reconcile_artifact(get_artifact(artifact["id"]))
+        self.assertEqual(updated["status"], "failed")
+        self.assertEqual(updated["error_code"], "dispatch_failed")
+
+    def test_failed_rq_job_marks_failed_with_detail(self):
+        artifact = update_artifact(self.create()["id"], rq_job_id="bad-job")
+        fake_job = SimpleNamespace(
+            get_status=lambda refresh=True: "failed",
+            exc_info="Traceback...\nValueError: invalid_scene: boom",
+        )
+        with patch("rq.job.Job.fetch", return_value=fake_job):
+            updated = reconcile_artifact(get_artifact(artifact["id"]))
+        self.assertEqual(updated["status"], "failed")
+        self.assertEqual(updated["error_code"], "dispatch_failed")
+        self.assertIn("boom", updated["error_message"])
+
+    def test_missing_rq_job_id_within_grace_stays_queued(self):
+        # rq_job_id 为空但刚创建（60s 投递宽限期内）→ 不得误判
+        artifact = self.create()
+        self.assertEqual(reconcile_artifact(artifact)["status"], "queued")
+
+    def test_missing_rq_job_id_beyond_grace_marks_failed(self):
+        artifact = self.create()
+        conn = get_conn()
+        try:
+            conn.execute(
+                "UPDATE manim_artifacts SET created_at=? WHERE id=?",
+                ("2020-01-01 00:00:00", artifact["id"]),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        updated = reconcile_artifact(get_artifact(artifact["id"]))
+        self.assertEqual(updated["status"], "failed")
+        self.assertEqual(updated["error_code"], "dispatch_failed")
 
 
 if __name__ == "__main__":

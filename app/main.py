@@ -13,6 +13,7 @@ from app.services.manim_queue import reconcile_active_artifacts_loop
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    _log_config_audit()
     # 后台把无网络 renderer 写入文件 spool 的渲染结果周期性回写到 SQLite，
     # 否则 artifact 状态只会在前端轮询时才推进，可能滞留 queued/running。
     stop_event = asyncio.Event()
@@ -39,6 +40,32 @@ if not evidence_logger.handlers:
     else:
         evidence_logger.addHandler(logging.StreamHandler())
 evidence_logger.propagate = False
+
+# 启动配置审计日志：与 evidence 日志同等可见性。
+config_logger = logging.getLogger("learnmath.config")
+config_logger.setLevel(logging.INFO)
+if not config_logger.handlers:
+    config_logger.handlers.extend(evidence_logger.handlers or [logging.StreamHandler()])
+config_logger.propagate = False
+
+
+def _log_config_audit() -> None:
+    """可选功能的配置审计：只记录"有无"，绝不记录密钥值。
+
+    防止「本地 .env 配了 key，但部署环境（runtime.env/服务器）没同步」导致
+    功能静默缺失（如公式识别 503 not_configured），启动日志一眼可见。
+    """
+    from app.services.llm_service import llm_service
+
+    features = {
+        "llm": llm_service.is_available(),
+        "knowledge_graph": bool(config.NEO4J_URI),
+        "formula_vision(图片识别)": bool(config.FORMULA_VISION_API_KEY),
+        "formula_fallback(备用识别)": bool(config.FORMULA_FALLBACK_API_KEY),
+        "learner_model": bool(getattr(config, "LEARNER_MODEL_ENABLED", True)),
+    }
+    summary = ", ".join(f"{name}={'on' if enabled else 'OFF'}" for name, enabled in features.items())
+    config_logger.info("startup config audit: %s", summary)
 
 app = FastAPI(
     title="LearnMath API",
