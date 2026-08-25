@@ -25,7 +25,7 @@ export default function WelcomeModal({ onClose, onDismiss, onOpenFeedback }: Pro
           </div>
           <p className="mt-4 text-sm leading-6 text-[var(--lm-text-muted)]">这是一个围绕教材、知识地图和 AI 答疑打造的学习工作台。你的真实使用反馈会直接帮助我们改进产品。</p>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {['沿教材章节定位知识点', '通过文字、截图和公式提问', '查看学习地图与学习记录'].map(item => (
+            {['沿教材章节定位知识点', '通过文字、截图和公式提问', '查看学习地图与学习记录', '使用公式工具编辑与识别'].map(item => (
               <div key={item} className="flex items-start gap-2 rounded-lg bg-[var(--lm-bg)] px-2.5 py-2 text-xs leading-5 text-[var(--lm-text)]"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--lm-success)]" />{item}</div>
             ))}
           </div>

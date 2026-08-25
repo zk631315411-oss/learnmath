@@ -268,16 +268,16 @@ function ChatPanelInner({
       )}
 
       <form onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}
-        className="p-3 sm:p-4 border-t border-[var(--lm-border)] bg-[var(--lm-surface)] shrink-0">
-        <div className="flex gap-2 items-end">
+        className="shrink-0 border-t border-[var(--lm-border)] bg-[var(--lm-surface)] p-3 sm:p-4">
+        <div className="min-w-0">
+          <FormulaComposer ref={formulaComposerRef} value={input} onChange={setInput} token={token ?? undefined}
+            placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit}
+            externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed}
+            externalFormulaQueue={externalFormulaQueue} onExternalFormulaQueueConsumed={onExternalFormulaQueueConsumed}
+            externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} />
+        </div>
+        <div className="mt-1 flex items-center justify-between">
           <ChatPlusMenu disabled={isLoading} onBeforeSelect={() => formulaComposerRef.current?.captureInsertionBookmark()} onSelectFile={file => onOpenPhoto?.(file)} />
-          <div className="min-w-0 flex-1">
-            <FormulaComposer ref={formulaComposerRef} value={input} onChange={setInput} token={token ?? undefined}
-              placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit}
-              externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed}
-              externalFormulaQueue={externalFormulaQueue} onExternalFormulaQueueConsumed={onExternalFormulaQueueConsumed}
-              externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} />
-          </div>
           {isLoading ? (
             <button type="button" onClick={onCancelGeneration} disabled={!onCancelGeneration}
               aria-label="停止生成" title="停止生成"
