@@ -93,7 +93,7 @@
 | 文件 | 状态 | 执行前处理 |
 |---|---|---|
 | `CONTEST_TIANQING_AI_2026_PLAN.md` | 进行中（截止 2026-08-31） | 赛事材料只描述已实现能力，不涉及代码改动；视频与文档按该计划时间线推进 |
-| `INTERNAL_TEST_WELCOME_PLAN.md` | 已确认，待开发 | 内测欢迎弹窗、问卷和预置数据方案；开发前继续核对当前 App 状态和素材路径 |
+| `INTERNAL_TEST_WELCOME_PLAN.md` | UI/反馈已验收，数据准备中 | 欢迎弹窗、反馈问卷和反馈接口已完成；PV 素材与测试账号模拟数据由独立工作线继续执行，见 `INTERNAL_TEST_WELCOME_ACCEPTANCE_20260826.md` |
 | `KG_KNOWLEDGE_MAP_PLAN_DRAFT.md` | 待重新基线化 | 先删除已由静态目录、关系导出和梯子视图覆盖的工作包，再决定是否继续 |
 | `PHASE3_STUDENT_MODEL_DESIGN.md` | 实现基线与偏离说明 | 保留研究和方案背景；当前代码以读时 replay、memory index/detail 为准，未实现部分继续列为后续工作 |
 

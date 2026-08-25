@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   pdfZoom: 'pdf_view_preferences_v1',
   darkMode: 'learnmath_dark',
   desktopChatCollapsed: 'learnmath.ui.desktopChatCollapsed',
+  mobileReaderDock: 'learnmath.mobileReaderDock.v1',
   formulaFavorites: 'formula_favorites',
   formulaHistory: 'formula_history',
   welcomeDismissed: 'learnmath.welcome.dismissed',

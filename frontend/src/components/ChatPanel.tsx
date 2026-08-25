@@ -25,6 +25,7 @@ interface Props {
   thinkingStageKey?: string;
   isThinking?: boolean;
   compact?: boolean;
+  composerOnly?: boolean;
   emptyState?: React.ReactNode;
   externalFormula?: ExternalFormulaDraft | null;
   onExternalFormulaConsumed?: (nonce: string) => void;
@@ -81,7 +82,7 @@ function LoadingStatus({ text }: { text?: string }) {
 function ChatPanelInner({
   messages, onSendMessage, onClearMessages, isLoading,
   token, pendingImages, onRemovePendingImage, onClearPendingImages,
-  error, thinkingStage, thinkingStageKey, isThinking = false, compact, emptyState,
+  error, thinkingStage, thinkingStageKey, isThinking = false, compact, composerOnly = false, emptyState,
   externalFormula, onExternalFormulaConsumed,
   externalFormulaQueue, onExternalFormulaQueueConsumed,
   onCancelGeneration,
@@ -141,7 +142,7 @@ function ChatPanelInner({
   };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--lm-surface)]">
+    <div className={`relative flex ${composerOnly ? 'h-auto' : 'h-full'} flex-col overflow-hidden bg-[var(--lm-surface)]`}>
       {!compact && (
         <div className="px-4 py-3 border-b border-[var(--lm-border)] bg-[var(--lm-surface)] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
@@ -156,7 +157,7 @@ function ChatPanelInner({
         </div>
       )}
 
-      <div
+      {!composerOnly && <div
         ref={messagesContainerRef}
         onScroll={handleMessagesScroll}
         className="relative flex-1 overflow-y-auto p-3 space-y-3"
@@ -228,7 +229,7 @@ function ChatPanelInner({
             <ArrowDown className="h-4 w-4" />
           </button>
         )}
-      </div>
+      </div>}
 
       {pendingImages && pendingImages.length > 0 && (
         <div className="px-4 py-3 border-t border-[var(--lm-border)] bg-[var(--lm-bg)] dark:bg-indigo-950/40">
@@ -268,29 +269,27 @@ function ChatPanelInner({
       )}
 
       <form onSubmit={(event) => { event.preventDefault(); handleSubmit(); }}
-        className="shrink-0 border-t border-[var(--lm-border)] bg-[var(--lm-surface)] p-3 sm:p-4">
+        className="shrink-0 bg-[var(--lm-surface)] px-2 pb-3 pt-2 sm:px-2 sm:pb-4 sm:pt-3">
         <div className="min-w-0">
           <FormulaComposer ref={formulaComposerRef} value={input} onChange={setInput} token={token ?? undefined}
             placeholder="输入问题…" disabled={isLoading} onSubmit={handleSubmit}
             externalFormula={externalFormula} onExternalFormulaConsumed={onExternalFormulaConsumed}
             externalFormulaQueue={externalFormulaQueue} onExternalFormulaQueueConsumed={onExternalFormulaQueueConsumed}
-            externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed} />
-        </div>
-        <div className="mt-1 flex items-center justify-between">
-          <ChatPlusMenu disabled={isLoading} onBeforeSelect={() => formulaComposerRef.current?.captureInsertionBookmark()} onSelectFile={file => onOpenPhoto?.(file)} />
-          {isLoading ? (
-            <button type="button" onClick={onCancelGeneration} disabled={!onCancelGeneration}
-              aria-label="停止生成" title="停止生成"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50">
-              <CircleStop className="w-4 h-4" />
-            </button>
-          ) : (
-            <button type="submit" disabled={!input.trim() && !(pendingImages && pendingImages.length > 0)}
-              aria-label="发送" title="发送"
-              className="px-4 sm:px-5 py-3 bg-[var(--lm-brand)] text-white rounded-xl font-medium hover:bg-[var(--lm-brand-strong)] disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 whitespace-nowrap">
-              <Send className="w-4 h-4" />
-            </button>
-          )}
+            externalContent={externalContent} onExternalContentConsumed={onExternalContentConsumed}
+            leadingActions={<ChatPlusMenu disabled={isLoading} onBeforeSelect={() => formulaComposerRef.current?.captureInsertionBookmark()} onSelectFile={file => onOpenPhoto?.(file)} />}
+            trailingActions={isLoading ? (
+              <button type="button" onClick={onCancelGeneration} disabled={!onCancelGeneration}
+                aria-label="停止生成" title="停止生成"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50">
+                <CircleStop className="w-4 h-4" />
+              </button>
+            ) : (
+              <button type="submit" disabled={!input.trim() && !(pendingImages && pendingImages.length > 0)}
+                aria-label="发送" title="发送"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--lm-brand)] p-0 text-white transition-all hover:bg-[var(--lm-brand-strong)] disabled:cursor-not-allowed disabled:opacity-40 active:scale-95 sm:h-10 sm:w-10">
+                <Send className="w-4 h-4" />
+              </button>
+            )} />
         </div>
       </form>
     </div>

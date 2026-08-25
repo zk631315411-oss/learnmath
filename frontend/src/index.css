@@ -357,18 +357,36 @@ body {
 .dark .chat-message-user code { background: #27466d; color: #dbeafe; }
 
 /* === 混合文字与公式输入 === */
+.formula-composer {
+  overflow: visible;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-lg);
+  background: var(--lm-surface);
+  box-shadow: var(--lm-shadow-panel);
+}
+.formula-composer:focus-within {
+  border-color: #b45309;
+  box-shadow: 0 0 0 2px rgb(180 83 9 / 16%);
+}
 .formula-editor-shell {
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  min-height: 52px;
-  border: 1px solid var(--lm-border);
-  border-radius: 8px;
-  background: var(--lm-bg);
-  padding: 5px 6px 5px 10px;
+  min-height: 64px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 12px 5px;
 }
-.formula-editor-shell:focus-within { border-color: #b45309; box-shadow: 0 0 0 2px rgb(180 83 9 / 16%); }
-.formula-editor-actions { display: flex; min-height: 30px; align-items: center; justify-content: flex-end; gap: 2px; padding: 2px 2px 0; }
+.formula-editor-shell:focus-within { border-color: transparent; box-shadow: none; }
+.formula-editor-actions { display: flex; min-height: 40px; align-items: center; gap: 2px; padding: 0 8px 8px; }
+.formula-editor-leading { display: flex; align-items: center; }
+.formula-editor-action-group { display: flex; align-items: center; gap: 2px; }
+.formula-editor-trailing { display: flex; align-items: center; margin-left: auto; }
+@media (min-width: 1024px) {
+  .formula-editor-shell { min-height: 72px; padding-inline: 14px; }
+  .formula-editor-actions { min-height: 44px; }
+}
 .formula-prosemirror { min-height: 40px; max-height: 132px; overflow-y: auto; padding: 6px 0; outline: none; font-size: 14px; line-height: 1.55; color: var(--lm-text-strong); }
 .formula-prosemirror.is-compact { min-height: 28px; max-height: 92px; padding: 3px 0; }
 .formula-prosemirror p { margin: 0; min-height: 1.55em; }

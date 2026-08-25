@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { SelectionBookmark } from '@tiptap/pm/state';
@@ -39,6 +39,8 @@ interface Props {
   /** 识别出的多个公式：弹窗顶部显示一次性队列，逐个编辑插入（含单个，交互统一）。 */
   externalFormulaQueue?: { formulas: { latex: string; displayMode: 'inline' | 'block' }[]; nonce: string } | null;
   onExternalFormulaQueueConsumed?: (nonce: string) => void;
+  leadingActions?: ReactNode;
+  trailingActions?: ReactNode;
 }
 
 export interface FormulaComposerHandle { captureInsertionBookmark: () => void; }
@@ -236,6 +238,7 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
   value, onChange, token, placeholder = '输入文字，或插入数学公式…', disabled, compact, onSubmit,
   externalFormula, onExternalFormulaConsumed, externalContent, onExternalContentConsumed,
   externalFormulaQueue, onExternalFormulaQueueConsumed,
+  leadingActions, trailingActions,
 }: Props, ref) {
   const [dialogOpen, setDialogOpen] = useState(false);
   // 识别公式队列：一次性的，逐个编辑插入，不写永久历史
@@ -548,19 +551,23 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
       </div>
       {/* 编辑工具独立于文本区域，避免在窄侧栏里挤压学生正在输入的内容。 */}
       <div className="formula-editor-actions" aria-label="输入编辑工具">
-        {/* undo/redo 作用于 Tiptap 文档历史（StarterKit 自带 History 扩展），不是 MathField 的历史 */}
-        <button type="button" className="formula-undo-redo" disabled={disabled || !editor?.can().undo()}
-          onClick={() => editor?.commands.undo()} title="撤销" aria-label="撤销">
-          <Undo2 size={16} />
-        </button>
-        <button type="button" className="formula-undo-redo" disabled={disabled || !editor?.can().redo()}
-          onClick={() => editor?.commands.redo()} title="重做" aria-label="重做">
-          <Redo2 size={16} />
-        </button>
-        <button type="button" onClick={openNewFormula} disabled={disabled}
-          className="formula-trigger" title="插入公式" aria-label="插入公式">
-          <Calculator size={18} />
-        </button>
+        <div className="formula-editor-leading">{leadingActions}</div>
+        <div className="formula-editor-action-group">
+          {/* undo/redo 作用于 Tiptap 文档历史（StarterKit 自带 History 扩展），不是 MathField 的历史 */}
+          <button type="button" className="formula-undo-redo" disabled={disabled || !editor?.can().undo()}
+            onClick={() => editor?.commands.undo()} title="撤销" aria-label="撤销">
+            <Undo2 size={16} />
+          </button>
+          <button type="button" className="formula-undo-redo" disabled={disabled || !editor?.can().redo()}
+            onClick={() => editor?.commands.redo()} title="重做" aria-label="重做">
+            <Redo2 size={16} />
+          </button>
+          <button type="button" onClick={openNewFormula} disabled={disabled}
+            className="formula-trigger" title="插入公式" aria-label="插入公式">
+            <Calculator size={18} />
+          </button>
+        </div>
+        <div className="formula-editor-trailing">{trailingActions}</div>
       </div>
 
       {dialogOpen && (

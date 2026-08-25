@@ -51,6 +51,7 @@ function DeferredPanel({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const mobileReaderBoundsRef = useRef<HTMLDivElement | null>(null);
   const {
     user, authReady, showAuthModal, setShowAuthModal,
     authMode, setAuthMode, authUsername, setAuthUsername,
@@ -369,14 +370,14 @@ export default function App() {
     <ErrorBoundary>
       <div className="flex h-screen flex-col bg-[var(--lm-bg)] dark:bg-slate-950">
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
-          <div className="flex items-center gap-2">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-3 py-3 shadow-sm min-[430px]:px-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+          <div className="flex shrink-0 items-center gap-1 min-[430px]:gap-2">
             <img src="/mascot/fox-head.png" alt="学数有道吉祥物" className="h-8 w-8 rounded-full" />
-            <span className="text-lg font-bold text-slate-800 dark:text-slate-100">学数有道</span>
+            <span className="whitespace-nowrap text-base font-bold text-slate-800 min-[430px]:text-lg dark:text-slate-100">学数有道</span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            {view === 'reader' && <select aria-label="选择教材" className={`${selectClass} w-24 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto`} value={textbookId} disabled={interactionLocked}
+          <div className="flex min-w-0 items-center gap-1 min-[430px]:gap-2 sm:gap-3">
+            {view === 'reader' && <select aria-label="选择教材" className={`${selectClass} w-20 px-2 disabled:cursor-not-allowed disabled:opacity-50 min-[430px]:w-24 min-[430px]:px-3 sm:w-auto`} value={textbookId} disabled={interactionLocked}
               onChange={(e) => { if (interactionLocked) return; const v = e.target.value; setTextbookId(v as never); }}>
               <option value="">选择教材...</option>{PRESET_PDFS.map((pdf) => <option key={pdf.path} value={pdf.textbookId}>{pdf.name}</option>)}
             </select>}
@@ -442,12 +443,12 @@ export default function App() {
                   <EmptyGuideCard />
                 )}
               </div>
-              {!desktopChatCollapsed && <div className="lm-panel w-[360px] shrink-0 overflow-hidden min-[1440px]:w-[400px]">
+              {!desktopChatCollapsed && <div className="lm-panel w-[400px] shrink-0 overflow-hidden min-[1440px]:w-[440px]">
                 {pageNotesPanel}
               </div>}
             </>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div ref={mobileReaderBoundsRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="lm-panel flex min-h-0 flex-1 flex-col overflow-hidden">
                 {selectedPdf && textbookId ? (
                   <div className="min-h-0 flex-1">
@@ -462,6 +463,7 @@ export default function App() {
                 )}
               </div>
               {selectedPdf && <BottomSheet
+                boundaryRef={mobileReaderBoundsRef}
                 stage={sheetStage}
                 onStageChange={stage => { if (!interactionLocked) setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none'); }}
                 unread={chat.unreadCount > 0}
