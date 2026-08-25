@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   desktopChatCollapsed: 'learnmath.ui.desktopChatCollapsed',
   formulaFavorites: 'formula_favorites',
   formulaHistory: 'formula_history',
+  welcomeDismissed: 'learnmath.welcome.dismissed',
 } as const;
 
 export function workspaceStorageKey(textbookId: string): string {

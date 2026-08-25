@@ -31,6 +31,22 @@ export async function getCurrentUser(token: string): Promise<UserProfile> {
   return get<UserProfile>('/auth/me', token);
 }
 
+export type FeedbackSubmission = {
+  rating: number;
+  most_used_feature?: string;
+  disappointing_feature?: string;
+  disappointing_reason?: string;
+  problem_description?: string;
+  recommend?: string;
+  suggestion?: string;
+  contact?: string;
+  page_url?: string;
+};
+
+export function submitFeedback(payload: FeedbackSubmission, token?: string): Promise<{ status: string; id: string }> {
+  return post('/feedback', payload, token, { maxRetries: 0, timeout: 10_000 });
+}
+
 // === 聊天历史 / 徽标 API ===
 
 export async function getChatHistoryByUser(userId: string, page: number, limit: number, textbookId?: string): Promise<ChatHistoryRecord[]> {

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { BookOpen, LoaderCircle, Map as MapIcon, X } from 'lucide-react';
+import { BookOpen, LoaderCircle, Map as MapIcon, MessageSquare, X } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
@@ -35,6 +35,8 @@ import { normalizeSectionKey } from './utils/sectionKey';
 import { getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
+import WelcomeModal from './components/WelcomeModal';
+import FeedbackForm from './components/FeedbackForm';
 import { applyProgressDelta } from './hooks/useLearningProgress';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
@@ -72,6 +74,12 @@ export default function App() {
 
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  useEffect(() => {
+    if (!window.localStorage.getItem(STORAGE_KEYS.welcomeDismissed)) setWelcomeOpen(true);
+  }, []);
 
   // 高亮自动淡出：跳转定位后显示一会儿即消失，不遮挡继续阅读
   useEffect(() => {
@@ -380,6 +388,10 @@ export default function App() {
 
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
 
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="toolbar-button" title="打开内测反馈">
+              <MessageSquare className="h-4 w-4" /><span className="hidden sm:inline">内测反馈</span>
+            </button>
+
             {migrationStatus !== 'idle' && <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status">
               <span>{migrationStatus === 'syncing' ? '进度同步中' : '进度同步失败'}</span>
               {migrationStatus === 'failed' && <button type="button" onClick={retryMigration} className="font-medium text-indigo-600 hover:underline dark:text-indigo-300">重试</button>}
@@ -507,6 +519,12 @@ export default function App() {
             onModeSwitch={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
             onClose={() => setShowAuthModal(false)} />
         )}
+        {welcomeOpen && <WelcomeModal
+          onClose={() => setWelcomeOpen(false)}
+          onDismiss={() => { window.localStorage.setItem(STORAGE_KEYS.welcomeDismissed, '1'); setWelcomeOpen(false); }}
+          onOpenFeedback={() => { setWelcomeOpen(false); setFeedbackOpen(true); }}
+        />}
+        {feedbackOpen && <FeedbackForm token={user.token || undefined} onClose={() => setFeedbackOpen(false)} />}
       </div>
     </ErrorBoundary>
   );
