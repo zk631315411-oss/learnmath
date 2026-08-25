@@ -29,6 +29,7 @@
 | 检查 | 结果 |
 |---|---|
 | `python -m pytest tests/test_feedback.py -q` | 2 passed |
+| `python -m pytest -q` | 213 passed，3 skipped，32 个子测试通过 |
 | `npm run test:unit -- --run` | 8 files，44 tests passed |
 | `npm run build` | TypeScript 与 Vite 生产构建通过 |
 | `npx playwright test frontend-redesign.spec.ts` | 52 passed，54 条按项目/视觉开关预期 skipped，0 failed |
@@ -48,7 +49,7 @@ E2E 明确覆盖：欢迎弹窗普通关闭与永久关闭、问卷必填和成�
 - `artifacts/mobile-pinch.png`
 - `artifacts/mobile-reader-tools-final/`
 
-检查结论：顶部停靠不侵入应用页眉，底部停靠不遮挡教材正文；工具栏始终向可用内容区展开，待处理徽标在四边均不被裁切。连续页面之间没有空白 Canvas，双指缩放只改变 PDF 内容，缩放后仍可横向、纵向平移，页码与工具控件没有遮挡。
+检查结论：顶部停靠不侵入应用页眉，底部停靠不遮挡教材正文；工具栏始终向可用内容区展开，待处理徽标在四边均不被裁切。连续页面之间没有空白 Canvas，双指缩放只改变 PDF 内容，缩放后仍可横向、纵向平移，页码与工具控件没有遮挡。另在 `320x568` 极窄视口复核，反馈入口会按低优先级隐藏，登录入口和阅读控件保持可见且不发生横向溢出。
 
 ## 5. 遗留协同项
 
