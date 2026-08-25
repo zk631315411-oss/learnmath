@@ -11,7 +11,7 @@ import LearningSidebar from './components/LearningSidebar';
 import PDFToolbar from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
-import BottomSheet, { type SheetStage } from './components/BottomSheet';
+import BottomSheet, { type ReaderDockInsets, type SheetStage } from './components/BottomSheet';
 import PageNotesPanel from './components/PageNotesPanel';
 import type { PDFViewerControls } from './components/PDFViewer';
 import PdfHighlight, { getNodeHighlight } from './components/PdfHighlight';
@@ -74,6 +74,7 @@ export default function App() {
   const drawerOpen = overlaySurface === 'drawer';
 
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
+  const [mobileDockInsets, setMobileDockInsets] = useState<ReaderDockInsets>({ top: 0, right: 0, bottom: 0, left: 0 });
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -389,7 +390,7 @@ export default function App() {
 
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
 
-            <button type="button" onClick={() => setFeedbackOpen(true)} className="toolbar-button" title="打开内测反馈">
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="toolbar-button max-[359px]:hidden" title="打开内测反馈">
               <MessageSquare className="h-4 w-4" /><span className="hidden sm:inline">内测反馈</span>
             </button>
 
@@ -454,7 +455,7 @@ export default function App() {
                   <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange} mobile
                         markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
-                        hideToolbar onControlsChange={setPdfControls} pageOverlay={({ page, scale }) => (
+                        hideToolbar mobileInsets={mobileDockInsets} onControlsChange={setPdfControls} pageOverlay={({ page, scale }) => (
                           <PdfHighlight textbookId={textbookId} nodeId={highlightNodeId} currentPage={page} scale={scale} />
                         )} /></DeferredPanel>
                   </div>
@@ -473,6 +474,7 @@ export default function App() {
                 onCapture={startCapture}
                 controls={pdfControls}
                 interactionLocked={interactionLocked}
+                onDockInsetsChange={setMobileDockInsets}
               >
                 {sheetStage === 'half' ? pageNotesPanel : learningSidebar(() => setOverlaySurface('none'))}
               </BottomSheet>}

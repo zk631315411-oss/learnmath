@@ -1,7 +1,7 @@
 export type ReaderDockMode = 'free' | 'left' | 'right' | 'top' | 'bottom';
 
 export interface ReaderDockPositionV1 {
-  version: 1;
+  version: 2;
   mode: ReaderDockMode;
   xRatio: number;
   yRatio: number;
@@ -30,10 +30,10 @@ export interface DockSize {
 }
 
 export const FREE_DOCK_SIZE = 48;
-export const SIDE_DOCK_VISUAL_SIZE: DockSize = { width: 24, height: 56 };
-export const HORIZONTAL_DOCK_VISUAL_SIZE: DockSize = { width: 56, height: 24 };
-export const SIDE_DOCK_HIT_SIZE: DockSize = { width: 44, height: 56 };
-export const HORIZONTAL_DOCK_HIT_SIZE: DockSize = { width: 56, height: 44 };
+export const SIDE_DOCK_VISUAL_SIZE: DockSize = { width: 44, height: 188 };
+export const HORIZONTAL_DOCK_VISUAL_SIZE: DockSize = { width: 188, height: 44 };
+export const SIDE_DOCK_HIT_SIZE: DockSize = SIDE_DOCK_VISUAL_SIZE;
+export const HORIZONTAL_DOCK_HIT_SIZE: DockSize = HORIZONTAL_DOCK_VISUAL_SIZE;
 export const DOCK_SNAP_DISTANCE = 24;
 export const DOCK_DRAG_THRESHOLD = 8;
 export const DOCK_LONG_PRESS_MS = 350;
@@ -42,10 +42,10 @@ export const TOOLBAR_GAP = 8;
 const MODES = new Set<ReaderDockMode>(['free', 'left', 'right', 'top', 'bottom']);
 
 export const DEFAULT_READER_DOCK_POSITION: ReaderDockPositionV1 = {
-  version: 1,
-  mode: 'free',
+  version: 2,
+  mode: 'right',
   xRatio: 1,
-  yRatio: 1,
+  yRatio: 0.5,
 };
 
 export function clampNumber(value: number, min: number, max: number): number {
@@ -56,7 +56,7 @@ export function clampNumber(value: number, min: number, max: number): number {
 export function isReaderDockPosition(value: unknown): value is ReaderDockPositionV1 {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<ReaderDockPositionV1>;
-  return candidate.version === 1
+  return candidate.version === 2
     && typeof candidate.mode === 'string'
     && MODES.has(candidate.mode as ReaderDockMode)
     && typeof candidate.xRatio === 'number'
@@ -73,7 +73,7 @@ export function dockPositionAtPoint(mode: ReaderDockMode, point: DockPoint, boun
   const width = Math.max(1, bounds.right - bounds.left);
   const height = Math.max(1, bounds.bottom - bounds.top);
   return {
-    version: 1,
+    version: 2,
     mode,
     xRatio: clampNumber((point.x - bounds.left) / width, 0, 1),
     yRatio: clampNumber((point.y - bounds.top) / height, 0, 1),

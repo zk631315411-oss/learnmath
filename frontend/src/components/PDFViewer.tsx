@@ -5,12 +5,13 @@ import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-
 import { loadJSON, saveJSON } from '../utils/storage';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import PageMarker, { type Marker } from './PageMarker';
+import MobileContinuousPDFViewer from './MobileContinuousPDFViewer';
 import type { TextbookId } from '../textbooks';
 
 // v5 IIFE worker（esbuild 从 pdfjs-dist@5.4.296 构建），与 react-pdf 的 core 版本一致，兼容旧平板
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
-interface Props {
+export interface PDFViewerProps {
   pdfUrl: string;
   textbookId: TextbookId;
   page: number;
@@ -22,6 +23,7 @@ interface Props {
   hideToolbar?: boolean;
   onControlsChange?: (controls: PDFViewerControls | null) => void;
   pageOverlay?: React.ReactNode | ((ctx: { page: number; scale: number }) => React.ReactNode);
+  mobileInsets?: { top: number; right: number; bottom: number; left: number };
 }
 
 const VIEWER_HORIZONTAL_PADDING = 32;
@@ -83,7 +85,7 @@ function saveZoomPreference(textbookId: string, layout: LayoutClass, preference:
   saveJSON(STORAGE_KEYS.pdfZoom, data);
 }
 
-function PDFViewerInner({ pdfUrl, textbookId, page, onPageRequest, mobile, markers, pdfContainerRef, onMarkerClick, hideToolbar = false, onControlsChange, pageOverlay }: Props) {
+function PDFViewerInner({ pdfUrl, textbookId, page, onPageRequest, mobile, markers, pdfContainerRef, onMarkerClick, hideToolbar = false, onControlsChange, pageOverlay }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const currentPage = page;
   const [pdfError, setPdfError] = useState<string>('');
@@ -488,4 +490,9 @@ function PDFViewerInner({ pdfUrl, textbookId, page, onPageRequest, mobile, marke
   );
 }
 
-export default memo(PDFViewerInner);
+const SinglePagePDFViewer = memo(PDFViewerInner);
+
+export default function PDFViewer(props: PDFViewerProps) {
+  if (props.mobile) return <MobileContinuousPDFViewer {...props} />;
+  return <SinglePagePDFViewer {...props} />;
+}

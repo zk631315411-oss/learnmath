@@ -65,8 +65,19 @@ export function useFloatingReaderDock(
   onActivate: () => void,
 ): FloatingReaderDockResult {
   const [committed, setCommitted] = useState<ReaderDockPositionV1>(() => {
-    const stored = loadJSON<unknown>(STORAGE_KEYS.mobileReaderDock, DEFAULT_READER_DOCK_POSITION);
-    return isReaderDockPosition(stored) ? stored : DEFAULT_READER_DOCK_POSITION;
+    const stored = loadJSON<unknown>(STORAGE_KEYS.mobileReaderDockV2, DEFAULT_READER_DOCK_POSITION);
+    if (isReaderDockPosition(stored)) return stored;
+    const legacy = loadJSON<{ mode?: unknown; xRatio?: unknown; yRatio?: unknown } | null>(STORAGE_KEYS.mobileReaderDock, null);
+    if (legacy && ['free', 'left', 'right', 'top', 'bottom'].includes(String(legacy.mode))
+      && typeof legacy.xRatio === 'number' && typeof legacy.yRatio === 'number') {
+      return {
+        version: 2,
+        mode: legacy.mode as ReaderDockPositionV1['mode'],
+        xRatio: Math.max(0, Math.min(1, legacy.xRatio)),
+        yRatio: Math.max(0, Math.min(1, legacy.yRatio)),
+      };
+    }
+    return DEFAULT_READER_DOCK_POSITION;
   });
   const [dragPosition, setDragPosition] = useState<ReaderDockPositionV1 | null>(null);
   const [fullBounds, setFullBounds] = useState<DockBounds | null>(null);
@@ -138,7 +149,7 @@ export function useFloatingReaderDock(
       ? freeDockPositionAtPoint(anchor, currentFullBounds)
       : dockPositionAtPoint(displayed.mode, anchor, currentFullBounds);
     setCommitted(next);
-    saveJSON(STORAGE_KEYS.mobileReaderDock, next);
+    saveJSON(STORAGE_KEYS.mobileReaderDockV2, next);
   }, []);
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {

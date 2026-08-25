@@ -17,13 +17,13 @@ const bounds: DockBounds = { left: 12, top: 72, right: 378, bottom: 832 };
 describe('floating reader dock geometry', () => {
   it('validates the versioned persisted shape', () => {
     expect(isReaderDockPosition(DEFAULT_READER_DOCK_POSITION)).toBe(true);
-    expect(isReaderDockPosition({ version: 2, mode: 'free', xRatio: 1, yRatio: 1 })).toBe(false);
+    expect(isReaderDockPosition({ version: 2, mode: 'free', xRatio: 1, yRatio: 1 })).toBe(true);
     expect(isReaderDockPosition({ version: 1, mode: 'corner', xRatio: 1, yRatio: 1 })).toBe(false);
     expect(isReaderDockPosition({ version: 1, mode: 'left', xRatio: -1, yRatio: 1 })).toBe(false);
   });
 
-  it('clamps the default free ball inside the safe reader bounds', () => {
-    expect(resolveDockAnchor(DEFAULT_READER_DOCK_POSITION, bounds)).toEqual({ x: 354, y: 808 });
+  it('defaults to a centered right-side tool rail', () => {
+    expect(resolveDockAnchor(DEFAULT_READER_DOCK_POSITION, bounds)).toEqual({ x: 378, y: 452 });
   });
 
   it.each([
@@ -54,10 +54,10 @@ describe('floating reader dock geometry', () => {
     const right = getDockSurfaceRect(dockPositionAtPoint('right', { x: 378, y: 400 }, bounds), bounds);
     const top = getDockSurfaceRect(dockPositionAtPoint('top', { x: 200, y: 72 }, bounds), bounds);
     const bottom = getDockSurfaceRect(dockPositionAtPoint('bottom', { x: 200, y: 832 }, bounds), bounds);
-    expect(left).toMatchObject({ x: 12, width: 44, height: 56 });
-    expect(right).toMatchObject({ x: 334, width: 44, height: 56 });
-    expect(top).toMatchObject({ y: 72, width: 56, height: 44 });
-    expect(bottom).toMatchObject({ y: 788, width: 56, height: 44 });
+    expect(left).toMatchObject({ x: 12, width: 44, height: 188 });
+    expect(right).toMatchObject({ x: 334, width: 44, height: 188 });
+    expect(top).toMatchObject({ y: 72, width: 188, height: 44 });
+    expect(bottom).toMatchObject({ y: 788, width: 188, height: 44 });
   });
 
   it.each([
@@ -75,9 +75,9 @@ describe('floating reader dock geometry', () => {
     const bottom = dockPositionAtPoint('bottom', { x: 360, y: 832 }, bounds);
     const leftPlacement = placeDockToolbar(left, bounds, toolbar);
     const bottomPlacement = placeDockToolbar(bottom, bounds, toolbar);
-    expect(leftPlacement.x).toBe(44);
+    expect(leftPlacement.x).toBe(64);
     expect(leftPlacement.y).toBeGreaterThanOrEqual(bounds.top + 8);
-    expect(bottomPlacement.y).toBe(703);
+    expect(bottomPlacement.y).toBe(683);
     expect(bottomPlacement.x + toolbar.width).toBeLessThanOrEqual(bounds.right - 8);
   });
 

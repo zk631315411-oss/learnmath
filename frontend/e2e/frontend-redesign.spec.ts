@@ -305,9 +305,8 @@ async function enterReader(page: Page) {
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习|复习这一节)$/ }).first().click();
   if ((page.viewportSize()?.width ?? 1280) < 1024) {
-    const mobileTools = page.getByRole('button', { name: '打开阅读工具' });
-    await expect(mobileTools).toBeVisible();
-    await mobileTools.click();
+    await expect(page.getByRole('toolbar', { name: '阅读工具' })).toBeVisible();
+    await expect(page.getByTestId('mobile-page-pager')).toBeVisible();
   }
   await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: '下一页' }).first()).toBeEnabled();
@@ -315,15 +314,15 @@ async function enterReader(page: Page) {
 
 async function resetMobileDock(page: Page, xRatio = 0.5, yRatio = 0.5) {
   await page.evaluate(({ x, y }) => {
-    localStorage.setItem('learnmath.mobileReaderDock.v1', JSON.stringify({ version: 1, mode: 'free', xRatio: x, yRatio: y }));
+    localStorage.setItem('learnmath.mobileReaderDock.v2', JSON.stringify({ version: 2, mode: 'free', xRatio: x, yRatio: y }));
   }, { x: xRatio, y: yRatio });
   await page.reload();
-  await expect(page.getByRole('button', { name: '打开阅读工具' })).toBeVisible();
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
 }
 
-async function dragMobileDock(page: Page, target: { x: number; y: number }, holdMs = 0) {
-  const trigger = page.getByRole('button', { name: '打开阅读工具' });
-  const box = await trigger.boundingBox();
+async function dragMobileDock(page: Page, target: { x: number; y: number }, holdMs = 0, buttonName?: string) {
+  const dock = buttonName ? page.getByRole('button', { name: buttonName, exact: true }) : page.getByTestId('mobile-reader-tools');
+  const box = await dock.boundingBox();
   expect(box).not.toBeNull();
   const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
   const client = await page.context().newCDPSession(page);
@@ -336,6 +335,46 @@ async function dragMobileDock(page: Page, target: { x: number; y: number }, hold
       type: 'touchMove',
       touchPoints: [touch(start.x + (target.x - start.x) * progress, start.y + (target.y - start.y) * progress)],
     });
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
+async function pinchMobilePdf(page: Page, startDistance: number, endDistance: number) {
+  const container = page.getByTestId('pdf-scroll-container');
+  const box = await container.boundingBox();
+  expect(box).not.toBeNull();
+  const center = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  const client = await page.context().newCDPSession(page);
+  const touch = (x: number, id: number) => ({ x, y: center.y, id, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [touch(center.x - startDistance / 2, 1), touch(center.x + startDistance / 2, 2)],
+  });
+  for (let step = 1; step <= 8; step += 1) {
+    const distance = startDistance + (endDistance - startDistance) * step / 8;
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [touch(center.x - distance / 2, 1), touch(center.x + distance / 2, 2)],
+    });
+    await page.waitForTimeout(50);
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
+async function swipeMobilePdf(page: Page, deltaY: number) {
+  const container = page.getByTestId('pdf-scroll-container');
+  const box = await container.boundingBox();
+  expect(box).not.toBeNull();
+  const client = await page.context().newCDPSession(page);
+  const x = box!.x + box!.width / 2;
+  const startY = box!.y + box!.height * 0.72;
+  const touch = (y: number) => ({ x, y, id: 1, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(startY)] });
+  for (let step = 1; step <= 8; step += 1) {
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [touch(startY - deltaY * step / 8)] });
+    await page.waitForTimeout(30);
   }
   await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await client.detach();
@@ -476,14 +515,14 @@ test('mobile floating tools open the half and full learning panels', async ({ pa
   await enterReader(page);
   await page.getByRole('button', { name: 'AI 旁批' }).click();
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '打开阅读工具' }).click();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
   await page.getByRole('button', { name: '提问记录与学习地图' }).click();
   await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '关闭', exact: true }).click();
-  await expect(page.getByRole('button', { name: '打开阅读工具' })).toBeVisible();
+  await expect(page.getByRole('toolbar', { name: '阅读工具' })).toBeVisible();
 });
 
-test('mobile floating tools stay compact across portrait and landscape', async ({ page }, testInfo) => {
+test('mobile continuous reader stays virtualized and compact across portrait and landscape', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
   await page.addInitScript(() => {
@@ -492,17 +531,18 @@ test('mobile floating tools stay compact across portrait and landscape', async (
   });
 
   for (const viewport of [
-    { width: 390, height: 844, maxToolbarWidth: 200, maxToolbarHeight: 120 },
-    { width: 512, height: 560, maxToolbarWidth: 200, maxToolbarHeight: 120 },
-    { width: 844, height: 390, maxToolbarWidth: 380, maxToolbarHeight: 64 },
+    { width: 390, height: 844 },
+    { width: 512, height: 560 },
+    { width: 844, height: 390 },
   ]) {
     await page.setViewportSize(viewport);
     await enterReader(page);
 
-    const dock = page.getByTestId('mobile-reader-tools');
-    await page.getByRole('button', { name: '收起阅读工具' }).click();
-    const trigger = page.getByRole('button', { name: '打开阅读工具' });
-    await expect(trigger).toBeVisible();
+    const dock = page.getByRole('toolbar', { name: '阅读工具' });
+    await expect(dock).toBeVisible();
+    await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-mobile-continuous', 'true');
+    expect(await page.locator('[data-mobile-pdf-page]').count()).toBe(421);
+    expect(await page.locator('.react-pdf__Page canvas').count()).toBeLessThanOrEqual(5);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
     if (viewport.width === 390) {
@@ -512,17 +552,10 @@ test('mobile floating tools stay compact across portrait and landscape', async (
       expect(loginBox?.height).toBeLessThanOrEqual(32);
     }
 
-    const triggerBox = await trigger.boundingBox();
-    expect(triggerBox?.width).toBe(48);
-    expect(triggerBox?.height).toBe(48);
-
-    await trigger.click();
-    const toolbar = page.getByRole('toolbar', { name: '阅读工具' });
-    await expect(toolbar).toBeVisible();
-    const box = await toolbar.boundingBox();
+    const box = await dock.boundingBox();
     expect(box).not.toBeNull();
-    expect(box!.width).toBeLessThanOrEqual(viewport.maxToolbarWidth);
-    expect(box!.height).toBeLessThanOrEqual(viewport.maxToolbarHeight);
+    expect(box!.width).toBe(44);
+    expect(box!.height).toBe(188);
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
     expect(box!.y).toBeGreaterThanOrEqual(0);
@@ -530,27 +563,83 @@ test('mobile floating tools stay compact across portrait and landscape', async (
 
     if (viewport.width === 390) {
       await page.getByRole('button', { name: '下一页' }).click();
-      await expect(page.getByTitle('第 2 页，共 421 页')).toBeVisible();
-      await page.getByRole('button', { name: /切换为整页显示/ }).click();
-      await expect(page.getByRole('button', { name: /切换为适宽显示/ })).toBeVisible();
-      await page.keyboard.press('Escape');
-      await expect(trigger).toBeVisible();
-      await trigger.click();
-      await expect(toolbar).toBeVisible();
+      await expect(page.getByRole('button', { name: '当前第 2 页，共 421 页' })).toBeVisible();
+      await page.getByRole('button', { name: /缩放，当前/ }).click();
+      await expect(page.getByRole('toolbar', { name: '缩放工具' })).toBeVisible();
+      await page.getByRole('button', { name: '放大' }).click();
+      await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-zoom-percent', '110');
+      await page.getByRole('button', { name: /恢复适宽/ }).click();
+      await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-zoom-percent', '100');
     }
-
-    await page.getByRole('button', { name: '收起阅读工具' }).click();
-    await expect(dock.getByRole('button', { name: '打开阅读工具' })).toBeVisible();
   }
 });
 
-test('mobile reader dock snaps to all four edges and opens every toolbar inward', async ({ page }, testInfo) => {
+test('mobile reader supports continuous page tracking, direct jumps and anchored pinch zoom', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('learnmath.welcome.dismissed', '1');
+    if (!sessionStorage.getItem('learnmath.pinch-test-initialized')) {
+      localStorage.setItem('learnmath.mobilePdfZoom.v1', '{}');
+      sessionStorage.setItem('learnmath.pinch-test-initialized', '1');
+    }
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+
+  await page.locator('[data-mobile-pdf-page]').nth(2).evaluate(element => element.scrollIntoView());
+  await expect(page.getByRole('button', { name: '当前第 3 页，共 421 页' })).toBeVisible();
+
+  await page.getByRole('button', { name: '当前第 3 页，共 421 页' }).click();
+  await page.getByRole('spinbutton', { name: '跳转页码' }).fill('120');
+  await page.getByRole('spinbutton', { name: '跳转页码' }).press('Enter');
+  await expect(page.getByRole('button', { name: '当前第 120 页，共 421 页' })).toBeVisible();
+  expect(await page.locator('.react-pdf__Page canvas').count()).toBeLessThanOrEqual(5);
+
+  const container = page.getByTestId('pdf-scroll-container');
+  const scrollBefore = await container.evaluate(element => element.scrollTop);
+  await swipeMobilePdf(page, 260);
+  await expect.poll(() => container.evaluate(element => element.scrollTop)).toBeGreaterThan(scrollBefore + 200);
+  await page.waitForTimeout(800);
+
+  const focalBefore = await page.evaluate(() => {
+    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]')!;
+    const rect = container.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const target = document.elementsFromPoint(x, y).map(element => element.closest<HTMLElement>('[data-mobile-pdf-page]')).find(Boolean)!;
+    const targetRect = target.getBoundingClientRect();
+    return { page: target.dataset.mobilePdfPage, ratio: (y - targetRect.top) / targetRect.height };
+  });
+  await pinchMobilePdf(page, 80, 176);
+  await expect(container).toHaveAttribute('data-zoom-percent', '220');
+  expect(await page.evaluate(() => window.visualViewport?.scale || 1)).toBe(1);
+  const focalAfter = await page.evaluate(() => {
+    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]')!;
+    const rect = container.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const target = document.elementsFromPoint(x, y).map(element => element.closest<HTMLElement>('[data-mobile-pdf-page]')).find(Boolean)!;
+    const targetRect = target.getBoundingClientRect();
+    return { page: target.dataset.mobilePdfPage, ratio: (y - targetRect.top) / targetRect.height };
+  });
+  expect(focalAfter.page).toBe(focalBefore.page);
+  expect(focalAfter.ratio).toBeCloseTo(focalBefore.ratio, 1);
+
+  await pinchMobilePdf(page, 160, 40);
+  await expect(container).toHaveAttribute('data-zoom-percent', '75');
+  await pinchMobilePdf(page, 40, 240);
+  await expect(container).toHaveAttribute('data-zoom-percent', '300');
+  await page.reload();
+  await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-zoom-percent', '300');
+});
+
+test('mobile reader dock snaps to all four edges and keeps controls visible', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
   await enterReader(page);
-  await page.getByRole('button', { name: '收起阅读工具' }).click();
 
   for (const mode of ['left', 'right', 'top', 'bottom'] as const) {
     await resetMobileDock(page);
@@ -566,25 +655,24 @@ test('mobile reader dock snaps to all four edges and opens every toolbar inward'
 
     const dock = page.getByTestId('mobile-reader-tools');
     await expect(dock).toHaveAttribute('data-dock-mode', mode);
-    const triggerBox = await page.getByRole('button', { name: '打开阅读工具' }).boundingBox();
-    expect(triggerBox).not.toBeNull();
+    const railBox = await dock.boundingBox();
+    expect(railBox).not.toBeNull();
     if (mode === 'left' || mode === 'right') {
-      expect(triggerBox!.width).toBe(44);
-      expect(triggerBox!.height).toBe(56);
+      expect(railBox!.width).toBe(44);
+      expect(railBox!.height).toBe(188);
     } else {
-      expect(triggerBox!.width).toBe(56);
-      expect(triggerBox!.height).toBe(44);
+      expect(railBox!.width).toBe(188);
+      expect(railBox!.height).toBe(44);
     }
 
-    await page.getByRole('button', { name: '打开阅读工具' }).click();
-    const toolbar = page.getByRole('toolbar', { name: '阅读工具' });
-    const toolbarBox = await toolbar.boundingBox();
-    expect(toolbarBox).not.toBeNull();
-    if (mode === 'left') expect(toolbarBox!.x).toBeGreaterThan(triggerBox!.x + 20);
-    if (mode === 'right') expect(toolbarBox!.x + toolbarBox!.width).toBeLessThan(triggerBox!.x + triggerBox!.width - 20);
-    if (mode === 'top') expect(toolbarBox!.y).toBeGreaterThan(triggerBox!.y + 20);
-    if (mode === 'bottom') expect(toolbarBox!.y + toolbarBox!.height).toBeLessThan(triggerBox!.y + triggerBox!.height - 20);
-    await page.getByRole('button', { name: '收起阅读工具' }).click();
+    await page.getByRole('button', { name: /缩放，当前/ }).click();
+    const popupBox = await page.getByRole('toolbar', { name: '缩放工具' }).boundingBox();
+    expect(popupBox).not.toBeNull();
+    if (mode === 'left') expect(popupBox!.x).toBeGreaterThan(railBox!.x + railBox!.width);
+    if (mode === 'right') expect(popupBox!.x + popupBox!.width).toBeLessThan(railBox!.x);
+    if (mode === 'top') expect(popupBox!.y).toBeGreaterThan(railBox!.y + railBox!.height);
+    if (mode === 'bottom') expect(popupBox!.y + popupBox!.height).toBeLessThan(railBox!.y);
+    await page.getByRole('button', { name: '关闭缩放工具' }).click();
   }
 });
 
@@ -594,35 +682,30 @@ test('mobile reader dock persists and long press restores a draggable free ball'
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
   await enterReader(page);
-  await page.getByRole('button', { name: '收起阅读工具' }).click();
-  await resetMobileDock(page);
-
   const main = await page.locator('main').boundingBox();
   expect(main).not.toBeNull();
+  const chatButton = page.getByRole('button', { name: 'AI 旁批', exact: true });
+  const buttonBox = await chatButton.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  await dragMobileDock(page, { x: buttonBox!.x + buttonBox!.width / 2, y: buttonBox!.y + buttonBox!.height / 2 }, 380, 'AI 旁批');
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
+  await expect(page.getByText('本页旁批', { exact: true })).toHaveCount(0);
+  const freeBox = await page.getByTestId('mobile-reader-tools').boundingBox();
+  expect(freeBox?.width).toBe(48);
+  expect(freeBox?.height).toBe(48);
+
   await dragMobileDock(page, { x: main!.x + main!.width - 13, y: main!.y + main!.height / 2 });
   await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'right');
   await page.reload();
   await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'right');
 
-  const trigger = page.getByRole('button', { name: '打开阅读工具' });
-  let box = await trigger.boundingBox();
-  expect(box).not.toBeNull();
-  await dragMobileDock(page, { x: box!.x + box!.width / 2 - 80, y: box!.y + box!.height / 2 });
-  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'right');
-  await expect(page.getByRole('toolbar', { name: '阅读工具' })).toHaveCount(0);
-
-  await dragMobileDock(page, { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }, 380);
+  const rail = await page.getByTestId('mobile-reader-tools').boundingBox();
+  expect(rail).not.toBeNull();
+  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + main!.height / 2 }, 380, '框选');
   await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
-
-  await dragMobileDock(page, { x: main!.x + main!.width - 13, y: main!.y + main!.height / 2 });
-  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'right');
-  box = await trigger.boundingBox();
-  expect(box).not.toBeNull();
-  await dragMobileDock(page, { x: box!.x + box!.width / 2 - 120, y: box!.y + box!.height / 2 + 40 }, 380);
+  await expect(page.getByText('裁剪截图', { exact: true })).toHaveCount(0);
+  await page.reload();
   await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
-  const freeBox = await trigger.boundingBox();
-  expect(freeBox?.width).toBe(48);
-  expect(freeBox?.height).toBe(48);
 });
 
 test('mobile reader dock avoids the half sheet without overwriting its stored position', async ({ page }, testInfo) => {
@@ -631,22 +714,21 @@ test('mobile reader dock avoids the half sheet without overwriting its stored po
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
   await enterReader(page);
-  await page.getByRole('button', { name: '收起阅读工具' }).click();
-  await resetMobileDock(page, 1, 1);
-  const before = await page.getByRole('button', { name: '打开阅读工具' }).boundingBox();
-  const storedBefore = await page.evaluate(() => localStorage.getItem('learnmath.mobileReaderDock.v1'));
+  const before = await page.getByTestId('mobile-reader-tools').boundingBox();
+  const storedBefore = await page.evaluate(() => localStorage.getItem('learnmath.mobileReaderDock.v2'));
 
-  await page.getByRole('button', { name: '打开阅读工具' }).click();
   await page.getByRole('button', { name: 'AI 旁批' }).click();
   const sheet = await page.getByTestId('mobile-learning-sheet').boundingBox();
-  const constrained = await page.getByRole('button', { name: '打开阅读工具' }).boundingBox();
+  const constrained = await page.getByTestId('mobile-reader-tools').boundingBox();
+  const pager = await page.getByTestId('mobile-page-pager').boundingBox();
   expect(sheet).not.toBeNull();
   expect(constrained).not.toBeNull();
   expect(constrained!.y + constrained!.height).toBeLessThanOrEqual(sheet!.y - 7);
-  expect(await page.evaluate(() => localStorage.getItem('learnmath.mobileReaderDock.v1'))).toBe(storedBefore);
+  expect(pager!.y + pager!.height).toBeLessThanOrEqual(sheet!.y - 7);
+  expect(await page.evaluate(() => localStorage.getItem('learnmath.mobileReaderDock.v2'))).toBe(storedBefore);
 
   await page.getByRole('button', { name: '关闭', exact: true }).click();
-  const restored = await page.getByRole('button', { name: '打开阅读工具' }).boundingBox();
+  const restored = await page.getByTestId('mobile-reader-tools').boundingBox();
   expect(restored?.y).toBeCloseTo(before!.y, 0);
 });
 
@@ -664,18 +746,16 @@ test('mobile reader dock keeps pending badges visible on the top and bottom edge
 
   const main = await page.locator('main').boundingBox();
   expect(main).not.toBeNull();
-  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + 13 });
+  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + 13 }, 380, 'AI 旁批');
   await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'top');
-  let badge = await page.getByTestId('mobile-reader-tools-badge').boundingBox();
+  let badge = await page.getByTestId('mobile-reader-tools-badge').first().boundingBox();
   expect(badge).not.toBeNull();
   expect(badge!.y).toBeGreaterThanOrEqual(main!.y);
   expect(badge!.y + badge!.height).toBeLessThan(main!.y + main!.height);
 
-  const topTrigger = await page.getByRole('button', { name: '打开阅读工具' }).boundingBox();
-  expect(topTrigger).not.toBeNull();
-  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + main!.height - 13 }, 380);
+  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + main!.height - 13 }, 380, 'AI 旁批');
   await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'bottom');
-  badge = await page.getByTestId('mobile-reader-tools-badge').boundingBox();
+  badge = await page.getByTestId('mobile-reader-tools-badge').first().boundingBox();
   expect(badge).not.toBeNull();
   expect(badge!.y).toBeGreaterThanOrEqual(main!.y);
   expect(badge!.y + badge!.height).toBeLessThanOrEqual(main!.y + main!.height);
@@ -1322,11 +1402,9 @@ test('E8 mobile sheet entries and pending screenshot count are visible', async (
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
   await openQuestionFromHistory(page, '什么是秩？');
   await expect(page.getByText('对话视图', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '打开阅读工具' }).click();
   await page.getByRole('button', { name: '框选', exact: true }).click();
   await expect(page.getByText('裁剪截图', { exact: true })).toBeVisible({ timeout: 5000 });
   await page.getByRole('button', { name: '提问', exact: true }).last().click();
-  await page.getByRole('button', { name: '打开阅读工具' }).click();
   const chatButton = page.getByRole('button', { name: /AI 旁批/ });
   await expect(chatButton).toContainText('1');
   await expect(page.getByAltText('待发送截图')).toBeVisible();
