@@ -545,6 +545,9 @@ const FormulaComposer = forwardRef<FormulaComposerHandle, Props>(function Formul
           {!value && <span className="formula-placeholder">{placeholder}</span>}
           <EditorContent editor={editor} />
         </div>
+      </div>
+      {/* 编辑工具独立于文本区域，避免在窄侧栏里挤压学生正在输入的内容。 */}
+      <div className="formula-editor-actions" aria-label="输入编辑工具">
         {/* undo/redo 作用于 Tiptap 文档历史（StarterKit 自带 History 扩展），不是 MathField 的历史 */}
         <button type="button" className="formula-undo-redo" disabled={disabled || !editor?.can().undo()}
           onClick={() => editor?.commands.undo()} title="撤销" aria-label="撤销">
