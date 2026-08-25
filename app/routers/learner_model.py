@@ -1,4 +1,4 @@
-"""Read-only student model APIs (Phase 3, opt-in)."""
+"""Read-only student model APIs (Phase 3, production-enabled by default)."""
 
 from __future__ import annotations
 

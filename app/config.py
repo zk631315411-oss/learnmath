@@ -83,10 +83,9 @@ class Config:
     # JWT 签名密钥，生产环境必须通过环境变量注入强随机值
     JWT_SECRET: str = os.getenv("JWT_SECRET", "change-me-in-production")
 
-    # Phase 3: the learner model is opt-in until the P0 evidence gate is
-    # manually accepted.  Keep the public API available as a neutral envelope
-    # while this flag is false.
-    LEARNER_MODEL_ENABLED: bool = os.getenv("LEARNER_MODEL_ENABLED", "false").strip().lower() in {
+    # Phase 3 is production-enabled by default.  Set the environment variable
+    # to false only for an explicit rollback or isolated diagnostic run.
+    LEARNER_MODEL_ENABLED: bool = os.getenv("LEARNER_MODEL_ENABLED", "true").strip().lower() in {
         "1", "true", "yes", "on",
     }
     LEARNER_MODEL_DEBUG: bool = os.getenv("LEARNER_MODEL_DEBUG", "false").strip().lower() in {

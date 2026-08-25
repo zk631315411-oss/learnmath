@@ -112,9 +112,12 @@ _BLOCK_STRUCTURE = re.compile(
 _MALFORMED_ENV_END = re.compile(
     r"(?<!\\)\\\\end(\s*\{(?:matrix|[bBpvV]matrix|cases|aligned|align(?:ed)?|gather(?:ed)?|split)\})"
 )
-# 双反斜杠+字母命令（\\lim、\\to、\\frac）→ 单反斜杠，捕获组 \1 保留命令首字母。
-# 只匹配"后跟字母"的双反斜杠，不碰矩阵换行符（换行 \\ 后跟空格/&/逗号等非字母）。
-_DOUBLE_BACKSLASH_COMMAND = re.compile(r"\\\\([a-zA-Z])")
+_ROW_ENVIRONMENT_TOKEN = re.compile(
+    r"\\(?P<kind>begin|end)\s*\{(?P<name>matrix|[bBpvV]matrix|cases|aligned|align(?:ed)?|gather(?:ed)?|split)\}"
+)
+# A row break is also two backslashes. Normalize doubled commands outside
+# row-oriented environments, while preserving compact forms such as ``\\c``.
+_DOUBLE_BACKSLASH_COMMAND = re.compile(r"\\\\(?=[a-zA-Z])")
 
 
 class FormulaConversionError(RuntimeError):
@@ -123,6 +126,35 @@ class FormulaConversionError(RuntimeError):
 
 class UnsafeFormulaError(FormulaConversionError):
     pass
+
+
+def _normalize_double_backslash_commands(value: str) -> str:
+    protected_ranges: list[tuple[int, int]] = []
+    open_environments: list[tuple[str, int]] = []
+
+    for token in _ROW_ENVIRONMENT_TOKEN.finditer(value):
+        kind = token.group("kind")
+        name = token.group("name")
+        if kind == "begin":
+            open_environments.append((name, token.end()))
+        elif open_environments and open_environments[-1][0] == name:
+            _, body_start = open_environments.pop()
+            protected_ranges.append((body_start, token.start()))
+
+    if not protected_ranges:
+        return _DOUBLE_BACKSLASH_COMMAND.sub(lambda _match: "\\", value)
+
+    protected_ranges.sort()
+    normalized: list[str] = []
+    cursor = 0
+    for start, end in protected_ranges:
+        if start < cursor:
+            continue
+        normalized.append(_DOUBLE_BACKSLASH_COMMAND.sub(lambda _match: "\\", value[cursor:start]))
+        normalized.append(value[start:end])
+        cursor = end
+    normalized.append(_DOUBLE_BACKSLASH_COMMAND.sub(lambda _match: "\\", value[cursor:]))
+    return "".join(normalized)
 
 
 class FormulaProvider(Protocol):
@@ -214,11 +246,8 @@ def sanitize_latex(raw: str) -> str:
             break
 
     value = _MALFORMED_ENV_END.sub(r"\\end\1", value)
-    # 双重转义残留：模型在 JSON 字符串里把 LaTeX 反斜杠双重转义（"\\\\lim"），
-    # json.loads 解一层后剩 "\\lim"（命令前两个反斜杠）。归一为单反斜杠。
-    # 只匹配"双反斜杠+字母命令"（\\lim→\lim、\\to→\to），不影响矩阵换行符
-    # （换行 \\ 后跟空格/&/逗号/换行，不是字母，故 \\(?=[a-zA-Z]) 不会误伤它）。
-    value = _DOUBLE_BACKSLASH_COMMAND.sub(r"\\\1", value)
+    # JSON transport can leave doubled backslashes in commands such as \\lim.
+    value = _normalize_double_backslash_commands(value)
 
     if not value:
         raise FormulaConversionError("模型没有返回公式")

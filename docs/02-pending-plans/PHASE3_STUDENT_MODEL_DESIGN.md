@@ -1,8 +1,8 @@
 # 第三阶段：学生学习建模设计稿
 
 > 项目：学数有道（LearnMath）
-> 日期：2026-08-21
-> 状态：待选择方案，尚未进入实现
+> 日期：2026-08-25
+> 状态：实现基线与偏离说明；原方案已选 A，节点级模型已进入生产并默认启用
 > 目标：依据 KG 节点和学习证据建立可解释、可重放、能辅助教学的学生模型
 
 ## 0. 摘要
@@ -17,7 +17,15 @@
 
 当前推荐方案是 **方案 A：可解释的节点级贝叶斯/遗忘模型 + KG 前置风险 + Open Learner Model**。它可以使用当前 `evidence_turns`，不要求先有完整题库，能够回放和人工审计。方案 B、C 作为后续离线对照和演进路线，不应在当前数据规模上直接替代生产基线。
 
-本稿等待的不是“要不要做画像”，而是选择第一版模型的复杂度和验收范围。选择方案后，另立实施计划和数据库迁移计划。
+本稿不再作为“选择 A/B/C 后才能实现”的待办清单。方案 A 已被采用并进入主树；本稿保留研究依据、原始契约和后续演进边界，并在下文明确当前代码与原计划的差异。当前正式契约以 [阶段 3方案 A 决策记录](../07-decisions/PHASE3_STUDENT_MODEL_DECISION.md) 和主树代码为准。
+
+## 0.1 当前代码基线（2026-08-25）
+
+已落地：`evidence_turns` 唯一事实源、版本化 outcome adapter、Beta replay、14 天时间衰减、四态节点估计、教材/节点隔离、`/api/learner-model`、`retrieve_learning_memory_index` 和 `retrieve_learning_memory_detail`，以及 QA 中的请求级 memory scope 和脱敏状态活动。前端专用的学习记录四态提示尚未在主树完成。
+
+实现偏离原计划：当前估计在读取时直接从 evidence replay，`learner_node_estimates` 和 `learner_model_runs` 只保留兼容表结构，当前版本不写入派生快照和 run 记录；原计划中持久化快照、反馈接口、完整用户级画像、前端 P3 展示、自动出题和 PDF 导出均未实现。
+
+发布边界：`LEARNER_MODEL_ENABLED=true` 为默认值，节点级 Beta 模型和 memory-first Agent 已正式进入生产。该开关不代表完整学生画像已经实现；真实学生证据闭合、真实 LLM 链路和干净设备部署仍作为持续验收项，自动出题、PDF 导出和 Bloom/SOLO 高阶诊断仍不在本阶段。
 
 ## 1. 当前基础与问题
 
@@ -145,7 +153,7 @@ evidence_turns（事实层，只追加）
 |---|---|
 | `estimate` | 0–1 的模型估计；不是考试分数 |
 | `uncertainty` | 0–1 的不确定性，证据少时不能伪装成确定 |
-| `state` | `unknown / emerging / likely_ready / needs_review` 等对外中性状态 |
+| `state` | `unknown / emerging / likely_ready / model_needs_review` 等对外中性状态 |
 | `evidence_count` | 全部证据行数 |
 | `closed_evidence_count` | `independent/assisted/direct_taught` 行数 |
 | `independent_count` | 独立表现次数 |
@@ -446,14 +454,14 @@ G0/G1/G2 必须固定同一模型供应商、模型版本、温度、最大轮�
 
 ## 8. 方案 A 的实施草案
 
-### 8.1 P0：证据适配与离线回放
+### 8.1 P0：证据适配与离线回放（原实施草案，当前代码已部分落地）
 
 1. 建立 100–200 条真实问答轮次的人工标注集：节点是否定位正确、学生是否独立表现、提示依赖程度、证据是否闭合。
 2. 计算 Agent 自评与人工标注的一致性：按 outcome 分层报告 precision/recall、Cohen's kappa 或 Krippendorff's alpha。
 3. 实现 `evidence_adapter`，所有映射带 `adapter_version`，不能修改原证据。
 4. 建立纯函数 replay：同一 evidence 输入和同一 model_version 必须得到相同 estimate。
 
-### 8.2 P1：估计层与版本化存储
+### 8.2 P1：估计层与版本化存储（原计划；当前版本不写派生快照）
 
 建议新增：
 
@@ -461,11 +469,11 @@ G0/G1/G2 必须固定同一模型供应商、模型版本、温度、最大轮�
 - `learner_model_runs`：每次重放的版本、输入 revision、参数摘要、开始/结束时间、失败信息；
 - `learner_model_feedback`：学生/人工对估计的“不准确”反馈，不直接改 evidence。
 
-写入规则：先追加 evidence，再在同一用户/教材 revision 上重算受影响节点；模型失败不阻断回答，标记 estimate stale 并保留旧估计。
+原计划写入规则是先追加 evidence，再写入版本化快照。当前主树采用读时 replay：先追加 evidence，读取模型或 memory 时直接重算；模型异常返回中性/partial 结果，不阻断 SSE。`learner_node_estimates`、`learner_model_runs` 和 `learner_model_feedback` 目前不作为在线派生写入表。
 
 ### 8.3 P2：读取接口和 Agent 上下文
 
-建议接口：
+原计划接口：
 
 ```text
 GET /api/learner-model?textbook_id=...
@@ -473,7 +481,7 @@ GET /api/learner-model/nodes/{node_id}?textbook_id=...
 POST /api/learner-model/feedback
 ```
 
-内部工具建议为 `retrieve_learner_model_context(node_ids, textbook_id)`，只返回目标节点和有界直接前置的紧凑上下文，不把全量画像塞进 Prompt。
+当前内部工具为 `retrieve_learning_memory_index` 和 `retrieve_learning_memory_detail`：前者返回节点记忆摘要、有限最近观察、mastery view 和教学提示；后者只读取本轮 index 注册的有限 evidence 引用。不把全量画像塞进 Prompt。
 
 初版教学动作只允许：
 
@@ -484,7 +492,7 @@ POST /api/learner-model/feedback
 
 禁止模型直接调用“修改画像”工具；画像由后端根据证据重放产生。
 
-### 8.4 P3：前端呈现
+### 8.4 P3：前端呈现（尚未实现的原计划）
 
 节点详情分成三层：
 
@@ -492,7 +500,7 @@ POST /api/learner-model/feedback
 2. **系统估计**：当前状态、置信等级、更新时间；
 3. **下一步**：建议复习哪个前置或做哪个验证动作。
 
-默认文案使用“已有证据 / 仍需验证 / 建议复习”，不直接显示“你能力差”。学生可以点击“这条判断不准确”，反馈进入 `learner_model_feedback`。
+默认文案使用“已有证据 / 仍需验证 / 建议复习”，不直接显示“你能力差”。当前前端尚未完成专用学习记录状态文案；节点详情中的完整模型视图和 `learner_model_feedback` 尚未实现。
 
 ### 8.5 方案 B/C 的离线实现边界
 

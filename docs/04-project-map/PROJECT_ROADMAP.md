@@ -1,7 +1,7 @@
 # LearnMath 当前项目路线图
 
-> 版本：v0.4
-> 更新日期：2026-08-21
+> 版本：v0.5
+> 更新日期：2026-08-25
 > 状态：当前有效
 
 ## 项目目标
@@ -32,9 +32,17 @@ LearnMath 要验证：以教材知识图谱为核心的 AI 教学 Agent，是否
 
 ### 阶段 3：学生学习建模
 
-状态：**未开始**。
+状态：**节点级生产能力已实现，默认启用；扩展业务验收持续进行**。
 
-开始前必须明确：画像字段、证据来源、置信度、更新时间窗、跨教材边界、删除规则，以及每个字段具体影响哪个教学动作。现有 `weak_points`、`strong_points` 和 `learning_preferences` 兼容字段不等于阶段 3 已完成。
+当前已实现：
+
+- 以 `evidence_turns` 为唯一事实源的 outcome adapter 和 Beta replay；
+- 节点级 `unknown / emerging / likely_ready / model_needs_review` 状态、不确定性和 14 天时间衰减；
+- 只读 `/api/learner-model` 接口；
+- memory-first Agent 工具 `retrieve_learning_memory_index` 和 `retrieve_learning_memory_detail`；
+- 当前轮 scope、用户/教材/节点隔离和脱敏的 learning-memory 状态活动；前端专用的四态学习记录文案尚未在主树 `AgentActivity.tsx` 中单独渲染。
+
+当前实现边界：模型估计从 evidence 读时重算，`learner_node_estimates` 和 `learner_model_runs` 仅保留兼容表结构，不作为当前写入快照；`LEARNER_MODEL_ENABLED=true` 为默认值，阶段 3 节点级模型和 memory-first Agent 已进入生产。真实学生证据闭合、真实 LLM 链路和干净设备部署仍需持续验收，但不再是默认启用的前置条件。完整学生画像、反馈接口、自动出题和 Bloom/SOLO 等高阶诊断不在本阶段。
 
 ### 阶段 4：题目选择与生成
 
@@ -63,10 +71,10 @@ LearnMath 要验证：以教材知识图谱为核心的 AI 教学 Agent，是否
 ## 当前优先级
 
 1. 复验并修复阶段 2 的闭合证据可靠性。
-2. 建立 KG 开启/关闭的对照评价，直接回答“KG 是否有用”。
-3. 根据真实证据定义阶段 3 学生模型，不先堆叠画像字段。
+2. 持续完成阶段 3 的 P0 回放、隔离、memory 工具边界和真实学生链路验收；生产开关已默认开启，验收结果用于质量监控和后续迭代。
+3. 建立 KG 开启/关闭的对照评价，直接回答“KG 是否有用”。
 4. 补做干净 Windows 设备的一键部署验收。
 5. 单独规划错题/笔记打印与 PDF 导出。
 6. 保持二维 Manim golden cases 和 Renderer 资源基线；三维按独立能力包评审，不通过删除现有策略检查的方式放开。
 
-阶段 4 应等待前 3 项形成稳定输入后再启动。
+阶段 4 仍应等待阶段 2 证据闭合并形成稳定输入后再启动；阶段 3 默认启用不等于自动出题所需的题库、难度和质量验收已经完成。

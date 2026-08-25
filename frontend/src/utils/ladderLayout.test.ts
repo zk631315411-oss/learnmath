@@ -60,6 +60,75 @@ describe('layoutSineLadder（纯概念梯子）', () => {
     expect(layout.positions.find(p => p.nodeId === 'p0')).toBeUndefined();
   });
 
+  it('作为某 Concept 的 HAS_PROPERTY 目标的 Formula（记法公式）不上主干', () => {
+    const nodes = [
+      node('lim_pos', 0, 'Concept'),      // 当 x→+∞ 时函数的极限
+      node('lim_pos_not', 1, 'Formula'),  // 它的记法公式（HAS_PROPERTY 目标）
+      node('lim_neg', 2, 'Concept'),      // 当 x→-∞ 时函数的极限
+      node('lim_neg_not', 3, 'Formula'),  // 它的记法公式
+      node('cauchy', 4, 'Theorem'),       // 独立定理（不受影响）
+      node('indep_f', 5, 'Formula'),      // 独立公式（无 HAS_PROPERTY，不受影响）
+    ];
+    const layout = layoutSineLadder(nodes, [
+      { source: 'lim_pos', target: 'lim_pos_not', type: 'HAS_PROPERTY' },
+      { source: 'lim_neg', target: 'lim_neg_not', type: 'HAS_PROPERTY' },
+      // 反向不算（公式→概念不是记法关系）
+      { source: 'indep_f', target: 'cauchy', type: 'HAS_PROPERTY' },
+    ]);
+    expect(layout.coreOrder).toEqual(['lim_pos', 'lim_neg', 'cauchy', 'indep_f']);
+    expect(layout.positions.find(p => p.nodeId === 'lim_pos_not')).toBeUndefined();
+    expect(layout.positions.find(p => p.nodeId === 'lim_neg_not')).toBeUndefined();
+  });
+
+  it('Formula --GETS--> Concept/Theorem 时视为记法公式不上主干', () => {
+    const nodes = [
+      { ...node('zuodao', 0, 'Concept'), name: '左导数' },
+      { ...node('zuodao_f', 1, 'Formula'), name: '左导数公式' },
+      { ...node('daohs', 2, 'Concept'), name: '导函数' },
+      { ...node('daohs_f', 3, 'Formula'), name: '导函数公式' },
+      { ...node('c0', 4, 'Concept'), name: '独立概念' },
+    ];
+    const layout = layoutSineLadder(nodes, [
+      { source: 'zuodao_f', target: 'zuodao', type: 'GETS' },
+      { source: 'daohs_f', target: 'daohs', type: 'GETS' },
+    ]);
+    expect(layout.coreOrder).toEqual(['zuodao', 'daohs', 'c0']);
+    expect(layout.positions.map(p => p.nodeId)).not.toContain('zuodao_f');
+    expect(layout.positions.map(p => p.nodeId)).not.toContain('daohs_f');
+  });
+
+  it('DERIVES / PART_OF 边不是记法关系，公式仍上主干（推导产物/组成员）', () => {
+    const nodes = [
+      { ...node('daoshu', 0, 'Concept'), name: '导数' },
+      { ...node('geo', 1, 'Concept'), name: '导数的几何意义' },
+      { ...node('slope_f', 2, 'Formula'), name: '导数与切线斜率关系式' },
+      { ...node('fize', 3, 'Theorem'), name: '四则运算求导法则' },
+      { ...node('prod_f', 4, 'Formula'), name: '乘积求导公式' },
+    ];
+    const layout = layoutSineLadder(nodes, [
+      // 关系式推导出「几何意义」这个独立概念——不是任何节点的记法
+      { source: 'slope_f', target: 'geo', type: 'DERIVES' },
+      // 乘积求导公式是法则的组成员——不是记法
+      { source: 'prod_f', target: 'fize', type: 'PART_OF' },
+    ]);
+    // 两个公式都保留在主干（DERIVES/PART_OF 不剔除）
+    expect(layout.coreOrder).toEqual(['daoshu', 'geo', 'slope_f', 'fize', 'prod_f']);
+    expect(layout.positions.map(p => p.nodeId)).toContain('slope_f');
+    expect(layout.positions.map(p => p.nodeId)).toContain('prod_f');
+  });
+
+  it('无 HAS_PROPERTY / GETS 边的公式即使名字像记法也不剔除（不按名字猜）', () => {
+    const nodes = [
+      { ...node('lagrange', 0, 'Theorem'), name: '拉格朗日中值定理' },
+      { ...node('lagrange_f', 1, 'Formula'), name: '拉格朗日中值公式' },
+      { ...node('kai', 2, 'Concept'), name: '开区间' },
+      { ...node('kai_f', 3, 'Formula'), name: '开区间表示公式' },
+    ];
+    // KG 未建边的「定理↔公式」「概念↔公式」对，前端不合并（B 类待数据侧补边）
+    const layout = layoutSineLadder(nodes, []);
+    expect(layout.coreOrder).toEqual(['lagrange', 'lagrange_f', 'kai', 'kai_f']);
+  });
+
   it('height 按主干节点数算：padTop*2 + (n-1)*gapY + bottomPad', () => {
     const layout = layoutSineLadder(Array.from({ length: 5 }, (_, i) => node(`c${i}`, i)), []);
     expect(layout.height).toBe(LADDER.padTop * 2 + 4 * LADDER.gapY + LADDER.bottomPad);

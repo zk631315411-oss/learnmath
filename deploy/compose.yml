@@ -13,6 +13,21 @@ services:
       FORMULA_API_BASE: ${FORMULA_API_BASE:-}
       FORMULA_MODEL: ${FORMULA_MODEL:-}
       FORMULA_CONVERSION_TIMEOUT_SECONDS: ${FORMULA_CONVERSION_TIMEOUT_SECONDS:-8}
+      FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS: ${FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS:-15}
+      FORMULA_VISION_API_KEY: ${FORMULA_VISION_API_KEY:-}
+      FORMULA_VISION_API_BASE: ${FORMULA_VISION_API_BASE:-https://open.bigmodel.cn/api/paas/v4}
+      FORMULA_VISION_MODEL: ${FORMULA_VISION_MODEL:-glm-4.1v-thinking-flash}
+      FORMULA_VISION_THINKING: ${FORMULA_VISION_THINKING:-disabled}
+      FORMULA_VISION_TIMEOUT_SECONDS: ${FORMULA_VISION_TIMEOUT_SECONDS:-25}
+      FORMULA_FALLBACK_API_KEY: ${FORMULA_FALLBACK_API_KEY:-}
+      FORMULA_FALLBACK_API_BASE: ${FORMULA_FALLBACK_API_BASE:-}
+      FORMULA_FALLBACK_MODEL: ${FORMULA_FALLBACK_MODEL:-}
+      FORMULA_FALLBACK_TIMEOUT_SECONDS: ${FORMULA_FALLBACK_TIMEOUT_SECONDS:-5}
+      FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS: ${FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS:-30}
+      FORMULA_CONTENT_VISION_TIMEOUT_SECONDS: ${FORMULA_CONTENT_VISION_TIMEOUT_SECONDS:-30}
+      LEARNER_MODEL_ENABLED: ${LEARNER_MODEL_ENABLED:-true}
+      LEARNER_MODEL_DEBUG: ${LEARNER_MODEL_DEBUG:-false}
+      APP_ENV: ${APP_ENV:-production}
       NEO4J_URI: ${NEO4J_URI:-}
       NEO4J_USER: ${NEO4J_USER:-}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
@@ -20,6 +35,8 @@ services:
       MANIM_REDIS_URL: redis://redis:6379/0
       MANIM_SPOOL_DIR: /app/manim-spool
       MANIM_RENDER_DIR: /app/manim-render
+      MANIM_MAX_DURATION_SECONDS: ${MANIM_MAX_DURATION_SECONDS:-30}
+      MANIM_RENDER_TIMEOUT_SECONDS: ${MANIM_RENDER_TIMEOUT_SECONDS:-90}
     volumes:
       - app-data:/app/data
       - manim-spool:/app/manim-spool
@@ -47,6 +64,10 @@ services:
   manim-dispatcher:
     image: learnmath-api:${LEARNMATH_VERSION:-local}
     command: ["python", "-m", "scripts.run_manim_dispatcher"]
+    # The dispatcher is a Redis worker, not an HTTP server. The API image's
+    # inherited /ready healthcheck would always fail for this command.
+    healthcheck:
+      disable: true
     environment:
       MANIM_REDIS_URL: redis://redis:6379/0
       MANIM_QUEUE: learnmath-manim
@@ -73,8 +94,8 @@ services:
     environment:
       MANIM_SPOOL_DIR: /var/lib/learnmath/spool
       MANIM_RENDER_DIR: /var/lib/learnmath/render
-      MANIM_RENDER_TIMEOUT_SECONDS: 90
-      MANIM_MAX_DURATION_SECONDS: 12
+      MANIM_RENDER_TIMEOUT_SECONDS: ${MANIM_RENDER_TIMEOUT_SECONDS:-90}
+      MANIM_MAX_DURATION_SECONDS: ${MANIM_MAX_DURATION_SECONDS:-30}
     volumes:
       - manim-spool:/var/lib/learnmath/spool
       - manim-render:/var/lib/learnmath/render

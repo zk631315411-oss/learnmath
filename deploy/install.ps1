@@ -134,11 +134,34 @@ if (-not $values.ContainsKey("FORMULA_API_KEY")) { $values["FORMULA_API_KEY"] = 
 if (-not $values.ContainsKey("FORMULA_API_BASE")) { $values["FORMULA_API_BASE"] = "" }
 if (-not $values.ContainsKey("FORMULA_MODEL")) { $values["FORMULA_MODEL"] = "" }
 if (-not $values.ContainsKey("FORMULA_CONVERSION_TIMEOUT_SECONDS")) { $values["FORMULA_CONVERSION_TIMEOUT_SECONDS"] = "8" }
+if (-not $values.ContainsKey("FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS")) { $values["FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS"] = "15" }
+if (-not $values.ContainsKey("FORMULA_VISION_API_KEY")) { $values["FORMULA_VISION_API_KEY"] = "" }
+if (-not $values.ContainsKey("FORMULA_VISION_API_BASE")) { $values["FORMULA_VISION_API_BASE"] = "https://open.bigmodel.cn/api/paas/v4" }
+if (-not $values.ContainsKey("FORMULA_VISION_MODEL")) { $values["FORMULA_VISION_MODEL"] = "glm-4.1v-thinking-flash" }
+if (-not $values.ContainsKey("FORMULA_VISION_THINKING")) { $values["FORMULA_VISION_THINKING"] = "disabled" }
+if (-not $values.ContainsKey("FORMULA_VISION_TIMEOUT_SECONDS")) { $values["FORMULA_VISION_TIMEOUT_SECONDS"] = "25" }
+if (-not $values.ContainsKey("FORMULA_FALLBACK_API_KEY")) { $values["FORMULA_FALLBACK_API_KEY"] = "" }
+if (-not $values.ContainsKey("FORMULA_FALLBACK_API_BASE")) { $values["FORMULA_FALLBACK_API_BASE"] = "" }
+if (-not $values.ContainsKey("FORMULA_FALLBACK_MODEL")) { $values["FORMULA_FALLBACK_MODEL"] = "" }
+if (-not $values.ContainsKey("FORMULA_FALLBACK_TIMEOUT_SECONDS")) { $values["FORMULA_FALLBACK_TIMEOUT_SECONDS"] = "5" }
+if (-not $values.ContainsKey("FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS")) { $values["FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS"] = "30" }
+if (-not $values.ContainsKey("FORMULA_CONTENT_VISION_TIMEOUT_SECONDS")) { $values["FORMULA_CONTENT_VISION_TIMEOUT_SECONDS"] = "30" }
+if (-not $values.ContainsKey("LEARNER_MODEL_ENABLED")) { $values["LEARNER_MODEL_ENABLED"] = "true" }
+if (-not $values.ContainsKey("LEARNER_MODEL_DEBUG")) { $values["LEARNER_MODEL_DEBUG"] = "false" }
+if (-not $values.ContainsKey("APP_ENV")) { $values["APP_ENV"] = "production" }
+if (-not $values.ContainsKey("MANIM_MAX_DURATION_SECONDS")) { $values["MANIM_MAX_DURATION_SECONDS"] = "30" }
+if (-not $values.ContainsKey("MANIM_RENDER_TIMEOUT_SECONDS")) { $values["MANIM_RENDER_TIMEOUT_SECONDS"] = "90" }
 
 $order = @(
     "LEARNMATH_VERSION", "LEARNMATH_PORT", "JWT_SECRET", "NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD",
     "QA_LLM_API_KEY", "QA_LLM_API_BASE", "QA_LLM_MODEL", "FORMULA_API_KEY",
-    "FORMULA_API_BASE", "FORMULA_MODEL", "FORMULA_CONVERSION_TIMEOUT_SECONDS"
+    "FORMULA_API_BASE", "FORMULA_MODEL", "FORMULA_CONVERSION_TIMEOUT_SECONDS",
+    "FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS", "FORMULA_VISION_API_KEY", "FORMULA_VISION_API_BASE",
+    "FORMULA_VISION_MODEL", "FORMULA_VISION_THINKING", "FORMULA_VISION_TIMEOUT_SECONDS",
+    "FORMULA_FALLBACK_API_KEY", "FORMULA_FALLBACK_API_BASE", "FORMULA_FALLBACK_MODEL",
+    "FORMULA_FALLBACK_TIMEOUT_SECONDS", "FORMULA_RECOGNIZE_TOTAL_TIMEOUT_SECONDS",
+    "FORMULA_CONTENT_VISION_TIMEOUT_SECONDS", "LEARNER_MODEL_ENABLED", "LEARNER_MODEL_DEBUG",
+    "APP_ENV", "MANIM_MAX_DURATION_SECONDS", "MANIM_RENDER_TIMEOUT_SECONDS"
 )
 $content = $order | ForEach-Object { "$_=$($values[$_])" }
 Set-Content -LiteralPath $EnvFile -Value $content -Encoding ascii

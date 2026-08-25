@@ -9,6 +9,8 @@
 
 > 实施记录（2026-08-18，数字对应该日实施时的工作区状态，非当前 HEAD）：`python -m pytest -q` 为 83 passed / 3 skipped / 23 subtests passed；前端 build 通过；Playwright 为 22 passed / 20 按项目条件 skipped。真实 Kimi 同线程两轮均出现 `content → stage(evidence_report) → done`，分别落 `unresolved / level 0` 与 `direct_taught / level 4`，`report_path=evidence_fork`、`invalid_node_ids=0`。第二轮为 direct_taught，是因为第一轮老师已直接给出完整定义，学生随后正确复述，符合快照 rubric。地图节点投影为 `learning`、`closed_evidence_count=1`、`chat.available=true`。
 
+> 与阶段 3的关系（2026-08-25）：本文件定义的 `evidence_turns` 仍是唯一事实账本；阶段 3的 Beta replay 和 learning-memory 工具只读取这些事实，不改写 evidence。阶段 3的 memory 查询状态可以进入学生可见活动，但 `report_turn_outcome`、thinking 和内部工具细节仍不进入学生可见活动。阶段 2真实学生后续轮次的闭合缺口仍然独立存在，不能因为阶段 3工程基线已实现而视为解决。
+
 ## 一、发现与定性
 
 真实 LLM 抽测（2026-08-18，同一线程两轮）：

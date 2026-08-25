@@ -177,7 +177,7 @@ class UnifiedQARoutingTests(unittest.IsolatedAsyncioTestCase):
     async def test_turn_scope_and_runtime_budget_are_bound_to_runtime(self):
         captured = {}
 
-        def fake_tools(*, textbook_id, page_number):
+        def fake_tools(*, textbook_id, page_number, **_kwargs):
             captured["scope"] = (textbook_id, page_number)
             return [kg_tool()]
 

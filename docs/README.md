@@ -1,6 +1,6 @@
 # LearnMath 文档索引
 
-> 最后更新：2026-08-22
+> 最后更新：2026-08-25
 > 本文件是第 5 类“文档索引、状态说明、阅读顺序”的唯一入口。当前项目状态以
 > [项目路线图](04-project-map/PROJECT_ROADMAP.md) 为准；历史计划中的“当前”表述只用于追溯。
 
@@ -34,7 +34,7 @@
 | 阶段 1：KG 定位与针对性教学 | 已完成 | 文字/图片问答、KG 定位、前后置检索和多轮教学已实现；KG 是否带来教学收益仍需对照评价 |
 | 阶段 2：学习地图 | 工程完成，业务部分通过 | 证据账本、确定性投影、静态目录、梯子视图和地图 UI 已实现；真实学生后续轮次闭合证据仍有失败记录 |
 | Manim 动画链路 | 二维能力已实现，三维暂未开放 | [Manim 能力边界与演进方向](07-decisions/MANIM_SCOPE_AND_SECURITY.md)；复杂二维函数可生成有限采样近似，三维需先完成受控 Renderer 验收 |
-| 阶段 3：学生学习建模 | 待选择设计方案 | [第三阶段设计稿](02-pending-plans/PHASE3_STUDENT_MODEL_DESIGN.md) 已完成调研和方案比较，选择 A/B/C 后再拆实施计划 |
+| 阶段 3：学生学习建模 | 节点级生产能力已实现，默认启用；扩展验收持续进行 | [阶段 3决策记录](07-decisions/PHASE3_STUDENT_MODEL_DECISION.md)、[实现基线设计稿](02-pending-plans/PHASE3_STUDENT_MODEL_DESIGN.md)；当前以 `evidence_turns` 读时 replay、节点级 Beta 估计和 memory-first Agent 工具为准 |
 | 阶段 4：选题与生成题目 | 未开始 | 等阶段 3 形成稳定、可解释输入，并另立题库和选题验收计划 |
 | 错题/笔记 PDF 导出 | 未开始 | 尚无获准执行计划 |
 | 桌面、平板和移动适配 | 已实现，有验收记录 | 见 `06-acceptance-records/` |
@@ -58,12 +58,13 @@
 4. [梯子视图验收记录](06-acceptance-records/LEARNING_MAP_LADDER_VIEW_TEST_20260821.md)。
 5. [真实学生链路测试记录](06-acceptance-records/STUDENT_TEST_RUN_20260819.md)，重点查看证据闭合失败项。
 
-### 进入第三阶段设计
+### 进入第三阶段实现与复核
 
 1. [项目路线图](04-project-map/PROJECT_ROADMAP.md) 的阶段 2/3 部分。
-2. [证据分叉决策](07-decisions/EVIDENCE_FORK_DESIGN.md)，确认可用观测和已知缺口。
-3. [第三阶段学生模型设计稿](02-pending-plans/PHASE3_STUDENT_MODEL_DESIGN.md)，比较 A/B/C 三个方案。
-4. 选择方案后，才新建正式实施计划、数据库迁移计划和对应验收记录。
+2. [阶段 3决策记录](07-decisions/PHASE3_STUDENT_MODEL_DECISION.md)，确认当前实现契约和未覆盖范围。
+3. [证据分叉决策](07-decisions/EVIDENCE_FORK_DESIGN.md)，确认 evidence 来源和闭合缺口。
+4. [阶段 3实现基线设计稿](02-pending-plans/PHASE3_STUDENT_MODEL_DESIGN.md)，查看原方案与当前代码的差异。
+5. 阶段 3已按生产决策默认启用；继续阅读验收记录，区分节点级生产能力与完整画像、真实学生链路等后续边界。
 
 ### 进入 Manim 动画工作
 
@@ -92,8 +93,9 @@
 | 文件 | 状态 | 执行前处理 |
 |---|---|---|
 | `CONTEST_TIANQING_AI_2026_PLAN.md` | 进行中（截止 2026-08-31） | 赛事材料只描述已实现能力，不涉及代码改动；视频与文档按该计划时间线推进 |
+| `INTERNAL_TEST_WELCOME_PLAN.md` | 已确认，待开发 | 内测欢迎弹窗、问卷和预置数据方案；开发前继续核对当前 App 状态和素材路径 |
 | `KG_KNOWLEDGE_MAP_PLAN_DRAFT.md` | 待重新基线化 | 先删除已由静态目录、关系导出和梯子视图覆盖的工作包，再决定是否继续 |
-| `PHASE3_STUDENT_MODEL_DESIGN.md` | 待选择方案 | 先由负责人选择 A/B/C；选择后另立实施计划，不直接从设计稿改代码 |
+| `PHASE3_STUDENT_MODEL_DESIGN.md` | 实现基线与偏离说明 | 保留研究和方案背景；当前代码以读时 replay、memory index/detail 为准，未实现部分继续列为后续工作 |
 
 ### 03 其他文件
 
@@ -115,6 +117,7 @@
 | `FRONTEND_REDESIGN_TEST_REPORT.md` | 前端重构和地图基础链路通过；记录了真实 LLM 闭环的边界 |
 | `LEARNING_MAP_LADDER_VIEW_TEST_20260821.md` | 梯子视图 v3 的单测、构建、E2E 和视觉审查通过 |
 | `STUDENT_TEST_RUN_20260819.md` | 真实学生链路部分通过，后续闭合 evidence 未通过 |
+| `PHASE3_STUDENT_MODEL_TEST_20260825.md` | 当前主树自动化基线；阶段 3专项测试通过，完整回归和前端单测仍有环境/既有失败项 |
 
 ### 07 决策原因
 
@@ -122,6 +125,7 @@
 |---|---|
 | `KG_TOOL_DESIGN.md` | KG 工具的参数、返回结构、关系语义和验收契约 |
 | `EVIDENCE_FORK_DESIGN.md` | 主干回答与证据分叉的架构、失败语义和已知产品缺口 |
+| `PHASE3_STUDENT_MODEL_DECISION.md` | 阶段 3当前实现的模型、记忆工具、边界和开关契约 |
 | `MANIM_SCOPE_AND_SECURITY.md` | Manim 当前二维边界、三维限制原因、复杂函数近似说明和后续优化验收条件 |
 
 ### 08 废弃的计划与文档
@@ -130,7 +134,7 @@
 
 ## 待执行事项的入口
 
-- 阶段 3：先阅读并选择 [第三阶段学生模型设计稿](02-pending-plans/PHASE3_STUDENT_MODEL_DESIGN.md)。当前推荐方案是 A，但必须由负责人确认后才能实现。
+- 阶段 3：先阅读 [阶段 3决策记录](07-decisions/PHASE3_STUDENT_MODEL_DECISION.md)，再阅读[实现基线设计稿](02-pending-plans/PHASE3_STUDENT_MODEL_DESIGN.md)和代码路径地图。当前节点级模型和 memory-first Agent 默认启用；仍不得将其宣称为完整学生画像，也不得把尚未完成的真实学生链路、自动出题或学习收益实验写成已完成。
 - 真实 KG 地图：先阅读 [KG 知识地图草案](02-pending-plans/KG_KNOWLEDGE_MAP_PLAN_DRAFT.md)，逐项重新基线化；不能整份从头照做。
 - 阶段 2 证据可靠性和 KG 效果对照：目前只有路线图中的优先级，尚未形成获准实施计划。
 

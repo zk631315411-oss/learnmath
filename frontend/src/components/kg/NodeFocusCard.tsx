@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 
 import type { ChapterCatalogEdge } from '../../catalog/types';
 import type { LearningMapNode } from '../../services/api';
+import { getNotationFormulas } from '../../utils/ladderLayout';
 import { STATUS_LABEL, stripMath, typeMeta } from './shared';
 
 /**
@@ -70,6 +71,18 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
       {list.length > 0 ? <ul>{list.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} />)}</ul>
         : <p className="text-[13px] text-[var(--lm-text-muted)]">本节起点</p>}
     </>;
+  }
+
+  /* ①b 记法/公式：主干梯子已剔除的公式（HAS_PROPERTY / GETS 边判定，与梯子布局同一套边规则），这里收回展示 */
+  let notationBlock: ReactNode = null;
+  if (stemNode) {
+    const notations = getNotationFormulas(node, allNodes, edges).sort(byOrder);
+    if (notations.length > 0) {
+      notationBlock = <>
+        <h3 className="nfc-h">记法</h3>
+        <ul>{notations.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} />)}</ul>
+      </>;
+    }
   }
 
   /* ② 方法 · 直接相关（仅直连，无边不显示整块） */
@@ -145,6 +158,7 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
       {STATUS_LABEL[node.status]}
     </div>
     {prereqBlock}
+    {notationBlock}
     {methodBlock}
     {problemBlock}
     {hostsBlock}

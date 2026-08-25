@@ -86,8 +86,8 @@ def build_retrieve_kg_context_tool(
         input_model=RetrieveKGContextInput,
         execute=execute,
         present_result=_present_retrieve_result,
-        max_calls_per_round=3,
-        max_calls_per_turn=3,
+        max_calls_per_round=10,
+        max_calls_per_turn=10,
         timeout_seconds=30.0,
         kind="read_only",
     )

@@ -52,6 +52,12 @@ class FormulaSanitizerTests(unittest.TestCase):
             r"\begin{pmatrix}a&b\\c&d\end{pmatrix}",
         )
 
+    def test_normalizes_doubled_commands_outside_matrix_rows(self) -> None:
+        self.assertEqual(
+            sanitize_latex(r"\\lim_{x\\to 0} \\frac{1}{2}"),
+            r"\lim_{x\to 0} \frac{1}{2}",
+        )
+
     def test_rejects_non_math_content(self) -> None:
         for value in (
             r"\href{https://example.com}{x}",
@@ -128,6 +134,7 @@ class FormulaServiceTests(unittest.IsolatedAsyncioTestCase):
                 r"\lim_{x \to 0} \frac{\sin x}{x}",
                 r"\begin{pmatrix} a & b \\ c & d \end{pmatrix}",
                 "x^2+y^2=1",
+                r"\frac{1}{\sqrt{2\pi}} e^{-\frac{x^2}{2}}",
             ],
         )
 
