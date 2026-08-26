@@ -140,6 +140,7 @@ def get_public_node(
             "node_id": item["node_id"],
             "learner_state": item["learner_state"],
             "map_status": item["map_status"],
+            "hop": item.get("hop", 1),
         }
         for item in prerequisites
     ]
@@ -185,67 +186,112 @@ def _prerequisite_context(
     textbook_id: str,
     node_id: str,
 ) -> tuple[list[dict[str, Any]], float | None, bool]:
-    try:
-        relationships, _ = kg_v44.get_kg_relationships(
-            node_id,
-            focus=["prerequisites"],
-            textbook_id=textbook_id,
-            limit_per_group=MAX_PREREQUISITES,
-        )
-    except Exception:
-        return [], None, False
-    items = relationships.get("explicit_prerequisites") or []
-    contexts = []
+    """沿 PREREQUISITE_OF 入边递归到深度 2，返回带去重与 hop 标注的前置上下文。
+
+    每一跳（层）最多收录 MAX_PREREQUISITES 个节点；第二跳从第一跳收录的
+    节点继续展开，跨层去重（目标节点本身也排除）。第一跳的 KG 查询失败
+    按原契约返回 ([], None, False)；第二跳某个节点展开失败只跳过该分支，
+    不拖垮已收集的结果。返回排序上「该学生有证据或有地图状态的节点」优先
+    于纯 KG 推断节点，其余按 hop 升序、风险降序，保证教学上最相关的薄弱
+    前置排在前面。
+    """
     try:
         progress = project_user_progress(user_id, textbook_id)
     except Exception:
         return [], None, False
-    risks = []
-    for item in items[:MAX_PREREQUISITES]:
-        if not isinstance(item, dict):
-            continue
-        if item.get("relationship_type") != "PREREQUISITE_OF" or item.get("direction") != "incoming":
-            continue
-        prereq = item.get("node") if isinstance(item, dict) else None
-        if not isinstance(prereq, dict) or not prereq.get("node_id"):
-            continue
-        prereq_id = str(prereq["node_id"])
-        if not prereq_id.startswith(f"{textbook_id}:"):
-            continue
-        try:
-            snapshot = compute_node_estimate(user_id, textbook_id, prereq_id)
-        except Exception:
-            estimate = 0.5
-            state = "unknown"
-            map_status = "unexplored"
-            risk = 1.0
-            snapshot = None
-        if snapshot is not None:
-            estimate = float(snapshot.get("estimate") or 0.5)
-            state = str(snapshot.get("learner_state") or "unknown")
-            map_status = (progress.get("nodes", {}).get(prereq_id, {}) or {}).get("status", "unexplored")
-            risk = 1.0 - estimate
-        risk = _clamp_risk(risk)
-        risks.append(risk)
-        contexts.append({
-            "node_id": prereq_id,
-            "name": prereq.get("name"),
-            "estimate": estimate,
-            "learner_state": state,
-            "map_status": map_status,
-            "risk": risk,
-            "stale": snapshot is None,
-        })
-    return contexts, aggregate_prerequisite_risk(risks), True
+
+    contexts: list[dict[str, Any]] = []
+    seen: set[str] = {node_id}
+    frontier = [node_id]
+    for hop in (1, 2):
+        layer: list[dict[str, Any]] = []
+        next_frontier: list[str] = []
+        for current_id in frontier:
+            if len(layer) >= MAX_PREREQUISITES:
+                break
+            try:
+                relationships, _ = kg_v44.get_kg_relationships(
+                    current_id,
+                    focus=["prerequisites"],
+                    textbook_id=textbook_id,
+                    limit_per_group=MAX_PREREQUISITES,
+                )
+            except Exception:
+                if hop == 1:
+                    return [], None, False
+                continue
+            items = relationships.get("explicit_prerequisites") or []
+            for item in items:
+                if len(layer) >= MAX_PREREQUISITES:
+                    break
+                if not isinstance(item, dict):
+                    continue
+                if item.get("relationship_type") != "PREREQUISITE_OF" or item.get("direction") != "incoming":
+                    continue
+                prereq = item.get("node") if isinstance(item, dict) else None
+                if not isinstance(prereq, dict) or not prereq.get("node_id"):
+                    continue
+                prereq_id = str(prereq["node_id"])
+                if not prereq_id.startswith(f"{textbook_id}:") or prereq_id in seen:
+                    continue
+                seen.add(prereq_id)
+                next_frontier.append(prereq_id)
+                try:
+                    snapshot = compute_node_estimate(user_id, textbook_id, prereq_id)
+                except Exception:
+                    estimate = 0.5
+                    state = "unknown"
+                    map_status = "unexplored"
+                    risk = 1.0
+                    evidence_count = 0
+                    snapshot = None
+                if snapshot is not None:
+                    estimate = float(snapshot.get("estimate") or 0.5)
+                    state = str(snapshot.get("learner_state") or "unknown")
+                    map_status = (progress.get("nodes", {}).get(prereq_id, {}) or {}).get("status", "unexplored")
+                    risk = 1.0 - estimate
+                    evidence_count = int(snapshot.get("evidence_count") or 0)
+                risk = _clamp_risk(risk)
+                layer.append({
+                    "node_id": prereq_id,
+                    "name": prereq.get("name"),
+                    "estimate": estimate,
+                    "learner_state": state,
+                    "map_status": map_status,
+                    "risk": risk,
+                    "stale": snapshot is None,
+                    "hop": hop,
+                    "evidence_count": evidence_count,
+                })
+        contexts.extend(layer)
+        frontier = next_frontier
+        if not frontier:
+            break
+
+    contexts.sort(key=_prerequisite_sort_key)
+    return contexts, aggregate_prerequisite_risk(item["risk"] for item in contexts), True
+
+
+def _prerequisite_sort_key(item: dict[str, Any]) -> tuple[int, int, float, str]:
+    """有学生证据或地图状态的节点优先；其余按跳数升序、风险降序。"""
+    has_signal = bool(item.get("evidence_count")) or item.get("map_status") not in {None, "unexplored"}
+    return (
+        0 if has_signal else 1,
+        int(item.get("hop") or 1),
+        -float(item.get("risk") or 0.0),
+        str(item.get("node_id") or ""),
+    )
 
 
 def aggregate_prerequisite_risk(risks: Iterable[float | None]) -> float:
-    """Version-1 KG risk contract: max risk across direct prerequisites.
+    """Version-2 KG risk contract: max risk across depth-1 and depth-2 prerequisites.
 
     Each risk is ``1 - estimate`` for a fresh prerequisite.  Missing or stale
     prerequisite snapshots are represented as ``1.0`` by the caller because
-    the system cannot verify that prerequisite yet.  No recursive or ordinary
-    KG relation participates in this aggregation; an empty set is zero risk.
+    the system cannot verify that prerequisite yet.  ``_prerequisite_context``
+    now walks PREREQUISITE_OF recursively to depth 2, so this aggregation
+    covers both hops (each hop capped at MAX_PREREQUISITES); no other KG
+    relation participates, and an empty set is zero risk.
     """
 
     values = [_clamp_risk(value) for value in risks if value is not None]

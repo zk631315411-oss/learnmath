@@ -13,13 +13,13 @@
 
 ## 当前实现
 
-- adapter/version：`evidence-beta-v1`；模型版本：`learner-beta-v1`；两者必须成对兼容。
+- adapter/version：`evidence-beta-v1`；模型版本：`learner-beta-v2`；两者必须成对兼容。v2 固定两跳前置风险聚合规则。
 - 先验为 Beta(1,1)，时间半衰期为 14 天；估计、不确定性和状态由
   `app/services/learning/student_model.py` 确定性计算。
 - `independent` 且无脚手架提供强正向信号；带脚手架的 independent 降级为 assisted；
   assisted 提供弱正向信号；`direct_taught` 和 `unresolved` 不增加 Alpha/Beta。
 - 内部状态为 `unknown`、`emerging`、`likely_ready`、`model_needs_review`。
-- KG 风险只使用最多 5 个明确直接前置，服务于 `check_prerequisite`、排序和建议，
+- KG 风险只使用明确的 `PREREQUISITE_OF`，最多两跳、每跳 5 个（单目标最多 10 个），服务于 `check_prerequisite`、排序和建议，
   不参与目标节点 estimate/state 计算。
 - 公开接口为 `GET /api/learner-model` 和节点详情接口；合法教材但模型关闭、失败或
   不可用时返回中性 envelope，未知教材沿用现有 400 校验。
@@ -30,17 +30,16 @@
 
 - `retrieve_learning_memory_index`：最多 3 个当前教材内、且已由本轮 KG 定位的节点；
   返回 memory summary、最多 5 条跨节点最近 observation、mastery view 和有限
-  teaching hint。
+  teaching hint。每个目标沿明确 `PREREQUISITE_OF` 最多两跳，每跳最多 5 个前置。
 - `retrieve_learning_memory_detail`：最多 3 条，只接受本轮 index 注册且同时绑定
   `evidence_id`、`user_id`、`textbook_id`、`node_id` 的引用；只返回学生问题和最终教师
   回复的短摘录，不返回 thinking 或 tool activities。
 
 memory scope 使用 `contextvars` 按 QA 请求隔离，请求结束即失效。当前轮新写入的
 observation 不进入当前轮的记忆读取结果，下一轮才可见。后端会把 memory 查询状态以
-脱敏的 `learning_memory_status` 活动写入 SSE 和历史记录。当前主树前端尚未为该活动
-增加专用四态文案，仍由通用 `AgentActivity` 展示；因此不能把“正在查询学习记录…”、
-“已读取学习记录”、“学习记录部分可用，继续回答”、“学习记录暂时不可用”记录为已完成
-UI 契约。
+脱敏的 `learning_memory_status` 活动写入 SSE 和历史记录；主树 `AgentActivity` 专门展示
+“正在查询学习记录…”、“已读取学习记录”、“学习记录部分可用，继续回答”、“学习记录暂时不可用”
+四态文案。
 
 ## 重要实现边界
 

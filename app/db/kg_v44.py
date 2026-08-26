@@ -713,6 +713,7 @@ def retrieve_kg_context(
     match_type = "selected_node_id" if node_id else ""
     selected = get_kg_node(node_id or "", textbook_id=textbook_id) if node_id else None
     candidates: list[dict[str, Any]] = []
+    retry_stats: dict[str, Any] | None = None
 
     if node_id and not selected:
         return {
@@ -739,17 +740,49 @@ def retrieve_kg_context(
         elif len(candidates) > 1:
             return _ambiguous_result(query_text, scope, candidates, requested_focus)
         else:
-            return {
-                "status": "not_found",
-                "query": query_text,
-                "scope": scope,
-                "kg_basis_available": False,
-                "requested_focus": requested_focus,
-                "retrieved_focus": [],
-                "empty_focus": [],
-                "focus_stats": {},
-                "message": "当前教材知识图谱中没有找到可定位的知识点；可以继续一般数学回答，但必须说明本轮没有 KG 依据。",
-            }
+            # 句子式 query 一个候选都没有时，用页上下文节点名做包含/相似
+            # 匹配纠正后自动重试一次；重试仍无唯一候选则维持原 not_found。
+            corrected = _correct_query_with_page_names(
+                query_text, textbook_id=textbook_id, page_number=page_number,
+            )
+            if corrected is not None:
+                corrected_query, matched_names = corrected
+                retry_candidates = search_kg_candidates(corrected_query, textbook_id=textbook_id)
+                retry_exact = [
+                    item for item in retry_candidates
+                    if item.get("match_type") in {"exact_name", "exact_alias"}
+                ]
+                retry_stats = {
+                    "original_query": query_text,
+                    "corrected_query": corrected_query,
+                    "matched_page_names": matched_names,
+                }
+                if len(retry_exact) == 1:
+                    chosen = retry_exact[0]
+                elif len(retry_candidates) == 1:
+                    chosen = retry_candidates[0]
+                else:
+                    chosen = None
+                if chosen is not None:
+                    retry_stats["outcome"] = "resolved"
+                else:
+                    retry_stats["outcome"] = "no_unique_match"
+            if not retry_stats or "outcome" not in retry_stats:
+                not_found = {
+                    "status": "not_found",
+                    "query": query_text,
+                    "scope": scope,
+                    "kg_basis_available": False,
+                    "requested_focus": requested_focus,
+                    "retrieved_focus": [],
+                    "empty_focus": [],
+                    "focus_stats": {},
+                    "message": "当前教材知识图谱中没有找到可定位的知识点；可以继续一般数学回答，但必须说明本轮没有 KG 依据。",
+                }
+                if retry_stats is not None:
+                    not_found["focus_stats"] = {"query_retry": retry_stats}
+                    not_found["message"] += "（已用本页知识点名称自动重试一次，仍未定位。）"
+                return not_found
         match_type = str(chosen.get("match_type") or "")
         selected = get_kg_node(str(chosen.get("node_id") or ""), textbook_id=textbook_id)
 
@@ -804,7 +837,87 @@ def retrieve_kg_context(
         result["relationships"] = relationships
     if rule_cases is not None:
         result["rule_cases"] = rule_cases
+    if retry_stats is not None:
+        # 可观测地标注发生了 not_found 自动重试（focus_stats 内为诊断键，
+        # 不与 retrieval focus 同名），对外返回契约保持不变。
+        result["focus_stats"]["query_retry"] = retry_stats
     return result
+
+
+_PAGE_NAME_RETRY_MIN_SCORE = 0.34
+
+
+def _char_bigrams(text: str) -> set[str]:
+    compact = re.sub(r"\s+", "", text or "")
+    if len(compact) < 2:
+        return {compact} if compact else set()
+    return {compact[index:index + 2] for index in range(len(compact) - 1)}
+
+
+def _correct_query_with_page_names(
+    query: str,
+    *,
+    textbook_id: str | None,
+    page_number: int | None,
+) -> tuple[str, list[str]] | None:
+    """用页上下文节点名纠正句子式 query，供 not_found 后重试一次。
+
+    页码 →（PDF 书签）→ 小节 → 本节核心节点名；先按「节点名被 query 包含」
+    匹配（句子式问法常把节点名拆在其中），再按字符 bigram Dice 相似度匹配
+    （覆盖换字/语序不同的问法，如 "交换行列式两行行列式变号" 对
+    "两行互换行列式反号"）。有唯一最佳候选时返回 (纠正后 query, 命中节点名)，
+    否则返回 None；任何一步失败（无页码、无小节、KG 不可达）也返回 None。
+    """
+    clean_book = (textbook_id or "").strip()
+    query_text = (query or "").strip()
+    if not clean_book or not query_text or not page_number:
+        return None
+    try:
+        from app.services.learning.section_page import page_sections
+
+        section_code = page_sections(clean_book).get(int(page_number))
+    except Exception:
+        return None
+    if not section_code:
+        return None
+    try:
+        nodes = list_kg_nodes_by_section(clean_book, section_code)
+    except Exception:
+        return None
+    names: list[str] = []
+    for node in nodes:
+        name = str(node.get("name") or "").strip()
+        if name and name not in names:
+            names.append(name)
+    if not names:
+        return None
+
+    contained = [name for name in names if len(name) >= 2 and name in query_text]
+    if contained:
+        best = max(contained, key=len)
+        return best, sorted(contained, key=len, reverse=True)
+
+    query_bigrams = _char_bigrams(query_text)
+    if not query_bigrams:
+        return None
+    scored: list[tuple[float, str]] = []
+    for name in names:
+        name_bigrams = _char_bigrams(name)
+        if not name_bigrams:
+            continue
+        overlap = len(query_bigrams & name_bigrams)
+        score = 2 * overlap / (len(query_bigrams) + len(name_bigrams))
+        scored.append((score, name))
+    if not scored:
+        return None
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    best_score, best_name = scored[0]
+    if best_score < _PAGE_NAME_RETRY_MIN_SCORE:
+        return None
+    # 并列最佳时不猜测，维持原样 not_found。
+    if len(scored) > 1 and scored[1][0] == best_score:
+        return None
+    return best_name, [best_name]
 
 
 def _ambiguous_result(

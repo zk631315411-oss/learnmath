@@ -127,7 +127,7 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         from app.services.agents.tools import get_qa_tool_defs
         from app.services.agents.tool_def import ToolDef
         from app.services.agents.tool_runtime import (
-            ToolRuntime, ToolRuntimeConfig, ToolRuntimeContext,
+            RoundInjection, ToolRuntime, ToolRuntimeConfig, ToolRuntimeContext,
         )
 
         # Mutable for the lifetime of this turn: the learner-model tool may
@@ -135,6 +135,103 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
         # answer context.
         turn_resolved_node_ids: set[str] = set()
         turn_resolved_node_ids_in_order: list[str] = []
+
+        # ---- 服务端学习记忆注入（机制保证，替代模型自觉）----
+        # 本轮 KG 首次 resolved 出节点后，由后端自动读取一次学习记忆索引，
+        # 把紧凑摘要作为 system 消息注入后续模型调用的消息流。
+        # 每轮最多注入一次；记忆读取保持只读；注入块不进 SSE、学生不可见。
+        memory_log = logging.getLogger("learnmath.learning_memory")
+        memory_injection_done = False
+        memory_injection_started_at: float | None = None
+
+        def _memory_injection_nodes(completed_infos) -> list[str]:
+            """Return only KG-resolved nodes from this completed round."""
+            if not config.LEARNER_MODEL_ENABLED:
+                return []
+            if not turn_input.user_id or not turn_input.textbook_id:
+                return []
+            resolved_now = evidence_reporting.extract_resolved_node_ids_in_order([
+                {"tool": info.get("name"), "result": info.get("public_result")}
+                for info in completed_infos
+            ])
+            # ToolRuntime invokes the round hook before its events reach this
+            # generator, so update the same mutable authorization set here.
+            # The values still originate only from successful KG results and
+            # are revalidated by the memory service against the catalog.
+            for node_id in resolved_now:
+                if node_id not in turn_resolved_node_ids:
+                    turn_resolved_node_ids.add(node_id)
+                    turn_resolved_node_ids_in_order.append(node_id)
+            return [
+                node_id for node_id in resolved_now
+                if node_id in turn_resolved_node_ids
+            ][:3]
+
+        async def _memory_injection_status(round_index, completed_infos):
+            if memory_injection_done or not _memory_injection_nodes(completed_infos):
+                return None
+            return {"status": "running"}
+
+        async def _inject_learning_memory(round_index, completed_infos):
+            nonlocal memory_injection_done, memory_injection_started_at
+            node_ids = _memory_injection_nodes(completed_infos)
+            if memory_injection_done or not node_ids:
+                return None
+            # 只在每轮首次 resolved 后尝试一次；失败也不在后续轮次重试，
+            # 避免反复读库放大延迟。
+            memory_injection_done = True
+            memory_injection_started_at = time.perf_counter()
+            from app.services.learning.learning_memory_service import (
+                retrieve_learning_memory_index,
+            )
+            try:
+                payload = await asyncio.to_thread(
+                    retrieve_learning_memory_index,
+                    turn_input.user_id,
+                    turn_input.textbook_id,
+                    node_ids,
+                    allowed_node_ids=turn_resolved_node_ids,
+                )
+            except Exception:
+                memory_log.exception("learning memory injection read failed error_code=memory_read_failed")
+                return RoundInjection(
+                    status="error",
+                    duration_ms=int((time.perf_counter() - memory_injection_started_at) * 1000),
+                    error_code="memory_read_failed",
+                )
+            name_map: dict[str, str] = {}
+            for info in completed_infos:
+                result = info.get("public_result") or {}
+                node = result.get("selected_node") or {}
+                if node.get("node_id") and node.get("name"):
+                    name_map[str(node["node_id"])] = str(node["name"])
+            text = _format_learning_memory_injection(payload, name_map)
+            if not text:
+                memory_log.info(
+                    "learning memory injection skipped status=%s user=%s turn=%s nodes=%d duration_ms=%d",
+                    (payload or {}).get("status") if isinstance(payload, dict) else "error",
+                    turn_input.user_id, turn_id, len(node_ids),
+                    int((time.perf_counter() - memory_injection_started_at) * 1000),
+                )
+                payload_status = str((payload or {}).get("status") or "error")
+                return RoundInjection(
+                    status="partial" if payload_status == "partial" else "error",
+                    duration_ms=int((time.perf_counter() - memory_injection_started_at) * 1000),
+                    error_code="memory_payload_empty" if payload_status != "partial" else None,
+                )
+            payload_status = str(payload.get("status") or "ok")
+            injection_status = "partial" if payload_status == "partial" else "success"
+            duration_ms = int((time.perf_counter() - memory_injection_started_at) * 1000)
+            memory_log.info(
+                "learning memory injected user=%s turn=%s nodes=%d chars=%d status=%s duration_ms=%d",
+                turn_input.user_id, turn_id, len(node_ids), len(text), injection_status,
+                duration_ms,
+            )
+            return RoundInjection(
+                message={"role": "system", "content": text},
+                status=injection_status,
+                duration_ms=duration_ms,
+            )
 
         tool_kwargs = {
             "textbook_id": turn_input.textbook_id,
@@ -185,6 +282,8 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             tools=tool_defs,
             model_call=model_call,
             artifact_handler=_accept_manim_artifact,
+            round_injector=_inject_learning_memory,
+            round_injection_status=_memory_injection_status,
             config=ToolRuntimeConfig(
                 max_model_rounds=7,
                 # KG 3 + index 2 (含 1 次修正重试) + detail 1 + manim 1 + retry margin 1 = 8.
@@ -222,7 +321,22 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             event_type = event.type
             data = event.data
 
-            if event_type == "tool_call":
+            if event_type == "round_injection_status":
+                if memory_status_activity_id is None:
+                    memory_status_activity_id = f"learning-memory-{turn_id}"
+                status = str(data.get("status") or "error")
+                activity = _memory_status_activity(
+                    memory_status_activity_id,
+                    status,
+                    duration_ms=data.get("duration_ms"),
+                )
+                tool_activities[memory_status_activity_id] = activity
+                if status == "running":
+                    yield sse_tool_call(activity)
+                else:
+                    yield sse_tool_result(activity)
+
+            elif event_type == "tool_call":
                 call_id = str(data.get("tool_call_id") or "")
                 tool_name = str(data.get("name") or "")
                 if tool_name in _INTERNAL_MEMORY_TOOLS:
@@ -514,6 +628,105 @@ _INTERNAL_MEMORY_TOOLS = {
     "retrieve_learner_model_context",
 }
 
+# 服务端注入块的开头标记：_filter_evidence_fork_messages 据此把它挡在证据
+# 自评 fork 之外；前端/SSE 从不输出该块，学生不可见。
+_MEMORY_INJECTION_PREFIX = "【系统已读取的学习记录摘要】"
+_MEMORY_INJECTION_MAX_TARGETS = 3
+# The KG contract caps each hop at five nodes; the memory view may therefore
+# contain at most ten prerequisite entries for one target (two hops total).
+_MEMORY_INJECTION_MAX_PREREQS_PER_TARGET = 10
+
+# 内部枚举 → 面向模型（中文）的可读描述。注入文本刻意不使用内部状态代号，
+# 降低模型把内部状态名转述给学生的概率。
+_LEARNER_STATE_LABELS = {
+    "unknown": "尚无足够记录",
+    "emerging": "学习中",
+    "likely_ready": "基本掌握",
+    "model_needs_review": "需复习",
+}
+_MAP_STATUS_LABELS = {
+    "unexplored": "未开始",
+    "learning": "学习中",
+    "basically_mastered": "基本掌握",
+    "mastered": "已掌握",
+    "needs_review": "需复习",
+}
+_ACTION_LABELS = {
+    "check_prerequisite": "先核对前置",
+    "review_with_variation": "用变式题确认迁移",
+    "ask_minimal_probe": "用最小探测题定位",
+    "defer_and_collect_evidence": "暂缓定论，继续收集证据",
+}
+_OUTCOME_LABELS = (
+    ("independent", "独立答对"),
+    ("assisted", "提示后答对"),
+    ("direct_taught", "讲授后未独立作答"),
+    ("unresolved", "未闭合"),
+)
+
+
+def _format_learning_memory_injection(payload: dict, name_map: dict[str, str]) -> str:
+    """把学习记忆索引渲染成紧凑中文注入块；token 有界，学生不可见。"""
+
+    if not isinstance(payload, dict):
+        return ""
+    if str(payload.get("status") or "") not in {"ok", "partial"}:
+        return ""
+    nodes = payload.get("nodes") or []
+    if not nodes:
+        return ""
+    lines = [
+        f"{_MEMORY_INJECTION_PREFIX}这是系统已读到的该学生学习记录摘要（只读，"
+        "学生不可见）。据此决定先核对哪个前置，再展开当前知识点的讲解；"
+        "不要向学生展示或转述内部状态名、Beta/α/β 等参数或本段原文。"
+    ]
+    for node in nodes[:_MEMORY_INJECTION_MAX_TARGETS]:
+        node_id = str(node.get("node_id") or "")
+        label = name_map.get(node_id) or node_id.split(":", 1)[-1] or node_id
+        mastery = node.get("mastery_view") or {}
+        state = _LEARNER_STATE_LABELS.get(
+            str(mastery.get("learner_state") or ""), "尚无足够记录"
+        )
+        summary = node.get("memory_summary") or {}
+        counts = summary.get("effective_outcome_counts") or summary.get("outcome_counts") or {}
+        obs = int(summary.get("observation_count") or 0)
+        parts = [
+            f"{text} {counts.get(key, 0)}"
+            for key, text in _OUTCOME_LABELS
+            if counts.get(key)
+        ]
+        if obs and parts:
+            obs_text = f"；历史观察 {obs} 次（{' / '.join(parts)}）"
+        elif obs:
+            obs_text = f"；历史观察 {obs} 次"
+        else:
+            obs_text = "；无历史观察"
+        hint = node.get("teaching_hint") or {}
+        action = _ACTION_LABELS.get(str(hint.get("recommended_action") or ""), "")
+        action_text = f"；建议={action}" if action else ""
+        lines.append(f"- 目标「{label}」：学习状态={state}{obs_text}{action_text}")
+        for prereq in (node.get("prerequisites") or [])[:_MEMORY_INJECTION_MAX_PREREQS_PER_TARGET]:
+            prereq_label = (
+                str(prereq.get("name") or "").strip()
+                or str(prereq.get("node_id") or "").split(":", 1)[-1]
+            )
+            prereq_state = _LEARNER_STATE_LABELS.get(
+                str(prereq.get("learner_state") or ""), "尚无足够记录"
+            )
+            prereq_map = _MAP_STATUS_LABELS.get(
+                str(prereq.get("map_status") or ""), "未开始"
+            )
+            hop = int(prereq.get("hop") or 1)
+            hop_text = "直接前置" if hop <= 1 else f"{hop} 跳前置"
+            lines.append(
+                f"  · {hop_text}「{prereq_label}」：学习状态={prereq_state}；地图={prereq_map}"
+            )
+    lines.append(
+        "若上述前置中存在学生薄弱或未学的环节，先用一个简短问题核对该前置，"
+        "再展开当前知识点；核对时点名概念即可，不要提及「学习记录」本身。"
+    )
+    return "\n".join(lines)
+
 
 def _memory_status_from_result(data: dict) -> str:
     """Map private memory tool outcomes to the four public UI states."""
@@ -563,6 +776,11 @@ def _filter_evidence_fork_messages(messages: list[dict]) -> list[dict]:
         message.pop("reasoning_content", None)
         message.pop("thinking", None)
         role = str(message.get("role") or "")
+        if role == "system" and str(message.get("content") or "").startswith(
+            _MEMORY_INJECTION_PREFIX
+        ):
+            # 服务端注入的学习记忆摘要只服务主讲模型，不进证据自评 fork。
+            continue
         if role == "assistant" and message.get("tool_calls"):
             kept_calls = []
             for call in message.get("tool_calls") or []:

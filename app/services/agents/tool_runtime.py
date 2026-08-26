@@ -25,11 +25,32 @@ logger = logging.getLogger("tool_runtime")
 
 RuntimeEventType = Literal[
     "tool_call", "tool_result", "visualization",
-    "thinking_delta", "content_delta", "final",
+    "thinking_delta", "content_delta", "round_injection_status", "final",
 ]
 ModelCall = Callable[..., Awaitable[Any]]
 ArtifactHandler = Callable[[dict[str, Any], ToolOutcome], Awaitable[dict[str, Any] | None]]
 TraceHandler = Callable[[dict[str, Any]], Awaitable[None]]
+# Server-side context injection hook: invoked once per tool round after the
+# round's tool messages have been appended, before the next model call.
+# Receives (round_index, completed outcome summaries) and returns an extra
+# message dict to append to the working list, or None.
+RoundInjector = Callable[[int, list[dict[str, Any]]], Awaitable[Any]]
+RoundInjectionStatusHook = Callable[[int, list[dict[str, Any]]], Awaitable[dict[str, Any] | None]]
+
+
+@dataclass(frozen=True)
+class RoundInjection:
+    """A private message injected between tool rounds plus safe UI metadata.
+
+    The message is never emitted as an SSE payload.  ``status`` is deliberately
+    limited to the public activity vocabulary so a callback cannot accidentally
+    expose model fields or raw memory text through the runtime event stream.
+    """
+
+    message: dict[str, Any] | None = None
+    status: Literal["success", "partial", "error"] = "success"
+    duration_ms: int | None = None
+    error_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -67,6 +88,33 @@ class ToolRuntimeResult:
     model_rounds: int = 0
 
 
+def _coerce_round_injection(value: RoundInjection | dict[str, Any] | None) -> RoundInjection:
+    """Keep legacy dict callbacks working while enforcing a safe result shape."""
+
+    if isinstance(value, RoundInjection):
+        return value
+    if isinstance(value, dict):
+        message = value if value.get("content") else None
+        return RoundInjection(message=message, status="success" if message else "partial")
+    return RoundInjection(status="partial")
+
+
+def _safe_round_injection_status(value: dict[str, Any]) -> dict[str, Any]:
+    """Return only fields allowed in the public runtime activity event."""
+
+    status = str(value.get("status") or "error")
+    if status not in {"running", "success", "partial", "error"}:
+        status = "error"
+    result: dict[str, Any] = {"status": status}
+    duration = value.get("duration_ms")
+    if isinstance(duration, (int, float)) and duration >= 0:
+        result["duration_ms"] = int(duration)
+    error_code = value.get("error_code")
+    if error_code and status == "error":
+        result["error_code"] = str(error_code)[:64]
+    return result
+
+
 class ToolRuntime:
     def __init__(
         self,
@@ -76,12 +124,16 @@ class ToolRuntime:
         config: ToolRuntimeConfig | None = None,
         artifact_handler: ArtifactHandler | None = None,
         trace_handler: TraceHandler | None = None,
+        round_injector: RoundInjector | None = None,
+        round_injection_status: RoundInjectionStatusHook | None = None,
     ) -> None:
         self.tools = tools
         self.model_call = model_call
         self.config = config or ToolRuntimeConfig()
         self.artifact_handler = artifact_handler
         self.trace_handler = trace_handler
+        self.round_injector = round_injector
+        self.round_injection_status = round_injection_status
         self._tool_map = {tool.name: tool for tool in tools}
 
     async def run(self, messages: list[dict[str, Any]], context: ToolRuntimeContext):
@@ -243,6 +295,48 @@ class ToolRuntime:
                         })
                     except Exception:
                         logger.exception("tool trace persistence failed")
+
+            injection_started = False
+            if self.round_injector is not None:
+                completed_summaries = [
+                    {
+                        "name": outcome.tool_name,
+                        "status": outcome.status,
+                        "public_result": outcome.public_result,
+                    }
+                    for _call, outcome, _fingerprint in completed
+                ]
+                if self.round_injection_status is not None:
+                    try:
+                        status_data = await self.round_injection_status(
+                            rounds, completed_summaries,
+                        )
+                    except Exception:
+                        logger.exception("round injection status hook failed")
+                        status_data = None
+                    if isinstance(status_data, dict) and status_data.get("status") == "running":
+                        injection_started = True
+                        yield RuntimeEvent(
+                            "round_injection_status",
+                            _safe_round_injection_status(status_data),
+                        )
+                try:
+                    injection = await self.round_injector(rounds, completed_summaries)
+                except Exception:
+                    logger.exception("round injector failed")
+                    injection = RoundInjection(status="error", error_code="injection_failed")
+                normalized = _coerce_round_injection(injection)
+                if normalized.message and normalized.message.get("content"):
+                    working.append(normalized.message)
+                if injection_started:
+                    yield RuntimeEvent(
+                        "round_injection_status",
+                        _safe_round_injection_status({
+                            "status": normalized.status,
+                            "duration_ms": normalized.duration_ms,
+                            "error_code": normalized.error_code,
+                        }),
+                    )
 
             failure_rounds = 0 if round_success else failure_rounds + 1
             budget_hit = stats["called"] >= self.config.max_total_calls

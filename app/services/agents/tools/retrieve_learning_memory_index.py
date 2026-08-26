@@ -61,7 +61,7 @@ def build_retrieve_learning_memory_index_tool(
         description=(
             "读取当前学生在当前教材内、已由 KG 定位节点的学习记忆索引。"
             "返回节点观察摘要、最近观察、mastery_view 和有限教学提示；"
-            "最多 3 个目标节点，每个最多 5 个明确直接前置。"
+            "最多 3 个目标节点；沿明确 PREREQUISITE_OF 最多两跳，每跳最多 5 个前置（总计最多 10 个）。"
             "这是只读工具，不能修改 evidence 或学生模型。"
         ),
         input_model=RetrieveLearningMemoryIndexInput,

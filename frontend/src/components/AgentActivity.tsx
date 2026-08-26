@@ -68,6 +68,20 @@ function queryText(activity: ToolActivity): string {
   return typeof value === 'string' && value.trim() ? value.trim() : '相关知识点';
 }
 
+function memoryStatusView(activity: ToolActivity) {
+  const status = String(activity.result?.memory_status || 'error');
+  if (status === 'running') {
+    return { label: '正在查询学习记录…', icon: LoaderCircle, color: 'text-indigo-500', spin: true };
+  }
+  if (status === 'partial') {
+    return { label: '学习记录部分可用，继续回答', icon: CircleMinus, color: 'text-amber-500', spin: false };
+  }
+  if (status === 'success') {
+    return { label: '已读取学习记录', icon: CheckCircle2, color: 'text-emerald-600', spin: false };
+  }
+  return { label: '学习记录暂时不可用', icon: XCircle, color: 'text-red-500', spin: false };
+}
+
 function NodeNames({ label, nodes }: { label: string; nodes?: Array<{ name?: string }> }) {
   const names = (nodes || []).map(node => node.name).filter(Boolean);
   if (!names.length) return null;
@@ -85,6 +99,8 @@ export default function AgentActivity({ activities, active }: Props) {
 
   // 过滤内部工具：report_turn_outcome 等自评/系统动作不出现在学生可见面板
   const visible = activities.filter(activity => !INTERNAL_TOOLS.has(activity.tool));
+  const memoryActivities = visible.filter(activity => activity.tool === 'learning_memory_status');
+  const kgActivities = visible.filter(activity => activity.tool !== 'learning_memory_status');
 
   useEffect(() => {
     if (active) setExpanded(true);
@@ -94,27 +110,39 @@ export default function AgentActivity({ activities, active }: Props) {
 
   if (!visible.length) return null;
 
-  const running = visible.some(activity => activity.status === 'running');
-  const hitCount = visible.filter(activity => (
+  const running = kgActivities.some(activity => activity.status === 'running');
+  const hitCount = kgActivities.filter(activity => (
     activity.status === 'success'
     && (activity.result?.status === 'resolved' || activity.result?.found === true)
   )).length;
   return (
     <div className="mb-3 border-b border-slate-100 pb-2.5 dark:border-slate-700/70">
-      <button
-        type="button"
-        onClick={() => setExpanded(value => !value)}
-        className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
-        aria-expanded={expanded}
-      >
-        <Network className={`h-4 w-4 shrink-0 ${running ? 'animate-pulse text-indigo-500' : 'text-slate-400'}`} />
-        <span className="min-w-0 flex-1">{running ? '正在检索知识图谱' : `已检索知识图谱 · 命中 ${hitCount}/${visible.length}`}</span>
-        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-      </button>
+      {memoryActivities.map(activity => {
+        const state = memoryStatusView(activity);
+        const StatusIcon = state.icon;
+        return (
+          <div key={activity.id} className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <StatusIcon className={`h-4 w-4 shrink-0 ${state.color} ${state.spin ? 'animate-spin' : ''}`} />
+            <span>{state.label}</span>
+          </div>
+        );
+      })}
+
+      {!!kgActivities.length && <>
+        <button
+          type="button"
+          onClick={() => setExpanded(value => !value)}
+          className="flex w-full items-center gap-2 text-left text-xs font-medium text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
+          aria-expanded={expanded}
+        >
+          <Network className={`h-4 w-4 shrink-0 ${running ? 'animate-pulse text-indigo-500' : 'text-slate-400'}`} />
+          <span className="min-w-0 flex-1">{running ? '正在检索知识图谱' : `已检索知识图谱 · 命中 ${hitCount}/${kgActivities.length}`}</span>
+          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
 
       {expanded && (
         <div className="mt-2 border-l-2 border-emerald-200 pl-3">
-          {visible.map((activity, index) => {
+          {kgActivities.map((activity, index) => {
             const state = activityState(activity);
             const StatusIcon = state.icon;
             const result = activity.result;
@@ -193,6 +221,7 @@ export default function AgentActivity({ activities, active }: Props) {
           })}
         </div>
       )}
+      </>}
     </div>
   );
 }

@@ -142,20 +142,22 @@ def retrieve_learning_memory_index(
 
         mastery_view: dict[str, Any]
         teaching_hint: dict[str, Any] | None = None
-        if snapshot is None and not canonical_rows:
-            partial = True
-            mastery_view = {
-                "learner_state": None,
-                "map_status": map_status,
-                "stale": True,
-                "updated_at": None,
-            }
+        # A node with no evidence still needs a bounded KG lookup so the Agent
+        # can decide whether to check a prerequisite.  Replay failures with
+        # existing evidence stay fail-closed and do not trigger a second KG
+        # query.  Keeping this decision in one branch prevents duplicate
+        # lookups (and makes the one-read budget observable in tests).
+        prerequisites: list[dict[str, Any]] = []
+        risk: float | None = None
+        kg_available = False
+        if snapshot is not None or not canonical_rows:
             prerequisites, risk, kg_available = _prerequisite_context(
                 user_id, textbook_id, node_id,
             )
-        elif snapshot is None:
-            # Read-time replay failed for this node even though evidence
-            # exists; degrade this node instead of the whole index.
+
+        if snapshot is None:
+            # Read-time replay failed for this node (or no evidence exists);
+            # preserve the memory index while omitting teaching_hint.
             partial = True
             mastery_view = {
                 "learner_state": None,
@@ -170,9 +172,6 @@ def retrieve_learning_memory_index(
                 "stale": False,
                 "updated_at": snapshot.get("computed_at"),
             }
-            prerequisites, risk, kg_available = _prerequisite_context(
-                user_id, textbook_id, node_id,
-            )
             teaching_hint = {
                 "recommended_action": _next_action(
                     snapshot.get("learner_state"),
@@ -183,19 +182,6 @@ def retrieve_learning_memory_index(
             }
             if kg_available:
                 teaching_hint["prerequisite_risk"] = risk
-            result_nodes.append({
-                "node_id": node_id,
-                "memory_summary": memory_summary,
-                "recent_observations": [],
-                "mastery_view": mastery_view,
-                "teaching_hint": teaching_hint,
-                "prerequisites": _public_prerequisites(prerequisites),
-            })
-            continue
-
-        prerequisites, _risk, _kg_available = _prerequisite_context(
-            user_id, textbook_id, node_id,
-        ) if snapshot is not None or canonical_rows else (prerequisites, risk, kg_available)
         node_result = {
             "node_id": node_id,
             "memory_summary": memory_summary,
@@ -220,12 +206,14 @@ def retrieve_learning_memory_index(
     return {
         "status": "partial" if partial else "ok",
         "available": True,
-        "memory_view_version": "learning-memory-v1",
+        "memory_view_version": "learning-memory-v2",
         "textbook_id": textbook_id,
         "nodes": result_nodes,
         "limits": {
             "target_nodes": MAX_TARGET_NODES,
-            "prerequisites_per_node": MAX_PREREQUISITES,
+            "prerequisite_hops": 2,
+            "prerequisites_per_hop": MAX_PREREQUISITES,
+            "prerequisites_total_per_node": MAX_PREREQUISITES * 2,
             "recent_observations_total": MAX_RECENT_OBSERVATIONS,
         },
     }
@@ -410,10 +398,13 @@ def _public_prerequisites(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {
             "node_id": item.get("node_id"),
+            "name": item.get("name"),
             "learner_state": item.get("learner_state") or "unknown",
             "map_status": item.get("map_status") or "unexplored",
             "prerequisite_risk": item.get("risk"),
             "stale": bool(item.get("stale")),
+            # 1 = 直接前置，2 = 前置的前置（沿 PREREQUISITE_OF 递归一跳）。
+            "hop": item.get("hop", 1),
         }
         for item in items
         if item.get("node_id")

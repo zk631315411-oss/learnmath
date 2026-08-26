@@ -60,7 +60,9 @@ export interface KGNodeReference {
 }
 
 export interface KGToolResult {
-  status?: 'resolved' | 'ambiguous' | 'not_found';
+  status?: 'resolved' | 'ambiguous' | 'not_found' | 'ok' | 'partial';
+  // Sanitized runtime status for the read-only learning-memory activity.
+  memory_status?: 'running' | 'success' | 'partial' | 'error';
   kg_basis_available?: boolean;
   found?: boolean;
   message?: string;

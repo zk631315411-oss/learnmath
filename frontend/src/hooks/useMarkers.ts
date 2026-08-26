@@ -60,13 +60,13 @@ export function useMarkers(user: User, currentPage: number, textbookId: string) 
   }, [selectActiveThreadId]);
 
   const handleDeleteMarker = useCallback(async (markerId: string) => {
-    try {
-      if (!user.token) return;
-      await deleteChatHistory(markerId, user.token);
-      setMarkers(prev => prev.filter(m => m.id !== markerId));
-      setActiveMarker(prev => prev?.id === markerId ? null : prev);
-      if (activeThreadId === markerId) selectActiveThreadId(null);
-    } catch {}
+    if (!user.token) throw new Error('authentication_required');
+    // Keep the row until the server confirms deletion.  Callers can now show
+    // a retry/error state instead of silently presenting a false success.
+    await deleteChatHistory(markerId, user.token);
+    setMarkers(prev => prev.filter(m => m.id !== markerId));
+    setActiveMarker(prev => prev?.id === markerId ? null : prev);
+    if (activeThreadId === markerId) selectActiveThreadId(null);
   }, [activeThreadId, selectActiveThreadId, user.token]);
 
   const addMarker = useCallback((marker: Marker) => {

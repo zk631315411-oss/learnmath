@@ -38,7 +38,9 @@ class ModelParameters:
     """All values that affect replay and therefore belong to model_version."""
 
     adapter_version: str = "evidence-beta-v1"
-    model_version: str = "learner-beta-v1"
+    # v2 freezes the depth-two prerequisite aggregation contract alongside
+    # the replay parameters.  The adapter itself remains wire-compatible v1.
+    model_version: str = "learner-beta-v2"
     prior_alpha: float = 1.0
     prior_beta: float = 1.0
     half_life_days: float = 14.0
@@ -46,7 +48,7 @@ class ModelParameters:
     likely_ready_uncertainty: float = 0.35
     likely_ready_independent_count: int = 2
     needs_review_estimate: float = 0.40
-    prerequisite_risk_aggregation: str = "max-direct-v1"
+    prerequisite_risk_aggregation: str = "max-two-hop-v2"
     check_prerequisite_threshold: float = 0.60
 
 
@@ -88,8 +90,8 @@ SUPPORTED_VERSION_PAIRS = frozenset({
 def validate_model_parameters(parameters: ModelParameters) -> None:
     """Reject unversioned math changes and unsupported adapter/model pairs.
 
-    ``learner-beta-v1`` is an immutable contract.  A future implementation may
-    add another supported pair, but it must not silently reinterpret a v1
+    ``learner-beta-v2`` is an immutable contract.  A future implementation may
+    add another supported pair, but it must not silently reinterpret a v2
     snapshot with different priors, thresholds, decay, or KG aggregation.
     """
 
@@ -101,5 +103,5 @@ def validate_model_parameters(parameters: ModelParameters) -> None:
         )
     if parameters != DEFAULT_PARAMETERS:
         raise ValueError(
-            "learner-beta-v1 parameters changed without a model_version bump"
+            "learner-beta-v2 parameters changed without a model_version bump"
         )

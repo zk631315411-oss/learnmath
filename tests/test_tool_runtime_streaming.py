@@ -5,6 +5,7 @@ import unittest
 from types import SimpleNamespace
 
 from app.services.agents.tool_runtime import (
+    RoundInjection,
     ToolRuntime,
     ToolRuntimeConfig,
     ToolRuntimeContext,
@@ -22,6 +23,62 @@ def chunk(*, content="", reasoning="", tool_calls=None):
 
 
 class ToolRuntimeStreamingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_round_injection_emits_running_and_sanitized_completion(self):
+        tool_call = SimpleNamespace(
+            index=0,
+            id="call-kg",
+            function=SimpleNamespace(
+                name="retrieve_kg_context",
+                arguments='{"query":"矩阵乘法"}',
+            ),
+        )
+        responses = iter([
+            [chunk(tool_calls=[tool_call])],
+            [chunk(content="最终回答")],
+        ])
+
+        async def status_hook(_round, completed):
+            if any(item.get("name") == "retrieve_kg_context" for item in completed):
+                return {"status": "running", "private": "must-not-leak"}
+            return None
+
+        async def injector(_round, _completed):
+            return RoundInjection(
+                message={"role": "system", "content": "private memory summary"},
+                status="success",
+                duration_ms=7,
+            )
+
+        tool = ToolDef(
+            name="retrieve_kg_context",
+            display_name="查询知识图谱",
+            description="查询知识图谱",
+            input_schema={"type": "object", "properties": {}},
+            execute=lambda query: {"status": "resolved", "query": query},
+        )
+        calls: list[list[dict]] = []
+
+        async def capturing_model_call(**kwargs):
+            calls.append(kwargs["messages"])
+            return next(responses)
+
+        runtime = ToolRuntime(
+            tools=[tool],
+            model_call=capturing_model_call,
+            round_injector=injector,
+            round_injection_status=status_hook,
+        )
+        events = [event async for event in runtime.run(
+            [{"role": "user", "content": "问题"}],
+            ToolRuntimeContext(turn_id="turn", user_id="user"),
+        )]
+
+        statuses = [event.data for event in events if event.type == "round_injection_status"]
+        self.assertEqual([item["status"] for item in statuses], ["running", "success"])
+        self.assertEqual(statuses[-1]["duration_ms"], 7)
+        self.assertNotIn("private", json.dumps(statuses, ensure_ascii=False))
+        self.assertIn("private memory summary", json.dumps(calls[1], ensure_ascii=False))
+
     async def test_forwards_reasoning_and_content_deltas_before_done(self):
         async def model_call(**_kwargs):
             return [

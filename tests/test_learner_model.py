@@ -168,7 +168,7 @@ class LearnerModelReplayTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             replay_node_evidence(
                 [],
-                parameters=replace(DEFAULT_PARAMETERS, model_version="learner-beta-v2"),
+                parameters=replace(DEFAULT_PARAMETERS, model_version="learner-beta-v3"),
             )
 
     def test_read_projection_decays_without_mutating_beta_or_latest_guard(self):

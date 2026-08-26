@@ -48,6 +48,14 @@ if not config_logger.handlers:
     config_logger.handlers.extend(evidence_logger.handlers or [logging.StreamHandler()])
 config_logger.propagate = False
 
+# 学习记忆服务端注入日志：注入发生与否、注入文本必须在生产容器日志中
+# 可检索（验证「AI 教师读取学习记忆」由机制保证的关键证据）。
+memory_logger = logging.getLogger("learnmath.learning_memory")
+memory_logger.setLevel(logging.INFO)
+if not memory_logger.handlers:
+    memory_logger.handlers.extend(evidence_logger.handlers or [logging.StreamHandler()])
+memory_logger.propagate = False
+
 
 def _log_config_audit() -> None:
     """可选功能的配置审计：只记录"有无"，绝不记录密钥值。

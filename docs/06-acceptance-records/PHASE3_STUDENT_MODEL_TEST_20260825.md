@@ -51,7 +51,9 @@ npm run test:unit
 ## 文档和路径检查
 
 - `git diff --check`：通过；仅有 Git 的 LF/CRLF 提示。
-- 阶段 3文档中引用的后端、工具、前端状态组件和专项测试路径：均存在；检查发现前端尚未专门渲染 `learning_memory_status` 的四条中文状态文案。
+- 阶段 3文档中引用的后端、工具、前端状态组件和专项测试路径：均存在。2026-08-26 收尾修订已由
+  `AgentActivity` 专门渲染 `learning_memory_status` 的四条中文状态文案；同时模型契约升级为
+  `learner-beta-v2`（adapter 仍为 `evidence-beta-v1`），两跳前置每跳最多 5 个。
 - 本记录未检查真实 LLM、浏览器交互或 Docker 干净设备部署；这些是生产后的持续验收项。
 
 ## 结论
