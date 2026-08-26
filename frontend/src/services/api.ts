@@ -64,7 +64,8 @@ export async function getAllChatHistory(userId: string, limit = 500, textbookId?
 }
 
 export async function deleteChatHistory(chatId: string, token: string): Promise<void> {
-  await del(`/chat/history/${chatId}`, token);
+  // 删除是明确的用户操作，失败后由记录面板提供重试；避免通用请求层的多次自动重试让确认框长时间卡在“删除中”。
+  await del(`/chat/history/${chatId}`, token, { maxRetries: 0, timeout: 10_000 });
 }
 
 export async function createChatHistory(data: {

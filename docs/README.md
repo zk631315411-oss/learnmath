@@ -118,6 +118,7 @@
 | `LEARNING_MAP_LADDER_VIEW_TEST_20260821.md` | 梯子视图 v3 的单测、构建、E2E 和视觉审查通过 |
 | `STUDENT_TEST_RUN_20260819.md` | 真实学生链路部分通过，后续闭合 evidence 未通过 |
 | `PHASE3_STUDENT_MODEL_TEST_20260825.md` | 当前主树自动化基线；阶段 3专项测试通过，完整回归和前端单测仍有环境/既有失败项 |
+| `STUDENT_VIEW_MOBILE_REVISION_20260826.md` | 移动端学生视角修订验收通过；截图、面板、空状态和左滑删除专项及单线程全量 E2E 已通过 |
 
 ### 07 决策原因
 

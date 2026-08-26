@@ -30,6 +30,8 @@ type MockOptions = {
   manimArtifacts?: Record<string, unknown>[];
   streamArtifact?: Record<string, unknown>;
   showWelcome?: boolean;
+  authenticated?: boolean;
+  deleteFailure?: boolean;
 };
 
 const R1: Record<string, unknown> = {
@@ -41,6 +43,11 @@ const R2: Record<string, unknown> = {
   id: 't2', question: '线性无关怎么判？', answer: '看齐次线性组合是否只有零解。', page_number: 2,
   marker_y_ratio: 40, marker_type: 'text', textbook_id: 'gaodai_shang', thumbnail: null, crop_bbox: null,
   follow_ups: [], thinking: null, tool_activities: [], created_at: '2026-08-18 09:05:00',
+};
+const RPENDING: Record<string, unknown> = {
+  id: 'tp', question: '等待回答的问题', answer: null, page_number: 1,
+  marker_y_ratio: 45, marker_type: 'text', textbook_id: 'gaodai_shang', thumbnail: null, crop_bbox: null,
+  follow_ups: [], thinking: null, tool_activities: [], generation_status: 'pending', created_at: '2026-08-18 09:10:00',
 };
 
 function normalizedHistoryRecord(id: string, data: Record<string, unknown>): Record<string, unknown> {
@@ -57,6 +64,7 @@ function normalizedHistoryRecord(id: string, data: Record<string, unknown>): Rec
     follow_ups: data.follow_ups ?? [],
     thinking: data.thinking ?? null,
     tool_activities: data.tool_activities ?? [],
+    generation_status: data.generation_status ?? (data.answer ? 'completed' : 'pending'),
     created_at: data.created_at || '2026-08-18 10:00:00',
   };
 }
@@ -64,6 +72,9 @@ function normalizedHistoryRecord(id: string, data: Record<string, unknown>): Rec
 async function mockApp(page: Page, options: MockOptions = {}) {
   if (!options.showWelcome) {
     await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
+  }
+  if (options.authenticated) {
+    await page.addInitScript(() => localStorage.setItem('auth_token', 'e2e-auth-token'));
   }
   let history: Record<string, unknown>[] = (options.initialHistory || []).map(item => ({ ...item }));
   let nextId = 1;
@@ -151,7 +162,9 @@ async function mockApp(page: Page, options: MockOptions = {}) {
   await page.route('**/api/auth/me', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ id: 'e2e-user', username: 'anonymous', is_anonymous: true }),
+    body: JSON.stringify(options.authenticated
+      ? { id: 'e2e-user', username: '学生', is_anonymous: false }
+      : { id: 'e2e-user', username: 'anonymous', is_anonymous: true }),
   }));
   await page.route('**/api/feedback', async route => route.fulfill({
     status: 200,
@@ -251,6 +264,12 @@ async function mockApp(page: Page, options: MockOptions = {}) {
       const data = await route.request().postDataJSON();
       const id = new URL(route.request().url()).pathname.split('/').pop();
       history = history.map(item => item.id === id ? { ...item, ...data, follow_ups: typeof data.follow_ups === 'string' ? JSON.parse(data.follow_ups) : data.follow_ups ?? item.follow_ups } : item);
+      return route.fulfill({ status: 204 });
+    }
+    if (method === 'DELETE') {
+      if (options.deleteFailure) return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'mock delete failure' }) });
+      const id = decodeURIComponent(new URL(route.request().url()).pathname.split('/').pop() || '');
+      history = history.filter(item => item.id !== id);
       return route.fulfill({ status: 204 });
     }
     return route.fulfill({ status: 204 });
@@ -363,6 +382,24 @@ async function pinchMobilePdf(page: Page, startDistance: number, endDistance: nu
   await client.detach();
 }
 
+async function swipeTouch(page: Page, locator: import('@playwright/test').Locator, dx: number, dy = 0) {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  const client = await page.context().newCDPSession(page);
+  const touch = (x: number, y: number) => ({ x, y, id: 1, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(start.x, start.y)] });
+  for (let step = 1; step <= 8; step += 1) {
+    const progress = step / 8;
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [touch(start.x + dx * progress, start.y + dy * progress)],
+    });
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
 async function swipeMobilePdf(page: Page, deltaY: number) {
   const container = page.getByTestId('pdf-scroll-container');
   const box = await container.boundingBox();
@@ -397,7 +434,7 @@ async function openQuestionFromHistory(page: Page, question: string) {
   if (await desktopDrawer.count()) {
     await desktopDrawer.click();
   } else {
-    const utilityButton = page.getByRole('button', { name: '提问记录与学习地图' });
+    const utilityButton = page.getByRole('button', { name: '提问记录' });
     if (await utilityButton.count() && await utilityButton.first().isVisible()) {
       await utilityButton.first().click();
     } else {
@@ -504,9 +541,9 @@ test('utility drawer opens and closes without taking layout width', async ({ pag
   await mockApp(page);
   await enterReader(page);
   await page.getByTitle('打开提问记录').click();
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeHidden();
 });
 
 test('mobile floating tools open the half and full learning panels', async ({ page }, testInfo) => {
@@ -516,8 +553,8 @@ test('mobile floating tools open the half and full learning panels', async ({ pa
   await page.getByRole('button', { name: 'AI 旁批' }).click();
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '关闭', exact: true }).click();
-  await page.getByRole('button', { name: '提问记录与学习地图' }).click();
-  await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '提问记录' }).click();
+  await expect(page.getByText('提问记录', { exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: '关闭', exact: true }).click();
   await expect(page.getByRole('toolbar', { name: '阅读工具' })).toBeVisible();
 });
@@ -896,10 +933,10 @@ test('visual regression archive covers the approved viewports and surfaces', asy
     await expect(page.getByRole('button', { name: '下一页' })).toBeEnabled();
     if (viewport.width >= 1024) {
       await page.getByTitle('打开提问记录').click();
-      await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: '提问记录' })).toBeVisible();
     } else {
-      await page.getByRole('button', { name: '提问记录与学习地图' }).click();
-      await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: '提问记录' }).click();
+      await expect(page.getByText('提问记录', { exact: true }).first()).toBeVisible();
     }
     for (const dark of viewport.themes) await capture('reader-drawer', viewport.width, dark);
   }
@@ -999,11 +1036,11 @@ test('E4 opening the drawer and starting capture keeps overlay surfaces mutually
   await mockApp(page);
   await enterReader(page);
   await page.getByTitle('打开提问记录').click();
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeVisible();
   // The drawer backdrop owns pointer events while open; invoke the toolbar
   // action directly to verify the top-level overlay state transition.
   await page.getByRole('button', { name: '框选', exact: true }).first().evaluate((element) => (element as HTMLButtonElement).click());
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeHidden();
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeHidden();
@@ -1040,6 +1077,98 @@ test('mobile capture flows into the bottom sheet chat input and completes a mock
   await input.fill('移动端这一步为什么成立？');
   await page.getByRole('button', { name: '发送' }).click();
   await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+});
+
+test('mobile capture uses touch copy and does not flash an error while loading', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '框选', exact: true }).click();
+  await expect(page.getByTestId('mobile-capture-error')).toBeHidden();
+  await expect(page.getByTestId('mobile-capture-hint')).toContainText('手指');
+});
+
+test('mobile question records reveal delete on a horizontal left swipe and recover on vertical movement', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1] });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  const row = page.getByTestId('mobile-question-row-t1');
+  await expect(row).toBeVisible();
+  await swipeTouch(page, row, -72);
+  await expect(page.getByTestId('mobile-delete-action')).toBeVisible();
+  await swipeTouch(page, row, 10, 90);
+  await expect(row).toHaveAttribute('data-swipe-offset', '0');
+});
+
+test('anonymous mobile delete offers authentication and keeps the record', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1] });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-t1'), -72);
+  await page.getByTestId('mobile-delete-action').click();
+  await expect(page.getByRole('dialog', { name: '登录后删除提问记录' })).toBeVisible();
+  const prompt = page.getByRole('dialog', { name: '登录后删除提问记录' });
+  await expect(prompt.getByRole('button', { name: '登录', exact: true })).toBeVisible();
+  await expect(prompt.getByRole('button', { name: '注册', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '暂不' }).click();
+  await expect(page.getByText('什么是秩？')).toBeVisible();
+});
+
+test('authenticated mobile delete confirms, removes the row, and preserves the evidence contract', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1], authenticated: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-t1'), -72);
+  await page.getByTestId('mobile-delete-action').click();
+  await expect(page.getByRole('dialog', { name: '确认删除提问记录' })).toBeVisible();
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await expect(page.getByText('还没有提问记录')).toBeVisible();
+});
+
+test('mobile delete failure keeps the record and exposes retry', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1], authenticated: true, deleteFailure: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-t1'), -72);
+  await page.getByTestId('mobile-delete-action').click();
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('删除失败');
+  await expect(page.getByRole('button', { name: '重试删除', exact: true })).toBeVisible();
+  await expect(page.getByText('什么是秩？')).toBeVisible();
+});
+
+test('mobile records keep a generating answer protected from deletion', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [RPENDING] });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-tp'), -72);
+  const deleteButton = page.getByTestId('mobile-delete-action');
+  await expect(deleteButton).toBeDisabled();
+  await expect(deleteButton).toHaveAttribute('aria-label', '回答生成中，完成后可删除');
+});
+
+test('question record empty state explains how to start on each device', async ({ page }, testInfo) => {
+  await mockApp(page);
+  await page.setViewportSize(testInfo.project.name === 'chromium-mobile' ? { width: 390, height: 844 } : { width: 1280, height: 800 });
+  await enterReader(page);
+  if (testInfo.project.name === 'chromium-mobile') await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  else await page.getByTitle('打开提问记录').click();
+  await expect(page.getByText('还没有提问记录', { exact: true })).toBeVisible();
+  const guide = testInfo.project.name === 'chromium-mobile'
+    ? '点击工具栏的“框选”按钮，选中不懂的内容后发起提问。'
+    : '点击“框选”按钮，选中不懂的内容后发起提问。';
+  await expect(page.getByText(guide, { exact: true })).toBeVisible();
 });
 
 test('E5 captured screenshot supports a follow-up in the right chat panel', async ({ page }, testInfo) => {
@@ -1408,8 +1537,8 @@ test('E8 mobile sheet entries and pending screenshot count are visible', async (
   const chatButton = page.getByRole('button', { name: /AI 旁批/ });
   await expect(chatButton).toContainText('1');
   await expect(page.getByAltText('待发送截图')).toBeVisible();
-  await page.getByRole('button', { name: '提问记录与学习地图' }).click();
-  await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '提问记录' }).click();
+  await expect(page.getByText('提问记录', { exact: true }).first()).toBeVisible();
 });
 
 test('E9 dark mode toggles on both map and reader views', async ({ page }, testInfo) => {

@@ -157,7 +157,7 @@ export default function BottomSheet({
       <ToolButton tool="capture" label="框选" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction} accent>
         <Scissors className="h-5 w-5" />
       </ToolButton>
-      <ToolButton tool="utility" label="提问记录与学习地图" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction}>
+      <ToolButton tool="utility" label="提问记录" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction}>
         <PanelLeft className="h-5 w-5" />
       </ToolButton>
     </>
@@ -250,7 +250,7 @@ export default function BottomSheet({
         <div data-testid="mobile-learning-sheet" className={`fixed inset-x-0 bottom-0 z-[80] flex flex-col bg-white shadow-lg dark:bg-slate-900 ${stage === 'half' ? 'h-[55vh] rounded-t-xl' : 'top-0 rounded-none'}`}>
           <div className="flex h-9 shrink-0 items-center justify-between border-b border-slate-200/70 px-3 dark:border-slate-800/70">
             <button type="button" onClick={() => onStageChange('collapsed')} className="icon-button" title="收起" aria-label="收起"><ChevronDown className="h-4 w-4" /></button>
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">{stage === 'half' ? '本页旁批' : '学习工具'}</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">{stage === 'half' ? '本页旁批' : '提问记录'}</span>
             <button type="button" onClick={() => onStageChange('collapsed')} className="icon-button" title="关闭" aria-label="关闭"><X className="h-4 w-4" /></button>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden">{children}</div>

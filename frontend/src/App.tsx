@@ -32,7 +32,7 @@ import { ensureStorageSchema, loadJSON, saveJSON } from './utils/storage';
 import { STORAGE_KEYS } from './utils/storageKeys';
 import { saveWorkspace } from './utils/workspace';
 import { normalizeSectionKey } from './utils/sectionKey';
-import { getSectionPage } from './services/api';
+import { deleteChatHistory, getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
 import WelcomeModal from './components/WelcomeModal';
@@ -282,11 +282,32 @@ export default function App() {
     else { mapHome.retryCatalog(); void mapHome.refresh(); }
   };
 
-  const learningSidebar = (onClose?: () => void) => <LearningSidebar
+  const handleDeleteQuestion = async (marker: Marker) => {
+    if (!user.token || user.isAnonymous) throw new Error('登录后才能删除提问记录');
+    await deleteChatHistory(marker.id, user.token);
+    await Promise.all([questionList.refresh(), markers.refreshMarkers()]);
+    if (markers.activeThreadId === marker.id) {
+      markers.setActiveThreadId(null);
+      markers.setActiveMarker(null);
+      chat.clearMessages();
+      setOverlaySurface('none');
+    }
+  };
+
+  const handleRequestAuth = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
+
+  const learningSidebar = (onClose?: () => void, mobile = false) => <LearningSidebar
     onClose={onClose}
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
     pageSections={pageSections}
     onRenamed={questionList.refresh}
+    mobile={mobile}
+    isAnonymous={user.isAnonymous}
+    onDeleteQuestion={handleDeleteQuestion}
+    onRequestAuth={handleRequestAuth}
   />;
 
   const openDrawer = () => {
@@ -476,7 +497,7 @@ export default function App() {
                 interactionLocked={interactionLocked}
                 onDockInsetsChange={setMobileDockInsets}
               >
-                {sheetStage === 'half' ? pageNotesPanel : learningSidebar(() => setOverlaySurface('none'))}
+                {sheetStage === 'half' ? pageNotesPanel : learningSidebar(() => setOverlaySurface('none'), true)}
               </BottomSheet>}
             </div>
           )}
