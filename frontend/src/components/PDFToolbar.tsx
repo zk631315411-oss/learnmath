@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, PanelLeft, PanelRightClose, PanelRightOpen, Scissors, ZoomIn, ZoomOut } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, ListTree, PanelLeft, PanelRightClose, PanelRightOpen, Scissors, ZoomIn, ZoomOut } from 'lucide-react';
 
 import type { PDFViewerControls, ZoomMode } from './PDFViewer';
 
@@ -10,10 +10,13 @@ interface Props {
   captureDisabled?: boolean;
   chatCollapsed?: boolean;
   onToggleChat?: () => void;
+  onOpenToc?: () => void;
+  tocOpen?: boolean;
+  tocPanel?: ReactNode;
   mobile?: boolean;
 }
 
-export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureDisabled = false, chatCollapsed = false, onToggleChat, mobile = false }: Props) {
+export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureDisabled = false, chatCollapsed = false, onToggleChat, onOpenToc, tocOpen = false, tocPanel, mobile = false }: Props) {
   const currentPage = controls?.currentPage ?? 1;
   const numPages = controls?.numPages ?? 0;
   const zoomMode = controls?.zoomMode ?? 'fit-page';
@@ -36,7 +39,7 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
   };
 
   return (
-    <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-[var(--lm-border)] bg-[var(--lm-surface)] px-3">
+    <div className="relative flex min-h-12 shrink-0 items-center gap-2 border-b border-[var(--lm-border)] bg-[var(--lm-surface)] px-3">
       <div className="flex items-center gap-1" aria-label="页码导航">
         <button
           type="button"
@@ -99,6 +102,9 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
       </div>
 
       {!mobile && <div className="ml-auto flex items-center gap-1">
+        {onOpenToc && <button type="button" onClick={onOpenToc} className={`toolbar-button ${tocOpen ? 'bg-[var(--lm-brand)]/10 text-[var(--lm-brand)]' : ''}`} title="打开教材目录" aria-label="教材目录" aria-expanded={tocOpen}>
+          <ListTree className="h-4 w-4" /><span className="hidden md:inline">目录</span>
+        </button>}
         <button type="button" onClick={onOpenDrawer} className="toolbar-button" title="打开提问记录">
           <PanelLeft className="h-4 w-4" />
           <span className="hidden md:inline">记录</span>
@@ -113,6 +119,7 @@ export default function PDFToolbar({ controls, onOpenDrawer, onCapture, captureD
           </button>
         )}
       </div>}
+      {tocOpen && tocPanel && <div className="absolute right-3 top-full z-[90] pt-2">{tocPanel}</div>}
     </div>
   );
 }

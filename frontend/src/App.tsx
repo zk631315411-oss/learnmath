@@ -37,6 +37,7 @@ import type { TextbookId } from './textbooks';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
 import WelcomeModal from './components/WelcomeModal';
 import FeedbackForm from './components/FeedbackForm';
+import TableOfContents from './components/TableOfContents';
 import { applyProgressDelta } from './hooks/useLearningProgress';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
@@ -64,20 +65,26 @@ export default function App() {
 
   const { selectedPdf, textbookId, setTextbookId } = useTextbookPreference();
 
-  // 换教材时清除残留高亮，避免跨教材串框
-  useEffect(() => { setHighlightNodeId(null); }, [textbookId]);
-
   const { currentPage, setCurrentPage, setTextbookPage } = usePdfPosition(textbookId);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [overlaySurface, setOverlaySurface] = useState<OverlaySurface>('none');
+  const [mobileReaderPanel, setMobileReaderPanel] = useState<'records' | 'toc'>('records');
   const sheetStage: SheetStage = overlaySurface === 'sheet-half' ? 'half' : overlaySurface === 'sheet-full' ? 'full' : 'collapsed';
   const drawerOpen = overlaySurface === 'drawer';
 
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
   const [mobileDockInsets, setMobileDockInsets] = useState<ReaderDockInsets>({ top: 0, right: 0, bottom: 0, left: 0 });
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // 换教材时清除残留高亮和目录状态，避免跨教材串页。
+  useEffect(() => {
+    setHighlightNodeId(null);
+    setTocOpen(false);
+    setMobileReaderPanel('records');
+  }, [textbookId]);
 
   useEffect(() => {
     if (!window.localStorage.getItem(STORAGE_KEYS.welcomeDismissed)) setWelcomeOpen(true);
@@ -294,6 +301,47 @@ export default function App() {
     }
   };
 
+  const closeToc = useCallback(() => {
+    setTocOpen(false);
+    setMobileReaderPanel('records');
+    if (!isDesktop) setOverlaySurface('none');
+  }, [isDesktop]);
+
+  const jumpFromToc = useCallback((page: number) => {
+    capture.clearDraft();
+    setCurrentPage(page);
+    navigatePage('reader', null, { page });
+    saveWorkspace(textbookId, { view: 'reader', page });
+    closeToc();
+  }, [capture.clearDraft, closeToc, navigatePage, setCurrentPage, textbookId]);
+
+  const openToc = useCallback(() => {
+    if (interactionLocked) return;
+    capture.cancel();
+    capture.clearDraft();
+    if (isDesktop) setTocOpen(value => !value);
+    else {
+      setMobileReaderPanel('toc');
+      setOverlaySurface('sheet-full');
+    }
+  }, [capture, interactionLocked, isDesktop]);
+
+  const desktopTocPanel = <TableOfContents
+    chapters={mapHome.tocChapters}
+    currentPage={currentPage}
+    loadChapter={mapHome.openChapter}
+    onSelectPage={jumpFromToc}
+    onClose={closeToc}
+  />;
+  const mobileTocPanel = <TableOfContents
+    chapters={mapHome.tocChapters}
+    currentPage={currentPage}
+    loadChapter={mapHome.openChapter}
+    onSelectPage={jumpFromToc}
+    onClose={closeToc}
+    mobile
+  />;
+
   const handleRequestAuth = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setShowAuthModal(true);
@@ -452,7 +500,7 @@ export default function App() {
                 {selectedPdf && textbookId ? (
                   <>
                     <PDFToolbar controls={pdfControls} onOpenDrawer={openDrawer} onCapture={startCapture} captureDisabled={!selectedPdf || interactionLocked}
-                      chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} />
+                      chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} onOpenToc={openToc} tocOpen={tocOpen} tocPanel={desktopTocPanel} />
                     <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange}
                         markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
@@ -487,17 +535,23 @@ export default function App() {
               {selectedPdf && <BottomSheet
                 boundaryRef={mobileReaderBoundsRef}
                 stage={sheetStage}
-                onStageChange={stage => { if (!interactionLocked) setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none'); }}
+                onStageChange={stage => {
+                  if (interactionLocked) return;
+                  if (stage === 'collapsed') setMobileReaderPanel('records');
+                  setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none');
+                }}
                 unread={chat.unreadCount > 0}
                 pendingCount={chat.pendingImages.length}
-                onOpenChat={() => { if (interactionLocked) return; chat.markRead(); setOverlaySurface('sheet-half'); }}
-                onOpenUtility={() => { if (!interactionLocked) setOverlaySurface('sheet-full'); }}
+                onOpenChat={() => { if (interactionLocked) return; setMobileReaderPanel('records'); chat.markRead(); setOverlaySurface('sheet-half'); }}
+                onOpenUtility={() => { if (!interactionLocked) { setMobileReaderPanel('records'); setOverlaySurface('sheet-full'); } }}
+                onOpenToc={openToc}
                 onCapture={startCapture}
+                panelTitle={mobileReaderPanel === 'toc' ? '教材目录' : '提问记录'}
                 controls={pdfControls}
                 interactionLocked={interactionLocked}
                 onDockInsetsChange={setMobileDockInsets}
               >
-                {sheetStage === 'half' ? pageNotesPanel : learningSidebar(() => setOverlaySurface('none'), true)}
+                {sheetStage === 'half' ? pageNotesPanel : mobileReaderPanel === 'toc' ? mobileTocPanel : learningSidebar(() => setOverlaySurface('none'), true)}
               </BottomSheet>}
             </div>
           )}
