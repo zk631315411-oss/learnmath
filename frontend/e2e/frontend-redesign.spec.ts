@@ -1171,6 +1171,23 @@ test('question record empty state explains how to start on each device', async (
   await expect(page.getByText(guide, { exact: true })).toBeVisible();
 });
 
+test('AI replies carry a compact source annotation inside the response bubble', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  await enterReader(page);
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+  const badge = page.getByTestId('ai-generated-badge').last();
+  await expect(badge).toBeVisible();
+  const badgeBox = await badge.boundingBox();
+  const bubbleBox = await page.locator('.chat-message-assistant').last().boundingBox();
+  expect(badgeBox).not.toBeNull();
+  expect(bubbleBox).not.toBeNull();
+  expect(badgeBox!.x).toBeGreaterThanOrEqual(bubbleBox!.x);
+  expect(badgeBox!.y).toBeGreaterThanOrEqual(bubbleBox!.y);
+  expect(badgeBox!.x + badgeBox!.width).toBeLessThanOrEqual(bubbleBox!.x + bubbleBox!.width);
+});
+
 test('E5 captured screenshot supports a follow-up in the right chat panel', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page);

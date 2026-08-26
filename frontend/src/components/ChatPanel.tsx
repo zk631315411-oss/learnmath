@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { ArrowDown, BrainCircuit, ChevronDown, CircleStop, Send, X } from 'lucide-react';
+import { ArrowDown, BrainCircuit, ChevronDown, CircleStop, Send, Sparkles, X } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import FormulaComposer, { type FormulaComposerHandle } from './formula/FormulaComposer';
 import type { ExternalFormulaDraft } from './formula/FormulaComposer';
@@ -178,6 +178,17 @@ function ChatPanelInner({
                   ? 'chat-message-user rounded-2xl rounded-br-md px-4 py-2.5'
                   : 'chat-message-assistant w-full px-1 py-1 text-slate-700 dark:text-slate-200'
               }`}>
+                {msg.role === 'assistant' && (
+                  <div
+                    data-testid="ai-generated-badge"
+                    aria-label="AI生成内容"
+                    title="AI生成内容"
+                    className="mb-1 flex items-center gap-1 text-[11px] leading-4 text-slate-400 dark:text-slate-500"
+                  >
+                    <Sparkles className="h-3 w-3" aria-hidden="true" />
+                    <span>AI生成</span>
+                  </div>
+                )}
                 {msg.image && (
                   <img src={msg.image} alt="用户截图" className="mb-2 max-w-full rounded-lg"
                     style={{ maxHeight: '200px' }} />
