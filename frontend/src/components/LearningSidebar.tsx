@@ -8,6 +8,7 @@ export default function LearningSidebar(props: {
   questions: Marker[]; questionsLoading: boolean; onSelectQuestion: (marker: Marker) => void;
   pageSections?: Record<string, string>;
   onRenamed?: () => void;
+  onDeleteQuestion?: (marker: Marker) => void | Promise<void>;
 }) {
   return <div className="flex h-full flex-col">
     <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-200 px-3 dark:border-slate-700">
@@ -17,7 +18,7 @@ export default function LearningSidebar(props: {
       {props.onClose && <button type="button" onClick={props.onClose} aria-label="关闭侧栏" title="关闭侧栏" className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><X className="h-4 w-4" /></button>}
     </div>
     <div className="min-h-0 flex-1">
-      <QuestionListPanel items={props.questions} loading={props.questionsLoading} onSelect={props.onSelectQuestion} pageSections={props.pageSections} onRenamed={props.onRenamed} />
+      <QuestionListPanel items={props.questions} loading={props.questionsLoading} onSelect={props.onSelectQuestion} pageSections={props.pageSections} onRenamed={props.onRenamed} onDelete={props.onDeleteQuestion} />
     </div>
   </div>;
 }

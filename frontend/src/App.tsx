@@ -175,6 +175,15 @@ export default function App() {
     }
   };
 
+  // 删除提问记录（桌面端提问记录侧栏的行内入口）：删除后刷新列表；
+  // 若删掉的正是当前打开的线程，同时清空对话区，避免对着已删除的对话继续追问。
+  const handleQuestionDelete = async (marker: Marker) => {
+    const wasActive = markers.activeThreadId === marker.id;
+    await markers.handleDeleteMarker(marker.id);
+    if (wasActive) chat.clearMessages();
+    void questionList.refresh();
+  };
+
   useEffect(() => {
     const request = navigation.threadRestore;
     if (!request || questionList.loading || !questionList.ready) return;
@@ -277,6 +286,7 @@ export default function App() {
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
     pageSections={pageSections}
     onRenamed={questionList.refresh}
+    onDeleteQuestion={handleQuestionDelete}
   />;
 
   const openDrawer = () => {
