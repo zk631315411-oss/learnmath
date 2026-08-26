@@ -83,6 +83,13 @@ def retrieve_learning_memory_index(
     if not clean_ids:
         return {"status": "invalid_scope", "nodes": []}
 
+    # Automatic server-side injection and an explicit Agent index call can
+    # target the same nodes in one QA turn.  Reuse the first bounded result;
+    # the scope is request-local and already enforces user/textbook isolation.
+    cached = scope.get_index_cache(clean_ids)
+    if cached is not None:
+        return cached
+
     try:
         rows = list_evidence_for_user_textbook_nodes(user_id, textbook_id, clean_ids)
     except Exception:
@@ -203,7 +210,7 @@ def retrieve_learning_memory_index(
             node_result["node_id"], []
         )
 
-    return {
+    result = {
         "status": "partial" if partial else "ok",
         "available": True,
         "memory_view_version": "learning-memory-v2",
@@ -217,6 +224,8 @@ def retrieve_learning_memory_index(
             "recent_observations_total": MAX_RECENT_OBSERVATIONS,
         },
     }
+    scope.cache_index(clean_ids, result)
+    return result
 
 
 def retrieve_learning_memory_detail(

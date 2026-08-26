@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from typing import Any
@@ -13,7 +14,27 @@ class MemoryRequestScope:
     textbook_id: str
     qa_turn_id: str | None = None
     refs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # A QA turn may read the same bounded index once for server-side
+    # injection and once for an explicit Agent call.  Keep the result
+    # request-local so the two paths share one logical read without sharing
+    # state across concurrent requests.
+    index_cache: dict[tuple[str, ...], dict[str, Any]] = field(default_factory=dict)
     closed: bool = False
+
+    @staticmethod
+    def _index_key(node_ids: list[str] | tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(sorted(dict.fromkeys(str(node_id).strip() for node_id in node_ids if str(node_id).strip())))
+
+    def get_index_cache(self, node_ids: list[str] | tuple[str, ...]) -> dict[str, Any] | None:
+        if self.closed:
+            return None
+        cached = self.index_cache.get(self._index_key(node_ids))
+        return deepcopy(cached) if cached is not None else None
+
+    def cache_index(self, node_ids: list[str] | tuple[str, ...], value: dict[str, Any]) -> None:
+        if self.closed:
+            return
+        self.index_cache[self._index_key(node_ids)] = deepcopy(value)
 
     def register(self, ref: dict[str, Any]) -> None:
         if self.closed:
@@ -41,6 +62,7 @@ class MemoryRequestScope:
     def close(self) -> None:
         self.closed = True
         self.refs.clear()
+        self.index_cache.clear()
 
 
 _scope: ContextVar[MemoryRequestScope | None] = ContextVar(

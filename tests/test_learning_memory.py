@@ -136,6 +136,36 @@ class LearningMemoryTests(unittest.TestCase):
             5,
         )
 
+    def test_index_reuses_request_local_result_for_same_nodes(self):
+        insert_evidence_rows([{
+            "id": "cache-e1", "user_id": self.user, "node_id": self.node,
+            "textbook_id": self.book, "outcome": "assisted", "scaffolding_level": 1,
+            "created_at": "2026-01-01T00:00:00+00:00",
+        }])
+        scope, token = self._scope()
+        try:
+            with patch(
+                "app.services.learning.learning_memory_service._prerequisite_context",
+                return_value=([], 0.0, False),
+            ), patch(
+                "app.services.learning.learning_memory_service.list_evidence_for_user_textbook_nodes",
+                wraps=__import__(
+                    "app.services.learning.learning_memory_service",
+                    fromlist=["list_evidence_for_user_textbook_nodes"],
+                ).list_evidence_for_user_textbook_nodes,
+            ) as evidence_read:
+                first = retrieve_learning_memory_index(self.user, self.book, [self.node])
+                second = retrieve_learning_memory_index(self.user, self.book, [self.node])
+            self.assertEqual(evidence_read.call_count, 1)
+            self.assertEqual(first, second)
+            # Callers receive copies, so mutating one response cannot poison
+            # the cached response returned to the next caller.
+            first["nodes"][0]["memory_summary"]["observation_count"] = 999
+            third = retrieve_learning_memory_index(self.user, self.book, [self.node])
+            self.assertEqual(third["nodes"][0]["memory_summary"]["observation_count"], 1)
+        finally:
+            reset_memory_scope(token, scope)
+
     def test_live_agent_registers_only_new_memory_tool_names(self):
         tools = get_qa_tool_defs(
             textbook_id=self.book,
