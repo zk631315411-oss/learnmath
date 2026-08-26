@@ -13,7 +13,7 @@ interface Props {
 export default function AuthControls({ user, onLoginClick, onRegisterClick, onLogout }: Props) {
   if (user.token && user.isAnonymous) {
     return (
-      <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+      <div className="flex shrink-0 items-center gap-2 whitespace-nowrap border-l border-slate-200 pl-2 dark:border-slate-700">
         <span className="text-xs text-slate-500 hidden sm:inline dark:text-slate-400">游客</span>
         <button onClick={onLoginClick} className="rounded-lg border border-[var(--lm-brand)] bg-transparent px-2.5 py-1 text-xs font-medium text-[var(--lm-brand)] transition-colors hover:bg-[var(--lm-brand)]/10">登录</button>
         <button onClick={onRegisterClick} className="rounded-lg border border-[var(--lm-border)] bg-transparent px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-[var(--lm-bg)] hidden sm:inline dark:text-slate-400">注册</button>
@@ -22,14 +22,14 @@ export default function AuthControls({ user, onLoginClick, onRegisterClick, onLo
   }
   if (user.token) {
     return (
-      <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+      <div className="flex shrink-0 items-center gap-2 whitespace-nowrap border-l border-slate-200 pl-2 dark:border-slate-700">
         <span className="text-sm font-medium text-slate-700 hidden sm:inline dark:text-slate-200">{user.username}</span>
         <button onClick={onLogout} className="rounded-lg border border-[var(--lm-border)] bg-transparent px-2.5 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-[var(--lm-bg)] dark:text-slate-400 dark:hover:text-slate-300">退出</button>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap border-l border-slate-200 pl-2 dark:border-slate-700">
       <button onClick={onLoginClick} className="rounded-lg border border-[var(--lm-brand)] bg-transparent px-2.5 py-1 text-sm font-medium text-[var(--lm-brand)] transition-colors hover:bg-[var(--lm-brand)]/10">登录</button>
       <button onClick={onRegisterClick} className="rounded-lg border border-[var(--lm-border)] bg-transparent px-2.5 py-1 text-sm font-medium text-slate-400 transition-colors hover:bg-[var(--lm-bg)] hidden sm:inline dark:text-slate-400">注册</button>
     </div>

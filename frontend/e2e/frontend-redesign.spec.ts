@@ -29,6 +29,9 @@ type MockOptions = {
   staticPage?: number | null;
   manimArtifacts?: Record<string, unknown>[];
   streamArtifact?: Record<string, unknown>;
+  showWelcome?: boolean;
+  authenticated?: boolean;
+  deleteFailure?: boolean;
 };
 
 const R1: Record<string, unknown> = {
@@ -40,6 +43,11 @@ const R2: Record<string, unknown> = {
   id: 't2', question: '线性无关怎么判？', answer: '看齐次线性组合是否只有零解。', page_number: 2,
   marker_y_ratio: 40, marker_type: 'text', textbook_id: 'gaodai_shang', thumbnail: null, crop_bbox: null,
   follow_ups: [], thinking: null, tool_activities: [], created_at: '2026-08-18 09:05:00',
+};
+const RPENDING: Record<string, unknown> = {
+  id: 'tp', question: '等待回答的问题', answer: null, page_number: 1,
+  marker_y_ratio: 45, marker_type: 'text', textbook_id: 'gaodai_shang', thumbnail: null, crop_bbox: null,
+  follow_ups: [], thinking: null, tool_activities: [], generation_status: 'pending', created_at: '2026-08-18 09:10:00',
 };
 
 function normalizedHistoryRecord(id: string, data: Record<string, unknown>): Record<string, unknown> {
@@ -56,11 +64,18 @@ function normalizedHistoryRecord(id: string, data: Record<string, unknown>): Rec
     follow_ups: data.follow_ups ?? [],
     thinking: data.thinking ?? null,
     tool_activities: data.tool_activities ?? [],
+    generation_status: data.generation_status ?? (data.answer ? 'completed' : 'pending'),
     created_at: data.created_at || '2026-08-18 10:00:00',
   };
 }
 
 async function mockApp(page: Page, options: MockOptions = {}) {
+  if (!options.showWelcome) {
+    await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
+  }
+  if (options.authenticated) {
+    await page.addInitScript(() => localStorage.setItem('auth_token', 'e2e-auth-token'));
+  }
   let history: Record<string, unknown>[] = (options.initialHistory || []).map(item => ({ ...item }));
   let nextId = 1;
   const streamDelayMs = options.streamDelayMs ?? 350;
@@ -147,7 +162,14 @@ async function mockApp(page: Page, options: MockOptions = {}) {
   await page.route('**/api/auth/me', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ id: 'e2e-user', username: 'anonymous', is_anonymous: true }),
+    body: JSON.stringify(options.authenticated
+      ? { id: 'e2e-user', username: '学生', is_anonymous: false }
+      : { id: 'e2e-user', username: 'anonymous', is_anonymous: true }),
+  }));
+  await page.route('**/api/feedback', async route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'feedback-e2e', status: 'accepted' }),
   }));
   await page.route('**/map-catalog/manifest.json*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manifestFor()) }));
   await page.route('**/map-catalog/*.index.json*', async route => {
@@ -244,6 +266,12 @@ async function mockApp(page: Page, options: MockOptions = {}) {
       history = history.map(item => item.id === id ? { ...item, ...data, follow_ups: typeof data.follow_ups === 'string' ? JSON.parse(data.follow_ups) : data.follow_ups ?? item.follow_ups } : item);
       return route.fulfill({ status: 204 });
     }
+    if (method === 'DELETE') {
+      if (options.deleteFailure) return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'mock delete failure' }) });
+      const id = decodeURIComponent(new URL(route.request().url()).pathname.split('/').pop() || '');
+      history = history.filter(item => item.id !== id);
+      return route.fulfill({ status: 204 });
+    }
     return route.fulfill({ status: 204 });
   });
   await page.route('**/api/qa/solve-stream', async route => {
@@ -291,18 +319,122 @@ async function installStreamSequence(page: Page, responses: Array<{ text: string
 
 async function enterReader(page: Page) {
   await page.goto('/');
+  const welcomeClose = page.getByRole('button', { name: '关闭欢迎说明' });
+  if (await welcomeClose.count() && await welcomeClose.isVisible()) await welcomeClose.click();
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.getByRole('button', { name: /^(直接开始阅读|打开教材|继续学习|复习这一节)$/ }).first().click();
+  if ((page.viewportSize()?.width ?? 1280) < 1024) {
+    await expect(page.getByRole('toolbar', { name: '阅读工具' })).toBeVisible();
+    await expect(page.getByTestId('mobile-page-pager')).toBeVisible();
+  }
   await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: '下一页' }).first()).toBeEnabled();
 }
 
+async function resetMobileDock(page: Page, xRatio = 0.5, yRatio = 0.5) {
+  await page.evaluate(({ x, y }) => {
+    localStorage.setItem('learnmath.mobileReaderDock.v2', JSON.stringify({ version: 2, mode: 'free', xRatio: x, yRatio: y }));
+  }, { x: xRatio, y: yRatio });
+  await page.reload();
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
+}
+
+async function dragMobileDock(page: Page, target: { x: number; y: number }, holdMs = 0, buttonName?: string) {
+  const dock = buttonName ? page.getByRole('button', { name: buttonName, exact: true }) : page.getByTestId('mobile-reader-tools');
+  const box = await dock.boundingBox();
+  expect(box).not.toBeNull();
+  const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  const client = await page.context().newCDPSession(page);
+  const touch = (x: number, y: number) => ({ x, y, id: 1, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(start.x, start.y)] });
+  if (holdMs) await page.waitForTimeout(holdMs);
+  for (let step = 1; step <= 10; step += 1) {
+    const progress = step / 10;
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [touch(start.x + (target.x - start.x) * progress, start.y + (target.y - start.y) * progress)],
+    });
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
+async function pinchMobilePdf(page: Page, startDistance: number, endDistance: number) {
+  const container = page.getByTestId('pdf-scroll-container');
+  const box = await container.boundingBox();
+  expect(box).not.toBeNull();
+  const center = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  const client = await page.context().newCDPSession(page);
+  const touch = (x: number, id: number) => ({ x, y: center.y, id, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [touch(center.x - startDistance / 2, 1), touch(center.x + startDistance / 2, 2)],
+  });
+  for (let step = 1; step <= 8; step += 1) {
+    const distance = startDistance + (endDistance - startDistance) * step / 8;
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [touch(center.x - distance / 2, 1), touch(center.x + distance / 2, 2)],
+    });
+    await page.waitForTimeout(50);
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
+async function swipeTouch(page: Page, locator: import('@playwright/test').Locator, dx: number, dy = 0) {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  const client = await page.context().newCDPSession(page);
+  const touch = (x: number, y: number) => ({ x, y, id: 1, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(start.x, start.y)] });
+  for (let step = 1; step <= 8; step += 1) {
+    const progress = step / 8;
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [touch(start.x + dx * progress, start.y + dy * progress)],
+    });
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
+async function swipeMobilePdf(page: Page, deltaY: number) {
+  const container = page.getByTestId('pdf-scroll-container');
+  const box = await container.boundingBox();
+  expect(box).not.toBeNull();
+  const client = await page.context().newCDPSession(page);
+  const x = box!.x + box!.width / 2;
+  const startY = box!.y + box!.height * 0.72;
+  const touch = (y: number) => ({ x, y, id: 1, radiusX: 2, radiusY: 2, force: 1 });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [touch(startY)] });
+  for (let step = 1; step <= 8; step += 1) {
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [touch(startY - deltaY * step / 8)] });
+    await page.waitForTimeout(30);
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await client.detach();
+}
+
+function isLegacyMapRequest(url: string): boolean {
+  return /\/api\/learning-map\/(?:chapters|nodes)(?:\?|$)/.test(url);
+}
+
 async function openQuestionFromHistory(page: Page, question: string) {
+  const matchingQuestions = page.getByRole('button').filter({ hasText: question });
+  for (let index = 0; index < await matchingQuestions.count(); index += 1) {
+    const candidate = matchingQuestions.nth(index);
+    if (await candidate.isVisible()) {
+      await candidate.click();
+      return;
+    }
+  }
   const desktopDrawer = page.getByTitle('打开提问记录');
   if (await desktopDrawer.count()) {
     await desktopDrawer.click();
   } else {
-    const utilityButton = page.getByRole('button', { name: '提问记录与学习地图' });
+    const utilityButton = page.getByRole('button', { name: '提问记录' });
     if (await utilityButton.count() && await utilityButton.first().isVisible()) {
       await utilityButton.first().click();
     } else {
@@ -310,13 +442,52 @@ async function openQuestionFromHistory(page: Page, question: string) {
       if (await chatButton.count() && await chatButton.first().isVisible()) await chatButton.first().click();
     }
   }
-  await page.getByRole('button', { name: new RegExp(question) }).click();
+  await page.getByRole('button').filter({ hasText: question }).first().click();
 }
+
+test('internal test welcome and feedback flow preserve their explicit dismissal contract', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page, { showWelcome: true });
+  let feedbackAttempts = 0;
+  await page.route('**/api/feedback', async route => {
+    feedbackAttempts += 1;
+    if (feedbackAttempts === 1) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: '反馈暂时无法保存' }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'feedback-e2e', status: 'ok' }) });
+  });
+  await page.goto('/');
+
+  const welcome = page.getByRole('dialog', { name: '欢迎来试用学数有道' });
+  await expect(welcome).toBeVisible();
+  await welcome.getByRole('button', { name: '开始体验' }).click();
+  await expect(welcome).toBeHidden();
+  await page.reload();
+  await expect(welcome).toBeVisible();
+  await welcome.getByRole('button', { name: '不再显示' }).click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('learnmath.welcome.dismissed'))).toBe('1');
+  await page.reload();
+  await expect(welcome).toHaveCount(0);
+
+  await page.getByRole('button', { name: '内测反馈' }).click();
+  const feedback = page.getByRole('dialog', { name: '告诉我们你的使用感受' });
+  await expect(feedback).toBeVisible();
+  await feedback.getByRole('button', { name: '提交反馈' }).click();
+  await expect(feedback.getByRole('alert')).toHaveText('请先选择整体体验评分');
+  await feedback.getByText('5 分', { exact: true }).click();
+  await feedback.getByLabel('最常使用的功能').selectOption({ label: '智能问答' });
+  await feedback.getByRole('button', { name: '提交反馈' }).click();
+  await expect(feedback.getByRole('alert')).toContainText('反馈暂时无法保存');
+  await feedback.getByRole('button', { name: '提交反馈' }).click();
+  await expect(page.getByRole('heading', { name: '感谢你的反馈' })).toBeVisible();
+});
 
 test('first visit opens map and later restores the reader workspace', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page);
   await enterReader(page);
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('learnmath.workspace.gaodai_shang'))).not.toBeNull();
   await page.reload();
   await expect(page.getByRole('button', { name: '框选', exact: true }).first()).toBeVisible();
@@ -370,25 +541,261 @@ test('utility drawer opens and closes without taking layout width', async ({ pag
   await mockApp(page);
   await enterReader(page);
   await page.getByTitle('打开提问记录').click();
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeHidden();
 });
 
-test('mobile handle moves through collapsed, half and full stages', async ({ page }, testInfo) => {
+test('mobile floating tools open the half and full learning panels', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
   await enterReader(page);
-  const handle = page.getByTestId('bottom-sheet-handle');
-  await handle.dispatchEvent('pointerdown', { pointerId: 1, clientY: 780 });
-  await handle.dispatchEvent('pointerup', { pointerId: 1, clientY: 710 });
+  await page.getByRole('button', { name: 'AI 旁批' }).click();
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
-  await handle.dispatchEvent('pointerdown', { pointerId: 2, clientY: 780 });
-  await handle.dispatchEvent('pointerup', { pointerId: 2, clientY: 710 });
-  await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
-  await handle.dispatchEvent('pointerdown', { pointerId: 3, clientY: 710 });
-  await handle.dispatchEvent('pointerup', { pointerId: 3, clientY: 780 });
-  await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.getByRole('button', { name: '提问记录' }).click();
+  await expect(page.getByText('提问记录', { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await expect(page.getByRole('toolbar', { name: '阅读工具' })).toBeVisible();
+});
+
+test('mobile continuous reader stays virtualized and compact across portrait and landscape', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem('learnmath.welcome.dismissed', '1');
+  });
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 512, height: 560 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await enterReader(page);
+
+    const dock = page.getByRole('toolbar', { name: '阅读工具' });
+    await expect(dock).toBeVisible();
+    await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-mobile-continuous', 'true');
+    expect(await page.locator('[data-mobile-pdf-page]').count()).toBe(421);
+    expect(await page.locator('.react-pdf__Page canvas').count()).toBeLessThanOrEqual(5);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+    if (viewport.width === 390) {
+      const brandBox = await page.getByText('学数有道', { exact: true }).boundingBox();
+      const loginBox = await page.getByRole('button', { name: '登录', exact: true }).boundingBox();
+      expect(brandBox?.height).toBeLessThanOrEqual(28);
+      expect(loginBox?.height).toBeLessThanOrEqual(32);
+    }
+
+    const box = await dock.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBe(44);
+    expect(box!.height).toBe(188);
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+
+    if (viewport.width === 390) {
+      await page.getByRole('button', { name: '下一页' }).click();
+      await expect(page.getByRole('button', { name: '当前第 2 页，共 421 页' })).toBeVisible();
+      await page.getByRole('button', { name: /缩放，当前/ }).click();
+      await expect(page.getByRole('toolbar', { name: '缩放工具' })).toBeVisible();
+      await page.getByRole('button', { name: '放大' }).click();
+      await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-zoom-percent', '110');
+      await page.getByRole('button', { name: /恢复适宽/ }).click();
+      await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-zoom-percent', '100');
+    }
+  }
+});
+
+test('mobile reader supports continuous page tracking, direct jumps and anchored pinch zoom', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('learnmath.welcome.dismissed', '1');
+    if (!sessionStorage.getItem('learnmath.pinch-test-initialized')) {
+      localStorage.setItem('learnmath.mobilePdfZoom.v1', '{}');
+      sessionStorage.setItem('learnmath.pinch-test-initialized', '1');
+    }
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+
+  await page.locator('[data-mobile-pdf-page]').nth(2).evaluate(element => element.scrollIntoView());
+  await expect(page.getByRole('button', { name: '当前第 3 页，共 421 页' })).toBeVisible();
+
+  await page.getByRole('button', { name: '当前第 3 页，共 421 页' }).click();
+  await page.getByRole('spinbutton', { name: '跳转页码' }).fill('120');
+  await page.getByRole('spinbutton', { name: '跳转页码' }).press('Enter');
+  await expect(page.getByRole('button', { name: '当前第 120 页，共 421 页' })).toBeVisible();
+  expect(await page.locator('.react-pdf__Page canvas').count()).toBeLessThanOrEqual(5);
+
+  const container = page.getByTestId('pdf-scroll-container');
+  const scrollBefore = await container.evaluate(element => element.scrollTop);
+  await swipeMobilePdf(page, 260);
+  await expect.poll(() => container.evaluate(element => element.scrollTop)).toBeGreaterThan(scrollBefore + 200);
+  await page.waitForTimeout(800);
+
+  const focalBefore = await page.evaluate(() => {
+    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]')!;
+    const rect = container.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const target = document.elementsFromPoint(x, y).map(element => element.closest<HTMLElement>('[data-mobile-pdf-page]')).find(Boolean)!;
+    const targetRect = target.getBoundingClientRect();
+    return { page: target.dataset.mobilePdfPage, ratio: (y - targetRect.top) / targetRect.height };
+  });
+  await pinchMobilePdf(page, 80, 176);
+  await expect(container).toHaveAttribute('data-zoom-percent', '220');
+  expect(await page.evaluate(() => window.visualViewport?.scale || 1)).toBe(1);
+  const focalAfter = await page.evaluate(() => {
+    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]')!;
+    const rect = container.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const target = document.elementsFromPoint(x, y).map(element => element.closest<HTMLElement>('[data-mobile-pdf-page]')).find(Boolean)!;
+    const targetRect = target.getBoundingClientRect();
+    return { page: target.dataset.mobilePdfPage, ratio: (y - targetRect.top) / targetRect.height };
+  });
+  expect(focalAfter.page).toBe(focalBefore.page);
+  expect(focalAfter.ratio).toBeCloseTo(focalBefore.ratio, 1);
+
+  await pinchMobilePdf(page, 160, 40);
+  await expect(container).toHaveAttribute('data-zoom-percent', '75');
+  await pinchMobilePdf(page, 40, 240);
+  await expect(container).toHaveAttribute('data-zoom-percent', '300');
+  await page.reload();
+  await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-zoom-percent', '300');
+});
+
+test('mobile reader dock snaps to all four edges and keeps controls visible', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
+  await enterReader(page);
+
+  for (const mode of ['left', 'right', 'top', 'bottom'] as const) {
+    await resetMobileDock(page);
+    const main = await page.locator('main').boundingBox();
+    expect(main).not.toBeNull();
+    const targets = {
+      left: { x: main!.x + 13, y: main!.y + main!.height / 2 },
+      right: { x: main!.x + main!.width - 13, y: main!.y + main!.height / 2 },
+      top: { x: main!.x + main!.width / 2, y: main!.y + 13 },
+      bottom: { x: main!.x + main!.width / 2, y: main!.y + main!.height - 13 },
+    };
+    await dragMobileDock(page, targets[mode]);
+
+    const dock = page.getByTestId('mobile-reader-tools');
+    await expect(dock).toHaveAttribute('data-dock-mode', mode);
+    const railBox = await dock.boundingBox();
+    expect(railBox).not.toBeNull();
+    if (mode === 'left' || mode === 'right') {
+      expect(railBox!.width).toBe(44);
+      expect(railBox!.height).toBe(188);
+    } else {
+      expect(railBox!.width).toBe(188);
+      expect(railBox!.height).toBe(44);
+    }
+
+    await page.getByRole('button', { name: /缩放，当前/ }).click();
+    const popupBox = await page.getByRole('toolbar', { name: '缩放工具' }).boundingBox();
+    expect(popupBox).not.toBeNull();
+    if (mode === 'left') expect(popupBox!.x).toBeGreaterThan(railBox!.x + railBox!.width);
+    if (mode === 'right') expect(popupBox!.x + popupBox!.width).toBeLessThan(railBox!.x);
+    if (mode === 'top') expect(popupBox!.y).toBeGreaterThan(railBox!.y + railBox!.height);
+    if (mode === 'bottom') expect(popupBox!.y + popupBox!.height).toBeLessThan(railBox!.y);
+    await page.getByRole('button', { name: '关闭缩放工具' }).click();
+  }
+});
+
+test('mobile reader dock persists and long press restores a draggable free ball', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
+  await enterReader(page);
+  const main = await page.locator('main').boundingBox();
+  expect(main).not.toBeNull();
+  const chatButton = page.getByRole('button', { name: 'AI 旁批', exact: true });
+  const buttonBox = await chatButton.boundingBox();
+  expect(buttonBox).not.toBeNull();
+  await dragMobileDock(page, { x: buttonBox!.x + buttonBox!.width / 2, y: buttonBox!.y + buttonBox!.height / 2 }, 380, 'AI 旁批');
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
+  await expect(page.getByText('本页旁批', { exact: true })).toHaveCount(0);
+  const freeBox = await page.getByTestId('mobile-reader-tools').boundingBox();
+  expect(freeBox?.width).toBe(48);
+  expect(freeBox?.height).toBe(48);
+
+  await dragMobileDock(page, { x: main!.x + main!.width - 13, y: main!.y + main!.height / 2 });
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'right');
+  await page.reload();
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'right');
+
+  const rail = await page.getByTestId('mobile-reader-tools').boundingBox();
+  expect(rail).not.toBeNull();
+  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + main!.height / 2 }, 380, '框选');
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
+  await expect(page.getByText('裁剪截图', { exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'free');
+});
+
+test('mobile reader dock avoids the half sheet without overwriting its stored position', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
+  await enterReader(page);
+  const before = await page.getByTestId('mobile-reader-tools').boundingBox();
+  const storedBefore = await page.evaluate(() => localStorage.getItem('learnmath.mobileReaderDock.v2'));
+
+  await page.getByRole('button', { name: 'AI 旁批' }).click();
+  const sheet = await page.getByTestId('mobile-learning-sheet').boundingBox();
+  const constrained = await page.getByTestId('mobile-reader-tools').boundingBox();
+  const pager = await page.getByTestId('mobile-page-pager').boundingBox();
+  expect(sheet).not.toBeNull();
+  expect(constrained).not.toBeNull();
+  expect(constrained!.y + constrained!.height).toBeLessThanOrEqual(sheet!.y - 7);
+  expect(pager!.y + pager!.height).toBeLessThanOrEqual(sheet!.y - 7);
+  expect(await page.evaluate(() => localStorage.getItem('learnmath.mobileReaderDock.v2'))).toBe(storedBefore);
+
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  const restored = await page.getByTestId('mobile-reader-tools').boundingBox();
+  expect(restored?.y).toBeCloseTo(before!.y, 0);
+});
+
+test('mobile reader dock keeps pending badges visible on the top and bottom edges', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
+  await enterReader(page);
+  await page.getByRole('button', { name: '框选', exact: true }).click();
+  await expect(page.getByText('裁剪截图', { exact: true })).toBeVisible({ timeout: 5000 });
+  await page.getByRole('button', { name: '提问', exact: true }).last().click();
+  await expect(page.getByAltText('待发送截图')).toBeVisible();
+  await page.getByRole('button', { name: '收起', exact: true }).click();
+
+  const main = await page.locator('main').boundingBox();
+  expect(main).not.toBeNull();
+  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + 13 }, 380, 'AI 旁批');
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'top');
+  let badge = await page.getByTestId('mobile-reader-tools-badge').first().boundingBox();
+  expect(badge).not.toBeNull();
+  expect(badge!.y).toBeGreaterThanOrEqual(main!.y);
+  expect(badge!.y + badge!.height).toBeLessThan(main!.y + main!.height);
+
+  await dragMobileDock(page, { x: main!.x + main!.width / 2, y: main!.y + main!.height - 13 }, 380, 'AI 旁批');
+  await expect(page.getByTestId('mobile-reader-tools')).toHaveAttribute('data-dock-mode', 'bottom');
+  badge = await page.getByTestId('mobile-reader-tools-badge').first().boundingBox();
+  expect(badge).not.toBeNull();
+  expect(badge!.y).toBeGreaterThanOrEqual(main!.y);
+  expect(badge!.y + badge!.height).toBeLessThanOrEqual(main!.y + main!.height);
 });
 
 test('capture flows into the chat input and streams a complete answer', async ({ page }, testInfo) => {
@@ -526,10 +933,10 @@ test('visual regression archive covers the approved viewports and surfaces', asy
     await expect(page.getByRole('button', { name: '下一页' })).toBeEnabled();
     if (viewport.width >= 1024) {
       await page.getByTitle('打开提问记录').click();
-      await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: '提问记录' })).toBeVisible();
     } else {
-      await page.getByRole('button', { name: '提问记录与学习地图' }).click();
-      await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: '提问记录' }).click();
+      await expect(page.getByText('提问记录', { exact: true }).first()).toBeVisible();
     }
     for (const dark of viewport.themes) await capture('reader-drawer', viewport.width, dark);
   }
@@ -629,17 +1036,17 @@ test('E4 opening the drawer and starting capture keeps overlay surfaces mutually
   await mockApp(page);
   await enterReader(page);
   await page.getByTitle('打开提问记录').click();
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeVisible();
   // The drawer backdrop owns pointer events while open; invoke the toolbar
   // action directly to verify the top-level overlay state transition.
   await page.getByRole('button', { name: '框选', exact: true }).first().evaluate((element) => (element as HTMLButtonElement).click());
-  await expect(page.getByRole('dialog', { name: '学习工具' })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: '提问记录' })).toBeHidden();
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeHidden();
 });
 
-// 框选 → 确认截图 → 预览弹层点「提问」：截图作为待发送图片进入聊天输入区
+// 框选后在选区操作条点「提问」：截图作为待发送图片进入聊天输入区。
 async function captureToChatInput(page: Page, nearRightEdge = false) {
   await page.getByRole('button', { name: '框选', exact: true }).first().click();
   await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
@@ -653,8 +1060,7 @@ async function captureToChatInput(page: Page, nearRightEdge = false) {
   await page.mouse.move(endX, box!.y + 260, { steps: 8 });
   await page.waitForTimeout(50);
   await page.mouse.up();
-  await page.getByTitle('确认截图').click();
-  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提问' }).click();
+  await page.getByRole('button', { name: '提问', exact: true }).last().click();
   await expect(page.getByAltText('待发送截图')).toBeVisible();
 }
 
@@ -665,13 +1071,121 @@ test('mobile capture flows into the bottom sheet chat input and completes a mock
   await enterReader(page);
   await page.getByRole('button', { name: '框选', exact: true }).click();
   await expect(page.getByText('裁剪截图', { exact: true })).toBeVisible({ timeout: 5000 });
-  await page.getByRole('button', { name: '确认截取' }).click();
-  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提问' }).click();
+  await page.getByRole('button', { name: '提问', exact: true }).last().click();
   await expect(page.getByAltText('待发送截图')).toBeVisible();
   const input = page.getByRole('textbox', { name: '输入问题…' });
   await input.fill('移动端这一步为什么成立？');
   await page.getByRole('button', { name: '发送' }).click();
   await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+});
+
+test('mobile capture uses touch copy and does not flash an error while loading', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '框选', exact: true }).click();
+  await expect(page.getByTestId('mobile-capture-error')).toBeHidden();
+  await expect(page.getByTestId('mobile-capture-hint')).toContainText('手指');
+});
+
+test('mobile question records reveal delete on a horizontal left swipe and recover on vertical movement', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1] });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  const row = page.getByTestId('mobile-question-row-t1');
+  await expect(row).toBeVisible();
+  await swipeTouch(page, row, -72);
+  await expect(page.getByTestId('mobile-delete-action')).toBeVisible();
+  await swipeTouch(page, row, 10, 90);
+  await expect(row).toHaveAttribute('data-swipe-offset', '0');
+});
+
+test('anonymous mobile delete offers authentication and keeps the record', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1] });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-t1'), -72);
+  await page.getByTestId('mobile-delete-action').click();
+  await expect(page.getByRole('dialog', { name: '登录后删除提问记录' })).toBeVisible();
+  const prompt = page.getByRole('dialog', { name: '登录后删除提问记录' });
+  await expect(prompt.getByRole('button', { name: '登录', exact: true })).toBeVisible();
+  await expect(prompt.getByRole('button', { name: '注册', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '暂不' }).click();
+  await expect(page.getByText('什么是秩？')).toBeVisible();
+});
+
+test('authenticated mobile delete confirms, removes the row, and preserves the evidence contract', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1], authenticated: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-t1'), -72);
+  await page.getByTestId('mobile-delete-action').click();
+  await expect(page.getByRole('dialog', { name: '确认删除提问记录' })).toBeVisible();
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await expect(page.getByText('还没有提问记录')).toBeVisible();
+});
+
+test('mobile delete failure keeps the record and exposes retry', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [R1], authenticated: true, deleteFailure: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-t1'), -72);
+  await page.getByTestId('mobile-delete-action').click();
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('删除失败');
+  await expect(page.getByRole('button', { name: '重试删除', exact: true })).toBeVisible();
+  await expect(page.getByText('什么是秩？')).toBeVisible();
+});
+
+test('mobile records keep a generating answer protected from deletion', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page, { initialHistory: [RPENDING] });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await enterReader(page);
+  await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  await swipeTouch(page, page.getByTestId('mobile-question-row-tp'), -72);
+  const deleteButton = page.getByTestId('mobile-delete-action');
+  await expect(deleteButton).toBeDisabled();
+  await expect(deleteButton).toHaveAttribute('aria-label', '回答生成中，完成后可删除');
+});
+
+test('question record empty state explains how to start on each device', async ({ page }, testInfo) => {
+  await mockApp(page);
+  await page.setViewportSize(testInfo.project.name === 'chromium-mobile' ? { width: 390, height: 844 } : { width: 1280, height: 800 });
+  await enterReader(page);
+  if (testInfo.project.name === 'chromium-mobile') await page.getByRole('button', { name: '提问记录', exact: true }).click();
+  else await page.getByTitle('打开提问记录').click();
+  await expect(page.getByText('还没有提问记录', { exact: true })).toBeVisible();
+  const guide = testInfo.project.name === 'chromium-mobile'
+    ? '点击工具栏的“框选”按钮，选中不懂的内容后发起提问。'
+    : '点击“框选”按钮，选中不懂的内容后发起提问。';
+  await expect(page.getByText(guide, { exact: true })).toBeVisible();
+});
+
+test('AI replies carry a compact source annotation inside the response bubble', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-desktop');
+  await mockApp(page);
+  await enterReader(page);
+  await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
+  await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
+  const badge = page.getByTestId('ai-generated-badge').last();
+  await expect(badge).toBeVisible();
+  const badgeBox = await badge.boundingBox();
+  const bubbleBox = await page.locator('.chat-message-assistant').last().boundingBox();
+  expect(badgeBox).not.toBeNull();
+  expect(bubbleBox).not.toBeNull();
+  expect(badgeBox!.x).toBeGreaterThanOrEqual(bubbleBox!.x);
+  expect(badgeBox!.y).toBeGreaterThanOrEqual(bubbleBox!.y);
+  expect(badgeBox!.x + badgeBox!.width).toBeLessThanOrEqual(bubbleBox!.x + bubbleBox!.width);
 });
 
 test('E5 captured screenshot supports a follow-up in the right chat panel', async ({ page }, testInfo) => {
@@ -703,31 +1217,29 @@ test('E6 switching between map and reader preserves the active conversation', as
   await expect(page.getByText('秩是矩阵中线性无关行（列）的最大数。')).toBeVisible();
 });
 
-test('E7 chapter card opens the chapter map and its primary action enters the reader', async ({ page }, testInfo) => {
+test('E7 chapter panorama expands inline and the primary action enters the reader', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page);
   await page.goto('/');
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
-  await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
-  await page.getByTestId('overview-section-1.1').click();
   await expect(page.getByTestId('ladder-section-1.1')).toBeVisible();
   const sectionRequests: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/textbook/section-page')) sectionRequests.push(request.url()); });
-  await page.getByRole('button', { name: '开始本章' }).click();
+  await page.getByRole('button', { name: '打开教材' }).click();
   await expect(page.getByRole('button', { name: '框选', exact: true })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('26');
+  await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('1');
   expect(sectionRequests).toHaveLength(0);
 });
 
-test('E7 chapter map falls back without a blank reader on a scan miss', async ({ page }, testInfo) => {
+test('E7 reader escape hatch works when static chapter page data is absent', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page, { staticPage: null });
   await page.goto('/');
   await expect(page.getByText('学习地图', { exact: true }).first()).toBeVisible();
   await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await page.getByRole('button', { name: '开始本章' }).click();
+  await expect(page.getByTestId('ladder-section-1.1')).toBeVisible();
+  await page.getByRole('button', { name: '打开教材' }).click();
   await expect(page.getByRole('button', { name: '框选', exact: true })).toBeVisible();
 });
 
@@ -747,7 +1259,7 @@ test('M1 map textbook selector switches the map data', async ({ page }, testInfo
   });
   const legacyRequests: string[] = [];
   page.on('request', request => {
-    if (request.url().includes('/api/learning-map/')) legacyRequests.push(request.url());
+    if (isLegacyMapRequest(request.url())) legacyRequests.push(request.url());
   });
   await page.goto('/');
   const selector = page.getByRole('button', { name: '选择教材' });
@@ -800,7 +1312,7 @@ test('M2 map cache is isolated when the authenticated user changes', async ({ pa
   await page.goto('/');
   await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
   const legacyRequests: string[] = [];
-  page.on('request', request => { if (request.url().includes('/api/learning-map/')) legacyRequests.push(request.url()); });
+  page.on('request', request => { if (isLegacyMapRequest(request.url())) legacyRequests.push(request.url()); });
 
   await page.unroute('**/api/auth/anonymous?*');
   await page.route('**/api/auth/anonymous?*', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: 'e2e-token-b', token_type: 'bearer', user_id: 'e2e-user-b', username: 'anonymous-b', is_anonymous: true }) }));
@@ -837,11 +1349,11 @@ test('M3 static chapter index renders without legacy node requests', async ({ pa
   test.skip(testInfo.project.name !== 'chromium-desktop');
   await mockApp(page);
   const legacyRequests: string[] = [];
-  page.on('request', request => { if (request.url().includes('/api/learning-map/')) legacyRequests.push(request.url()); });
+  page.on('request', request => { if (isLegacyMapRequest(request.url())) legacyRequests.push(request.url()); });
   await page.goto('/');
   await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
   await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await expect(page.getByRole('button', { name: '开始本章' })).toBeVisible();
+  await expect(page.getByTestId('ladder-section-1.1')).toBeVisible();
   expect(legacyRequests).toHaveLength(0);
 });
 
@@ -887,9 +1399,8 @@ test('M6 knowledge section takes priority over an unrelated source question page
   });
   await page.goto('/');
   await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await page.getByTestId('overview-section-1.2').click();
-  await page.getByRole('button', { name: /线性方程组，学习中/ }).click();
-  await page.getByTestId('node-detail-card').getByRole('button', { name: '继续学习' }).click();
+  await page.getByTestId('ladder-section-1.2').getByRole('button', { name: '线性方程组' }).click();
+  await page.getByRole('button', { name: '去学这个 →' }).click();
   await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('26');
 });
 
@@ -913,9 +1424,8 @@ test('M6 falls back from node section to the chapter first section', async ({ pa
   page.on('request', request => { if (request.url().includes('/api/textbook/section-page')) sectionsRequested.push(request.url()); });
   await page.goto('/');
   await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await page.getByTestId('overview-section-1.2').click();
-  await page.getByRole('button', { name: /线性方程组，学习中/ }).click();
-  await page.getByTestId('node-detail-card').getByRole('button', { name: '继续学习' }).click();
+  await page.getByTestId('ladder-section-1.2').getByRole('button', { name: '线性方程组' }).click();
+  await page.getByRole('button', { name: '去学这个 →' }).click();
   await expect(page.getByRole('textbox', { name: '当前页码' })).toHaveValue('26');
   expect(sectionsRequested).toHaveLength(0);
 });
@@ -930,7 +1440,7 @@ test('M7 progress errors keep the static map and reading escape hatch', async ({
   await expect(page.locator('main ul').getByText('线性方程组', { exact: true })).toBeVisible();
 });
 
-test('B1 chapter map: overview → sine ladder → inline detail card → cross-chapter chip', async ({ page }, testInfo) => {
+test('B1 chapter panorama exposes the sine ladder, detail card, methods and problem types', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop');
   const first = {
     chapter: '第1章 线性方程组', node_count: 3,
@@ -962,36 +1472,30 @@ test('B1 chapter map: overview → sine ladder → inline detail card → cross-
   } } });
   await page.goto('/');
   await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
-  // 首屏是章总览（不画图），点节行进入梯子
-  await expect(page.getByTestId('overview-section-1.1 消元法')).toBeVisible();
-  await page.getByTestId('overview-section-1.1 消元法').click();
-  await expect(page.getByTestId('ladder-section-1.1 消元法')).toBeVisible();
-  // 题型默认收起，梯子上只有核心节点
-  await expect(page.getByLabel(/参数方程组题型，未探索/)).toBeHidden();
-  // 点击图形 → 内联详情卡（聚焦子图 + 关系 chips）
-  await page.getByLabel(/线性方程组，学习中/).click();
-  const card = page.getByTestId('node-detail-card');
-  await expect(card).toBeVisible();
-  await expect(card.getByTestId('focus-subgraph')).toBeVisible();
-  // 出边 chip 钻取到邻居；n2 有一条通往第2章的跨章边
-  await card.getByRole('button', { name: /上位于 → 矩阵消元法/ }).click();
-  await expect(card.getByText(/通往 第2章 矩阵/)).toBeVisible();
-  await card.getByRole('button', { name: '关闭详情' }).click();
-  await expect(page.getByTestId('node-detail-card')).toBeHidden();
-  // 显示题型开关：题型侧枝出现
-  await page.getByText('显示题型', { exact: true }).click();
-  await expect(page.getByLabel(/参数方程组题型，未探索/)).toBeVisible();
+  const ladder = page.getByTestId('ladder-section-1.1 消元法');
+  await expect(ladder).toBeVisible();
+  await expect(ladder.getByRole('button', { name: '参数方程组题型' })).toHaveCount(0);
+  await ladder.getByRole('button', { name: '线性方程组' }).click();
+  await expect(page.getByRole('heading', { name: '线性方程组', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '关闭详情' })).toBeVisible();
+  await page.getByRole('button', { name: '矩阵消元法', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '矩阵消元法' })).toBeVisible();
+  await page.getByRole('button', { name: '参数方程组题型', exact: true }).last().click();
+  await expect(page.getByRole('heading', { name: '参数方程组题型' })).toBeVisible();
+  await page.getByRole('button', { name: '关闭详情' }).click();
+  await expect(page.getByRole('button', { name: '关闭详情' })).toHaveCount(0);
 });
 
-test('B2 mobile chapter view defaults to list and can switch to the ladder', async ({ page }, testInfo) => {
+test('B2 mobile chapter map expands directly into the ladder', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
   await page.goto('/');
-  await page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first().click();
-  await expect(page.getByTitle('列表视图')).toHaveAttribute('aria-pressed', 'true');
-  await page.getByTitle('地图视图').click();
-  await expect(page.getByTestId('chapter-ladder-view')).toBeVisible();
+  const welcomeClose = page.getByRole('button', { name: '关闭欢迎说明' });
+  if (await welcomeClose.count() && await welcomeClose.isVisible()) await welcomeClose.click();
+  const chapterMapButton = page.locator('main li').filter({ hasText: /^第 1 章/ }).getByTestId('chapter-map-button').first();
+  await chapterMapButton.click();
+  await expect(chapterMapButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: '线性方程组', exact: true })).toBeVisible();
 });
 
 test('D1 SSE progress delta updates the map without a full progress refetch', async ({ page }, testInfo) => {
@@ -1021,7 +1525,7 @@ test('D1 SSE progress delta updates the map without a full progress refetch', as
   await page.getByRole('button', { name: '发送' }).click();
   await expect(page.getByText('先观察系数矩阵的秩。')).toBeVisible();
   await page.locator('header').getByRole('button', { name: '地图' }).click();
-  await expect(page.getByText('全部掌握', { exact: true })).toBeVisible();
+  await expect(page.getByText('全部学过', { exact: true })).toBeVisible();
   expect(progressRequests).toBe(1);
 });
 
@@ -1040,22 +1544,18 @@ test('E8 mobile sheet entries and pending screenshot count are visible', async (
   await mockApp(page, { initialHistory: [R1, R2] });
   await page.setViewportSize({ width: 390, height: 844 });
   await enterReader(page);
-  const handle = page.getByTestId('bottom-sheet-handle');
-  await handle.dispatchEvent('pointerdown', { pointerId: 11, clientY: 780 });
-  await handle.dispatchEvent('pointerup', { pointerId: 11, clientY: 710 });
+  await page.getByRole('button', { name: 'AI 旁批' }).click();
   await expect(page.getByText('本页旁批', { exact: true })).toBeVisible();
   await openQuestionFromHistory(page, '什么是秩？');
   await expect(page.getByText('对话视图', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '框选', exact: true }).click();
   await expect(page.getByText('裁剪截图', { exact: true })).toBeVisible({ timeout: 5000 });
-  await page.getByRole('button', { name: '确认截取' }).click();
-  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提问' }).click();
+  await page.getByRole('button', { name: '提问', exact: true }).last().click();
   const chatButton = page.getByRole('button', { name: /AI 旁批/ });
   await expect(chatButton).toContainText('1');
   await expect(page.getByAltText('待发送截图')).toBeVisible();
-  await handle.dispatchEvent('pointerdown', { pointerId: 12, clientY: 780 });
-  await handle.dispatchEvent('pointerup', { pointerId: 12, clientY: 710 });
-  await expect(page.getByText('学习工具', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '提问记录' }).click();
+  await expect(page.getByText('提问记录', { exact: true }).first()).toBeVisible();
 });
 
 test('E9 dark mode toggles on both map and reader views', async ({ page }, testInfo) => {
@@ -1275,7 +1775,7 @@ test('E17 duplicate done events apply one progress revision', async ({ page }, t
   }, delta);
   await page.getByRole('button', { name: '这页哪里没看懂？' }).click();
   await page.locator('header').getByRole('button', { name: '地图' }).click();
-  await expect(page.getByText('全部掌握', { exact: true })).toBeVisible();
+  await expect(page.getByText('全部学过', { exact: true })).toBeVisible();
   await expect(page.getByText('1 / 1 已探索', { exact: true })).toBeVisible();
 });
 

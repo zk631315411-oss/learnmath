@@ -117,6 +117,9 @@ export function useMapHomeData(
   if (progress.error) errors.__progress = progress.error;
   return {
     chapters,
+    // The manifest's chapter summaries are also the reader's lightweight TOC.
+    // Full section details remain lazy-loaded through openChapter.
+    tocChapters: entry?.chapters || [],
     nodesByChapter,
     edgesByChapter,
     errors,

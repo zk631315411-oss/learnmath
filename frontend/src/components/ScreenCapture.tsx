@@ -38,6 +38,7 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
   const [confirmed, setConfirmed] = useState(false);  // 选区已确认，等用户点 ✓
   const [isCapturing, setIsCapturing] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropStatus, setCropStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const maskRef = useRef<HTMLDivElement>(null);       // 蒙层 ref，截图前隐藏
 
   // 确认态选区的拖移/缩放纯逻辑集中在 hook，这里只消费状态与事件
@@ -55,26 +56,44 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
   useEffect(() => {
     if (!isActive || !isMobileTouch) return;
 
+    let cancelled = false;
+    setCropSrc(null);
+    setCropStatus('loading');
+
+    const resolveCropSource = (source: string) => {
+      if (!cancelled) {
+        setCropSrc(source);
+        setCropStatus('ready');
+      }
+    };
+    const failCropSource = () => {
+      if (!cancelled) {
+        setCropSrc(null);
+        setCropStatus('error');
+      }
+    };
+
     const canvas = document.querySelector(
       `.react-pdf__Page[data-page-number="${currentPage}"] canvas`
     ) as HTMLCanvasElement | null;
     if (canvas) {
       try {
-        setCropSrc(canvas.toDataURL('image/png'));
+        resolveCropSource(canvas.toDataURL('image/png'));
       } catch {
-        html2canvas(document.body, { scale: 1, backgroundColor: '#ffffff' }).then((c) => {
-          setCropSrc(c.toDataURL('image/png'));
-        }).catch(() => setCropSrc(null));
+        void html2canvas(document.body, { scale: 1, backgroundColor: '#ffffff' })
+          .then(c => resolveCropSource(c.toDataURL('image/png')))
+          .catch(failCropSource);
       }
     } else {
       const pageEl = document.querySelector(
         `.react-pdf__Page[data-page-number="${currentPage}"]`
       ) as HTMLElement | null;
-      html2canvas(pageEl || document.body, { scale: 1, backgroundColor: '#ffffff', useCORS: true }).then((c) => {
-        setCropSrc(c.toDataURL('image/png'));
-      }).catch(() => setCropSrc(null));
+      void html2canvas(pageEl || document.body, { scale: 1, backgroundColor: '#ffffff', useCORS: true })
+        .then(c => resolveCropSource(c.toDataURL('image/png')))
+        .catch(failCropSource);
     }
-  }, [isActive]);
+    return () => { cancelled = true; };
+  }, [currentPage, isActive]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -214,11 +233,13 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
 
   const handleCropConfirm = (croppedBase64: string, rx: number, ry: number, cropBBox: CropBBox, action: CaptureAction) => {
     setCropSrc(null);
+    setCropStatus('idle');
     onCapture(croppedBase64, rx, ry, cropBBox, action);
   };
 
   const handleCropCancel = () => {
     setCropSrc(null);
+    setCropStatus('idle');
     onCancel();
   };
 
@@ -226,23 +247,23 @@ export default function ScreenCapture({ isActive, currentPage, onCapture, onCanc
 
   // 移动端：二段式截图裁剪
   if (isMobileTouch) {
-    if (cropSrc) {
+    if (cropStatus === 'ready' && cropSrc) {
       return <ImageCropper src={cropSrc} onConfirm={handleCropConfirm} onCancel={handleCropCancel} />;
     }
-    if (cropSrc === null) {
+    if (cropStatus === 'error') {
       return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
-          <div className="bg-white px-6 py-4 rounded-lg shadow-xl text-center">
-            <div className="text-red-500 mb-2">截图失败</div>
-            <button onClick={handleCropCancel} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">返回</button>
+          <div data-testid="mobile-capture-error" className="rounded-lg bg-white px-6 py-4 text-center shadow-xl">
+            <div className="mb-2 text-red-500">截图失败</div>
+            <button type="button" onClick={handleCropCancel} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700">返回</button>
           </div>
         </div>
       );
     }
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
-        <div className="bg-white px-6 py-4 rounded-lg shadow-xl text-center">
-          <div className="text-gray-700">正在截图...</div>
+        <div data-testid="mobile-capture-loading" className="rounded-lg bg-white px-6 py-4 text-center shadow-xl">
+          <div className="text-gray-700">正在准备截图...</div>
         </div>
       </div>
     );

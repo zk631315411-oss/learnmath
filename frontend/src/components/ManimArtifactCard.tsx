@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CircleAlert, Film, LoaderCircle, RefreshCw } from 'lucide-react';
+import { CircleAlert, Film, LoaderCircle, RefreshCw, Sparkles } from 'lucide-react';
 import type { ManimArtifact } from '../types';
 import { getManimArtifact, retryManimArtifact } from '../services/api';
 
@@ -73,6 +73,10 @@ export default function ManimArtifactCard({ artifact, token, onChange }: Props) 
           <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{current.title}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">{statusLabel(current.status)}</p>
         </div>
+        <span className="flex shrink-0 items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500" aria-label="AI生成内容" title="AI生成内容">
+          <Sparkles className="h-3 w-3" aria-hidden="true" />
+          <span>AI生成</span>
+        </span>
         {current.status === 'failed' && token ? (
           <button
             type="button"

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import config
 from app.db.connection import init_db
-from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook, manim, learner_model
+from app.routers import auth, chat, formula, qa, learning_map, learning_progress, textbook, manim, learner_model, feedback
 from app.services.manim_queue import reconcile_active_artifacts_loop
 
 
@@ -100,6 +100,7 @@ app.include_router(learning_progress.router)
 app.include_router(textbook.router)
 app.include_router(manim.router)
 app.include_router(learner_model.router)
+app.include_router(feedback.router)
 
 
 @app.get("/")

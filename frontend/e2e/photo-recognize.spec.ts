@@ -4,6 +4,8 @@ import { expect, test, type Page } from '@playwright/test';
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 
 async function mockAppApi(page: Page) {
+  // 这些用例验证图片/公式流程本身；欢迎说明由专门的前端回归用例覆盖。
+  await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
   await page.route('**/api/auth/anonymous?*', route => route.fulfill({
     status: 200,
     contentType: 'application/json',

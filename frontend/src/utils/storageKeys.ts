@@ -7,10 +7,14 @@ export const STORAGE_KEYS = {
   currentTextbook: 'current_textbook',
   pdfPages: 'pdf_viewer_page_v2',
   pdfZoom: 'pdf_view_preferences_v1',
+  mobilePdfZoom: 'learnmath.mobilePdfZoom.v1',
   darkMode: 'learnmath_dark',
   desktopChatCollapsed: 'learnmath.ui.desktopChatCollapsed',
+  mobileReaderDock: 'learnmath.mobileReaderDock.v1',
+  mobileReaderDockV2: 'learnmath.mobileReaderDock.v2',
   formulaFavorites: 'formula_favorites',
   formulaHistory: 'formula_history',
+  welcomeDismissed: 'learnmath.welcome.dismissed',
 } as const;
 
 export function workspaceStorageKey(textbookId: string): string {

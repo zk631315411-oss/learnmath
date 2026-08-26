@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { BookOpen, LoaderCircle, Map as MapIcon, X } from 'lucide-react';
+import { BookOpen, LoaderCircle, Map as MapIcon, MessageSquare, X } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ChatPanel from './components/ChatPanel';
@@ -11,7 +11,7 @@ import LearningSidebar from './components/LearningSidebar';
 import PDFToolbar from './components/PDFToolbar';
 import UtilityDrawer from './components/UtilityDrawer';
 import MapHome from './components/MapHome';
-import BottomSheet, { type SheetStage } from './components/BottomSheet';
+import BottomSheet, { type ReaderDockInsets, type SheetStage } from './components/BottomSheet';
 import PageNotesPanel from './components/PageNotesPanel';
 import type { PDFViewerControls } from './components/PDFViewer';
 import PdfHighlight, { getNodeHighlight } from './components/PdfHighlight';
@@ -35,6 +35,9 @@ import { normalizeSectionKey } from './utils/sectionKey';
 import { getSectionPage } from './services/api';
 import type { TextbookId } from './textbooks';
 import PhotoPreviewSheet from './components/PhotoPreviewSheet';
+import WelcomeModal from './components/WelcomeModal';
+import FeedbackForm from './components/FeedbackForm';
+import TableOfContents from './components/TableOfContents';
 import { applyProgressDelta } from './hooks/useLearningProgress';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
@@ -49,6 +52,7 @@ function DeferredPanel({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const mobileReaderBoundsRef = useRef<HTMLDivElement | null>(null);
   const {
     user, authReady, showAuthModal, setShowAuthModal,
     authMode, setAuthMode, authUsername, setAuthUsername,
@@ -61,17 +65,30 @@ export default function App() {
 
   const { selectedPdf, textbookId, setTextbookId } = useTextbookPreference();
 
-  // 换教材时清除残留高亮，避免跨教材串框
-  useEffect(() => { setHighlightNodeId(null); }, [textbookId]);
-
   const { currentPage, setCurrentPage, setTextbookPage } = usePdfPosition(textbookId);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
   const [overlaySurface, setOverlaySurface] = useState<OverlaySurface>('none');
+  const [mobileReaderPanel, setMobileReaderPanel] = useState<'records' | 'toc'>('records');
   const sheetStage: SheetStage = overlaySurface === 'sheet-half' ? 'half' : overlaySurface === 'sheet-full' ? 'full' : 'collapsed';
   const drawerOpen = overlaySurface === 'drawer';
 
   const [pdfControls, setPdfControls] = useState<PDFViewerControls | null>(null);
+  const [mobileDockInsets, setMobileDockInsets] = useState<ReaderDockInsets>({ top: 0, right: 0, bottom: 0, left: 0 });
   const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // 换教材时清除残留高亮和目录状态，避免跨教材串页。
+  useEffect(() => {
+    setHighlightNodeId(null);
+    setTocOpen(false);
+    setMobileReaderPanel('records');
+  }, [textbookId]);
+
+  useEffect(() => {
+    if (!window.localStorage.getItem(STORAGE_KEYS.welcomeDismissed)) setWelcomeOpen(true);
+  }, []);
 
   // 高亮自动淡出：跳转定位后显示一会儿即消失，不遮挡继续阅读
   useEffect(() => {
@@ -175,15 +192,6 @@ export default function App() {
     }
   };
 
-  // 删除提问记录（桌面端提问记录侧栏的行内入口）：删除后刷新列表；
-  // 若删掉的正是当前打开的线程，同时清空对话区，避免对着已删除的对话继续追问。
-  const handleQuestionDelete = async (marker: Marker) => {
-    const wasActive = markers.activeThreadId === marker.id;
-    await markers.handleDeleteMarker(marker.id);
-    if (wasActive) chat.clearMessages();
-    void questionList.refresh();
-  };
-
   useEffect(() => {
     const request = navigation.threadRestore;
     if (!request || questionList.loading || !questionList.ready) return;
@@ -281,12 +289,74 @@ export default function App() {
     else { mapHome.retryCatalog(); void mapHome.refresh(); }
   };
 
-  const learningSidebar = (onClose?: () => void) => <LearningSidebar
+  // 桌面端和移动端共用同一删除路径：先由 useMarkers 调用后端，
+  // 后端确认成功后才清理本地徽标，再刷新全量记录；失败向上抛给移动端重试层。
+  const handleDeleteQuestion = async (marker: Marker) => {
+    if (!user.token || user.isAnonymous) throw new Error('登录后才能删除提问记录');
+    const wasActive = markers.activeThreadId === marker.id;
+    await markers.handleDeleteMarker(marker.id);
+    await Promise.all([questionList.refresh(), markers.refreshMarkers()]);
+    if (wasActive) {
+      chat.clearMessages();
+      setOverlaySurface('none');
+    }
+  };
+
+  const closeToc = useCallback(() => {
+    setTocOpen(false);
+    setMobileReaderPanel('records');
+    if (!isDesktop) setOverlaySurface('none');
+  }, [isDesktop]);
+
+  const jumpFromToc = useCallback((page: number) => {
+    capture.clearDraft();
+    setCurrentPage(page);
+    navigatePage('reader', null, { page });
+    saveWorkspace(textbookId, { view: 'reader', page });
+    closeToc();
+  }, [capture.clearDraft, closeToc, navigatePage, setCurrentPage, textbookId]);
+
+  const openToc = useCallback(() => {
+    if (interactionLocked) return;
+    capture.cancel();
+    capture.clearDraft();
+    if (isDesktop) setTocOpen(value => !value);
+    else {
+      setMobileReaderPanel('toc');
+      setOverlaySurface('sheet-full');
+    }
+  }, [capture, interactionLocked, isDesktop]);
+
+  const desktopTocPanel = <TableOfContents
+    chapters={mapHome.tocChapters}
+    currentPage={currentPage}
+    loadChapter={mapHome.openChapter}
+    onSelectPage={jumpFromToc}
+    onClose={closeToc}
+  />;
+  const mobileTocPanel = <TableOfContents
+    chapters={mapHome.tocChapters}
+    currentPage={currentPage}
+    loadChapter={mapHome.openChapter}
+    onSelectPage={jumpFromToc}
+    onClose={closeToc}
+    mobile
+  />;
+
+  const handleRequestAuth = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
+
+  const learningSidebar = (onClose?: () => void, mobile = false) => <LearningSidebar
     onClose={onClose}
     questions={questionList.items} questionsLoading={questionList.loading} onSelectQuestion={handleQuestionSelect}
     pageSections={pageSections}
     onRenamed={questionList.refresh}
-    onDeleteQuestion={handleQuestionDelete}
+    mobile={mobile}
+    isAnonymous={user.isAnonymous}
+    onDeleteQuestion={handleDeleteQuestion}
+    onRequestAuth={handleRequestAuth}
   />;
 
   const openDrawer = () => {
@@ -371,14 +441,14 @@ export default function App() {
     <ErrorBoundary>
       <div className="flex h-screen flex-col bg-[var(--lm-bg)] dark:bg-slate-950">
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:px-6">
-          <div className="flex items-center gap-2">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-[var(--lm-bg)] px-3 py-3 shadow-sm min-[430px]:px-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+          <div className="flex shrink-0 items-center gap-1 min-[430px]:gap-2">
             <img src="/mascot/fox-head.png" alt="学数有道吉祥物" className="h-8 w-8 rounded-full" />
-            <span className="text-lg font-bold text-slate-800 dark:text-slate-100">学数有道</span>
+            <span className="whitespace-nowrap text-base font-bold text-slate-800 min-[430px]:text-lg dark:text-slate-100">学数有道</span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            {view === 'reader' && <select aria-label="选择教材" className={`${selectClass} w-24 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto`} value={textbookId} disabled={interactionLocked}
+          <div className="flex min-w-0 items-center gap-1 min-[430px]:gap-2 sm:gap-3">
+            {view === 'reader' && <select aria-label="选择教材" className={`${selectClass} w-20 px-2 disabled:cursor-not-allowed disabled:opacity-50 min-[430px]:w-24 min-[430px]:px-3 sm:w-auto`} value={textbookId} disabled={interactionLocked}
               onChange={(e) => { if (interactionLocked) return; const v = e.target.value; setTextbookId(v as never); }}>
               <option value="">选择教材...</option>{PRESET_PDFS.map((pdf) => <option key={pdf.path} value={pdf.textbookId}>{pdf.name}</option>)}
             </select>}
@@ -389,6 +459,10 @@ export default function App() {
             </button>}
 
             <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="toolbar-button max-[359px]:hidden" title="打开内测反馈">
+              <MessageSquare className="h-4 w-4" /><span className="hidden sm:inline">内测反馈</span>
+            </button>
 
             {migrationStatus !== 'idle' && <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status">
               <span>{migrationStatus === 'syncing' ? '进度同步中' : '进度同步失败'}</span>
@@ -427,7 +501,7 @@ export default function App() {
                 {selectedPdf && textbookId ? (
                   <>
                     <PDFToolbar controls={pdfControls} onOpenDrawer={openDrawer} onCapture={startCapture} captureDisabled={!selectedPdf || interactionLocked}
-                      chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} />
+                      chatCollapsed={desktopChatCollapsed} onToggleChat={toggleDesktopChat} onOpenToc={openToc} tocOpen={tocOpen} tocPanel={desktopTocPanel} />
                     <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange}
                         markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
@@ -445,13 +519,13 @@ export default function App() {
               </div>}
             </>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div ref={mobileReaderBoundsRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="lm-panel flex min-h-0 flex-1 flex-col overflow-hidden">
                 {selectedPdf && textbookId ? (
                   <div className="min-h-0 flex-1">
                       <DeferredPanel><PDFViewer pdfUrl={selectedPdf} textbookId={textbookId} page={currentPage} onPageRequest={handlePageChange} mobile
                         markers={markers.markers} pdfContainerRef={setPdfContainerNode} onMarkerClick={handleMarkerClick}
-                        hideToolbar onControlsChange={setPdfControls} pageOverlay={({ page, scale }) => (
+                        hideToolbar mobileInsets={mobileDockInsets} onControlsChange={setPdfControls} pageOverlay={({ page, scale }) => (
                           <PdfHighlight textbookId={textbookId} nodeId={highlightNodeId} currentPage={page} scale={scale} />
                         )} /></DeferredPanel>
                   </div>
@@ -460,17 +534,25 @@ export default function App() {
                 )}
               </div>
               {selectedPdf && <BottomSheet
+                boundaryRef={mobileReaderBoundsRef}
                 stage={sheetStage}
-                onStageChange={stage => { if (!interactionLocked) setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none'); }}
+                onStageChange={stage => {
+                  if (interactionLocked) return;
+                  if (stage === 'collapsed') setMobileReaderPanel('records');
+                  setOverlaySurface(stage === 'half' ? 'sheet-half' : stage === 'full' ? 'sheet-full' : 'none');
+                }}
                 unread={chat.unreadCount > 0}
                 pendingCount={chat.pendingImages.length}
-                onOpenChat={() => { if (interactionLocked) return; chat.markRead(); setOverlaySurface('sheet-half'); }}
-                onOpenUtility={() => { if (!interactionLocked) setOverlaySurface('sheet-full'); }}
+                onOpenChat={() => { if (interactionLocked) return; setMobileReaderPanel('records'); chat.markRead(); setOverlaySurface('sheet-half'); }}
+                onOpenUtility={() => { if (!interactionLocked) { setMobileReaderPanel('records'); setOverlaySurface('sheet-full'); } }}
+                onOpenToc={openToc}
                 onCapture={startCapture}
+                panelTitle={mobileReaderPanel === 'toc' ? '教材目录' : '提问记录'}
                 controls={pdfControls}
                 interactionLocked={interactionLocked}
+                onDockInsetsChange={setMobileDockInsets}
               >
-                {sheetStage === 'half' ? pageNotesPanel : learningSidebar(() => setOverlaySurface('none'))}
+                {sheetStage === 'half' ? pageNotesPanel : mobileReaderPanel === 'toc' ? mobileTocPanel : learningSidebar(() => setOverlaySurface('none'), true)}
               </BottomSheet>}
             </div>
           )}
@@ -517,6 +599,12 @@ export default function App() {
             onModeSwitch={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
             onClose={() => setShowAuthModal(false)} />
         )}
+        {welcomeOpen && <WelcomeModal
+          onClose={() => setWelcomeOpen(false)}
+          onDismiss={() => { window.localStorage.setItem(STORAGE_KEYS.welcomeDismissed, '1'); setWelcomeOpen(false); }}
+          onOpenFeedback={() => { setWelcomeOpen(false); setFeedbackOpen(true); }}
+        />}
+        {feedbackOpen && <FeedbackForm token={user.token || undefined} onClose={() => setFeedbackOpen(false)} />}
       </div>
     </ErrorBoundary>
   );

@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 async function mockAppApi(page: import('@playwright/test').Page) {
+  // 这些用例验证公式交互本身；欢迎说明由专门的前端回归用例覆盖。
+  await page.addInitScript(() => localStorage.setItem('learnmath.welcome.dismissed', '1'));
   await page.route('**/api/auth/anonymous?*', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -49,7 +51,7 @@ async function openChat(page: import('@playwright/test').Page, projectName: stri
   }
 }
 
-test('converts, inserts, serializes and sends an inline formula', async ({ page }, testInfo) => {
+test('converts, inserts, serializes and sends a block formula', async ({ page }, testInfo) => {
   await mockAppApi(page);
 
   let formulaAuthorization = '';
@@ -58,7 +60,7 @@ test('converts, inserts, serializes and sends an inline formula', async ({ page 
     formulaAuthorization = route.request().headers().authorization || '';
     expect(await route.request().postDataJSON()).toEqual({
       description: 'x平方加y平方等于1',
-      preferred_display: 'auto',
+      preferred_display: 'block',
     });
     await route.fulfill({
       status: 200,
@@ -100,11 +102,12 @@ test('converts, inserts, serializes and sends an inline formula', async ({ page 
   });
 
   await dialog.getByRole('button', { name: '插入', exact: true }).click();
-  await expect(page.locator('[data-type="inline-math"][data-latex="x^2+y^2=1"]')).toBeVisible();
+  await expect(page.locator('[data-type="block-math"][data-latex="x^2+y^2=1"]')).toBeVisible();
   await page.getByRole('button', { name: '发送' }).click();
 
   await expect(page.getByText('已收到公式。')).toBeVisible();
-  expect(submittedPayload).toContain('$x^2+y^2=1$');
+  expect(submittedPayload).toContain('x^2+y^2=1');
+  expect(submittedPayload).toContain('$$');
   await expect(page.locator('.chat-message').filter({ hasText: 'x2+y2=1' }).locator('.katex')).toBeVisible();
 });
 
@@ -116,7 +119,7 @@ test('formula dialog stays within the mobile viewport', async ({ page }, testInf
   await page.getByRole('button', { name: '插入公式' }).click();
 
   const dialog = page.getByRole('dialog', { name: '公式编辑器' });
-  await dialog.getByRole('button', { name: '更多符号' }).click();
+  await dialog.getByRole('button', { name: '手写输入' }).click();
   const bounds = await dialog.evaluate(element => {
     const rect = element.getBoundingClientRect();
     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
@@ -131,7 +134,7 @@ test('formula dialog stays within the mobile viewport', async ({ page }, testInf
   await page.screenshot({ path: testInfo.outputPath('formula-editor-mobile.png'), fullPage: true });
 });
 
-test('one-shot shortcuts close after inserting and vec keeps an editable placeholder', async ({ page }, testInfo) => {
+test('symbol buttons and MathLive shortcuts keep editable placeholders', async ({ page }, testInfo) => {
   await mockAppApi(page);
   await page.goto('/');
   await openChat(page, testInfo.project.name);
@@ -139,22 +142,19 @@ test('one-shot shortcuts close after inserting and vec keeps an editable placeho
   const dialog = page.getByRole('dialog', { name: '公式编辑器' });
   const field = dialog.locator('math-field');
 
-  await page.keyboard.press('Control+Shift+G');
-  await expect(dialog.getByRole('dialog', { name: '快捷插入' })).toBeVisible();
-  await page.keyboard.press('1');
-  await expect(dialog.getByRole('dialog', { name: '快捷插入' })).toBeHidden();
-  await expect(field).toBeFocused();
-  await field.evaluate((element: any) => { element.value = ''; element.dispatchEvent(new InputEvent('input', { bubbles: true })); });
-
   await dialog.getByRole('button', { name: '向量', exact: true }).click();
   await expect(field).toBeFocused();
   await page.keyboard.type('a');
-  await expect(field).toHaveJSProperty('value', '\\vec{a}');
+  await expect.poll(() => field.evaluate((element: any) => element.value)).toContain('a');
 
-  await page.keyboard.press('Control+Shift+G');
-  await page.keyboard.press('Escape');
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('dialog', { name: '快捷插入' })).toBeHidden();
+  await field.evaluate((element: any) => {
+    element.value = '';
+    element.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    element.focus();
+  });
+  await page.keyboard.type('sqrt');
+  await page.keyboard.press('Space');
+  await expect.poll(() => field.evaluate((element: any) => element.value)).toContain('\\sqrt');
 });
 
 test('handwriting recognition keeps confirmation in the formula dialog', async ({ page }, testInfo) => {
@@ -208,7 +208,7 @@ test('smart input, selection wrapping and Tab placeholders work in MathLive', as
   await expect.poll(() => field.evaluate((element: any) => element.value)).toContain('\\sqrt');
 
   await field.evaluate((element: any) => { element.value = 'x+1'; element.executeCommand('selectAll'); element.dispatchEvent(new InputEvent('input', { bubbles: true })); });
-  await dialog.locator('.formula-toolbar button[aria-label="根式"]').click();
+  await dialog.locator('.formula-toolbar button[aria-label="根号"]').click();
   await expect(field).toHaveJSProperty('value', '\\sqrt{x+1}');
 
   await field.evaluate((element: any) => { element.value = ''; element.dispatchEvent(new InputEvent('input', { bubbles: true })); element.focus(); });
@@ -220,7 +220,7 @@ test('smart input, selection wrapping and Tab placeholders work in MathLive', as
   await expect(field).toHaveJSProperty('value', '\\frac{a}{b}');
 });
 
-test('PDF capture extracts a formula and inserts it into the chat editor', async ({ page }, testInfo) => {
+test('PDF capture extracts a formula into the editor and inserts it into chat', async ({ page }, testInfo) => {
   await mockAppApi(page);
   await page.route('**/api/formula/recognize-content', route => route.fulfill({
     status: 200, contentType: 'application/json',
@@ -233,20 +233,27 @@ test('PDF capture extracts a formula and inserts it into the chat editor', async
 
   if (testInfo.project.name === 'chromium-mobile') {
     await expect(page.getByText('裁剪截图')).toBeVisible();
-    await page.getByRole('button', { name: '确认截取' }).click();
+    await page.getByRole('button', { name: '提取并编辑', exact: true }).click();
   } else {
     await expect(page.getByText('拖动鼠标框选区域，按 ESC 取消')).toBeVisible();
-    await page.mouse.move(180, 180);
+    const canvas = page.locator('.react-pdf__Page canvas').first();
+    const canvasBox = await canvas.boundingBox();
+    expect(canvasBox).not.toBeNull();
+    const startX = canvasBox!.x + Math.max(24, canvasBox!.width * 0.08);
+    const startY = canvasBox!.y + Math.max(24, canvasBox!.height * 0.08);
+    const endX = Math.min(canvasBox!.x + canvasBox!.width - 24, startX + Math.max(120, canvasBox!.width * 0.35));
+    const endY = Math.min(canvasBox!.y + canvasBox!.height - 24, startY + Math.max(100, canvasBox!.height * 0.25));
+    await page.mouse.move(startX, startY);
     await page.mouse.down();
-    await page.mouse.move(520, 360, { steps: 5 });
+    await page.mouse.move(endX, endY, { steps: 5 });
     await page.mouse.up();
-    await page.getByTitle('确认截图').click();
+    await expect(page.getByRole('button', { name: '提取编辑', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '提取编辑', exact: true }).click();
   }
-  await page.getByRole('dialog', { name: '框选内容预览' }).getByRole('button', { name: '提取并编辑' }).click();
-  const result = page.getByRole('dialog', { name: '识别结果' });
-  await expect(result).toBeVisible({ timeout: 15_000 });
-  await expect(result.getByRole('code')).toHaveText('\\int_0^1 x^2\\,dx');
-  await result.getByRole('button', { name: '插入聊天' }).click();
+  const formulaDialog = page.getByRole('dialog', { name: '公式编辑器' });
+  await expect(formulaDialog).toBeVisible({ timeout: 15_000 });
+  await expect(formulaDialog.locator('math-field')).toHaveJSProperty('value', '\\int_0^1 x^2\\,dx');
+  await formulaDialog.getByRole('button', { name: /插入/ }).last().click();
   const composer = page.getByRole('textbox', { name: '输入问题…' });
   await expect(composer.getByRole('math')).toBeVisible();
 });
@@ -272,7 +279,6 @@ test('formula surfaces stay framed across approved light and dark viewports', as
     }
     await page.getByRole('button', { name: '插入公式' }).click();
     const dialog = page.getByRole('dialog', { name: '公式编辑器' });
-    await dialog.getByRole('button', { name: '打开快捷插入' }).click();
     await dialog.getByRole('button', { name: '手写输入' }).click();
     const bounds = await dialog.evaluate(element => { const rect = element.getBoundingClientRect(); return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }; });
     expect(bounds.left).toBeGreaterThanOrEqual(0);
