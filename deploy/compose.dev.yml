@@ -1,0 +1,64 @@
+name: learnmath-dev
+
+services:
+  # Fixed development dependencies. The API and Vite frontend run on the host
+  # so source changes are visible immediately without rebuilding images.
+  redis:
+    image: redis:7.4.5-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:${LEARNMATH_DEV_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  # Reuse the API runtime dependencies, but mount current source files. This
+  # keeps dispatcher changes out of the image rebuild loop during development.
+  manim-dispatcher:
+    image: ${LEARNMATH_DEV_API_IMAGE:-learnmath-api:team-demo-1}
+    command: ["python", "-m", "scripts.run_manim_dispatcher"]
+    environment:
+      MANIM_REDIS_URL: redis://redis:6379/0
+      MANIM_QUEUE: learnmath-manim
+      MANIM_SPOOL_DIR: /app/manim-spool
+      MANIM_RENDER_DIR: /app/manim-render
+    volumes:
+      - ../.runtime-dev/manim-spool:/app/manim-spool
+      - ../app:/app/app:ro
+      - ../scripts:/app/scripts:ro
+      - ../shared:/app/shared:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Renderer remains isolated in a container. Mounting app/ lets worker and
+  # rendering policy changes take effect after a container restart, without
+  # rebuilding the large Manim/font image.
+  manim-renderer:
+    image: ${LEARNMATH_DEV_MANIM_IMAGE:-learnmath-manim:team-demo-1}
+    environment:
+      MANIM_SPOOL_DIR: /var/lib/learnmath/spool
+      MANIM_RENDER_DIR: /var/lib/learnmath/render
+      MANIM_RENDER_TIMEOUT_SECONDS: ${MANIM_RENDER_TIMEOUT_SECONDS:-90}
+      MANIM_MAX_DURATION_SECONDS: ${MANIM_MAX_DURATION_SECONDS:-30}
+    volumes:
+      - ../.runtime-dev/manim-spool:/var/lib/learnmath/spool
+      - ../.runtime-dev/manim-render:/var/lib/learnmath/render
+      - ../app:/opt/learnmath/app:ro
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:size=384m,mode=1777
+      - /home/manimuser:size=32m,uid=1000,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1.0
+    restart: unless-stopped

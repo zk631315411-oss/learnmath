@@ -104,27 +104,24 @@ Install-LearnMath.bat
 start.bat
 ```
 
-后端默认从 `8001`、前端默认从 `5173` 开始选取端口；如果端口已被占用，脚本会自动选择后续空闲端口，并在启动窗口中打印实际地址。也可以显式设置
-`LEARNMATH_API_PORT` 和 `LEARNMATH_FRONTEND_PORT`（例如 `set LEARNMATH_API_PORT=8002 && set LEARNMATH_FRONTEND_PORT=5174 && start.bat`）。脚本会检查 Python/npm 依赖，必要时自动修复缺失的前端依赖，并把前端代理指向实际后端端口。
+`start.bat` 会启动完整开发环境：本机带热重载的 Python API、本机 Vite 前端，以及 Docker Redis、Manim Dispatcher 和断网 Renderer。公式编辑器和公式识别使用本机前端/API链路，动画使用 Docker 固定依赖，因此修改 `app/` 或 `frontend/src/` 不需要重建镜像。
+
+后端默认使用 `8001`、前端默认使用 `5173`、开发 Redis 默认使用 `6379`。如果端口被占用，可以显式设置
+`LEARNMATH_API_PORT`、`LEARNMATH_FRONTEND_PORT` 和 `LEARNMATH_DEV_REDIS_PORT`。脚本会检查 Python/npm/Docker 依赖，首次缺少 API 或 Manim 基础镜像时才构建一次，之后直接复用镜像。
+
+停止开发环境：
+
+```bat
+stop-dev.bat
+```
+
+该脚本停止 Docker 开发依赖；API 和前端分别运行在独立终端窗口中，关闭对应窗口即可停止。
 首次运行请先创建 venv 并安装依赖：`python -m venv venv && venv\Scripts\pip install -r requirements.txt`，
 再把 `.env.example` 复制为 `.env` 并填入真实的 `JWT_SECRET` 与 `QA_LLM_API_KEY`。
 
-#### 开发模式下启用 Manim 动画（可选）
+#### 开发环境的固定依赖
 
-`start.bat` 只起后端和前端，**不含** Manim 渲染链路。开发模式要真渲染动画，需额外起三个进程（生产模式的 compose 会自动拉起，开发模式需手动）：
-
-```bat
-REM 1) 主机 Redis（开发后端默认连 127.0.0.1:6379）
-docker run -d --name learnmath-dev-redis -p 127.0.0.1:6379:6379 redis:7.4.5-alpine redis-server --save "" --appendonly no
-
-REM 2) Dispatcher：消费 Redis 队列 -> 写入渲染 spool（需 PYTHONPATH 指向项目根）
-set PYTHONPATH=%CD% && venv\Scripts\python -m scripts.run_manim_dispatcher
-
-REM 3) Spool worker：取 spool 任务 -> 调用 manim 渲染出 mp4
-venv\Scripts\python -m app.workers.manim_worker
-```
-
-前置：venv 内需安装 manim（`venv\Scripts\pip install manim`），worker 会以 `python -m manim` 自包含调用，不依赖系统 manim.exe。未启用时调用动画工具会优雅降级（回答正常完成，仅提示渲染服务不可用），不影响其余问答功能。
+开发 Compose 配置见 `deploy/compose.dev.yml`。它只管理 Redis、Dispatcher 和 Renderer，使用 `.runtime-dev/manim-spool`、`.runtime-dev/manim-render` 作为临时开发目录；不会修改生产 Docker volumes。固定镜像缺失时，`start.bat` 会自动执行一次带缓存构建。
 
 ## 数据库
 
