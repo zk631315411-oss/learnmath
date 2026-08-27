@@ -150,6 +150,7 @@ def replay_node_evidence(
         last_outcome=last_outcome,
         last_observed_at=last_observed_at,
         last_closed_at=last_closed_at,
+        computed_at=now.isoformat(timespec="microseconds"),
     )
 
 

@@ -21,6 +21,10 @@ from app.services.qa.answer_service import (
 from app.services.qa.contracts import QATurnInput
 from app.services.agents.tool_def import ToolDef
 from app.services.agents.tool_runtime import RuntimeEvent, ToolRuntime
+from app.services.learning.catalog import catalog_node_ids
+
+
+CATALOG_NODE = sorted(catalog_node_ids("gaodai_shang"))[0]
 
 
 def _chunk(*, content="", reasoning="", tool_calls=None):
@@ -61,7 +65,7 @@ class _FakeLLM:
             self.fork_calls += 1
             self.fork_messages = messages
             return _completion_tool_call("report_turn_outcome", {
-                "node_ids": ["gaodai_shang:线性无关"],
+                "node_ids": [CATALOG_NODE],
                 "scaffolding_level": 3,
                 "student_outcome": "assisted",
             })
@@ -85,7 +89,7 @@ class _ThreeKGCallsLLM:
         if kwargs.get("stream") is False:
             self.fork_calls += 1
             return _completion_tool_call("report_turn_outcome", {
-                "node_ids": ["gaodai_shang:目标"],
+                "node_ids": [CATALOG_NODE],
                 "scaffolding_level": 1,
                 "student_outcome": "assisted",
             })
@@ -110,7 +114,7 @@ class _EvidenceForkLLM:
             self.fork_calls += 1
             self.fork_messages = messages
             return _completion_tool_call("report_turn_outcome", {
-                "node_ids": ["gaodai_shang:目标"],
+                "node_ids": [CATALOG_NODE],
                 "scaffolding_level": 0,
                 "student_outcome": "unresolved",
             })
@@ -142,11 +146,16 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("private reasoning", json.dumps(filtered, ensure_ascii=False))
         self.assertNotIn("本轮最终教师回答", json.dumps(filtered, ensure_ascii=False))
         self.assertIn("retrieve_kg_context", json.dumps(filtered, ensure_ascii=False))
+        self.assertNotIn(
+            {"role": "assistant"},
+            filtered,
+            "仅含内部记忆调用的 assistant 消息不应留下空壳",
+        )
 
     async def test_report_flow_persists_rows_and_hides_internal_tool(self):
         resolved = {
             "status": "resolved", "kg_basis_available": True,
-            "selected_node": {"node_id": "gaodai_shang:线性无关", "name": "线性无关", "type": "Concept"},
+            "selected_node": {"node_id": CATALOG_NODE, "name": "线性无关", "type": "Concept"},
             "relationships": {}, "requested_focus": ["overview"],
             "retrieved_focus": [], "empty_focus": [], "focus_stats": {},
         }
@@ -188,7 +197,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
                 rows = list_evidence_for_user("u1")
                 self.assertEqual(len(rows), 1)
                 row = rows[0]
-                self.assertEqual(row["node_id"], "gaodai_shang:线性无关")
+                self.assertEqual(row["node_id"], CATALOG_NODE)
                 self.assertEqual(row["outcome"], "assisted")
                 self.assertEqual(row["scaffolding_level"], 3)
                 self.assertEqual(row["source"], "agent_self_report")
@@ -260,7 +269,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
         }), "error")
 
     async def test_three_kg_calls_still_leave_budget_for_report(self):
-        resolved = {"status": "resolved", "selected_node": {"node_id": "gaodai_shang:目标", "name": "目标"}, "relationships": {}}
+        resolved = {"status": "resolved", "selected_node": {"node_id": CATALOG_NODE, "name": "目标"}, "relationships": {}}
         with tempfile.TemporaryDirectory() as tmp:
             with patch.object(config, "DB_PATH", str(Path(tmp) / "learning.db")):
                 init_db()
@@ -272,7 +281,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(done["qa_turn_id"], "thread-id")
 
     async def test_follow_up_turns_in_same_thread_get_distinct_turn_ids(self):
-        resolved = {"status": "resolved", "selected_node": {"node_id": "gaodai_shang:线性无关", "name": "线性无关"}, "relationships": {}}
+        resolved = {"status": "resolved", "selected_node": {"node_id": CATALOG_NODE, "name": "线性无关"}, "relationships": {}}
         with tempfile.TemporaryDirectory() as tmp:
             with patch.object(config, "DB_PATH", str(Path(tmp) / "learning.db")):
                 init_db()
@@ -284,7 +293,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(row["qa_turn_id"] != "same-thread" for row in rows))
 
     async def test_eligible_turn_gets_one_shot_evidence_fork(self):
-        resolved = {"status": "resolved", "selected_node": {"node_id": "gaodai_shang:目标", "name": "目标"}, "relationships": {}}
+        resolved = {"status": "resolved", "selected_node": {"node_id": CATALOG_NODE, "name": "目标"}, "relationships": {}}
         fake = _EvidenceForkLLM()
         with tempfile.TemporaryDirectory() as tmp:
             with patch.object(config, "DB_PATH", str(Path(tmp) / "learning.db")):
@@ -302,7 +311,7 @@ class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
     async def test_learner_model_enabled_does_not_change_evidence_or_sse(self):
         resolved = {
             "status": "resolved",
-            "selected_node": {"node_id": "gaodai_shang:目标", "name": "目标"},
+            "selected_node": {"node_id": CATALOG_NODE, "name": "目标"},
             "relationships": {},
         }
         fake = _EvidenceForkLLM()

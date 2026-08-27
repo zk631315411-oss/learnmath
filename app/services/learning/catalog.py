@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
+from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from app.config import config
@@ -11,11 +13,45 @@ from app.config import config
 
 CATALOG_MANIFEST_PATH = config.BASE_DIR / "shared" / "generated" / "learning_catalog_manifest.json"
 
+_CatalogSignature = tuple[str, int, int, int]
+_manifest_lock = RLock()
+_manifest_cache: tuple[_CatalogSignature, dict[str, Any]] | None = None
+
 
 def load_catalog_manifest() -> dict[str, Any]:
-    if not CATALOG_MANIFEST_PATH.exists():
-        raise RuntimeError("learning catalog has not been generated")
-    return json.loads(CATALOG_MANIFEST_PATH.read_text(encoding="utf-8"))
+    """Load the generated catalog once per file version.
+
+    Catalog reads sit on several hot paths (model validation, KG scoping and
+    progress responses).  Parsing the manifest for each node used to turn a
+    bounded request into repeated disk/JSON work.  The signature keeps local
+    development safe: replacing the generated manifest automatically causes
+    the next call to reload it without requiring a process restart.
+    """
+
+    global _manifest_cache
+    path: Path = CATALOG_MANIFEST_PATH
+    try:
+        stat = path.stat()
+    except FileNotFoundError as exc:
+        raise RuntimeError("learning catalog has not been generated") from exc
+    signature: _CatalogSignature = (
+        str(path),
+        int(stat.st_mtime_ns),
+        int(stat.st_size),
+        int(getattr(stat, "st_ctime_ns", 0)),
+    )
+    with _manifest_lock:
+        if _manifest_cache is not None and _manifest_cache[0] == signature:
+            return _manifest_cache[1]
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(parsed, dict):
+            raise RuntimeError("learning catalog manifest must be an object")
+        _manifest_cache = (signature, parsed)
+        # The node-id cache is keyed by textbook only for historical callers;
+        # clear it whenever the source manifest changes so a hot reload cannot
+        # leave an old catalog scope in memory.
+        catalog_node_ids.cache_clear()
+        return parsed
 
 
 def get_catalog_entry(textbook_id: str) -> dict[str, Any] | None:

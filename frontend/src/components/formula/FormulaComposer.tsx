@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { SelectionBookmark } from '@tiptap/pm/state';
@@ -183,7 +183,7 @@ function SymbolKeyButton({ item, onInsert }: { item: SymbolKey; onInsert: (value
     }
   };
 
-  const endPress = (clientX?: number, clientY?: number) => {
+  const endPress = () => {
     clearTimer();
     if (open) {
       // 松开时若有高亮候选则插入候选，否则关闭不插入
@@ -217,7 +217,7 @@ function SymbolKeyButton({ item, onInsert }: { item: SymbolKey; onInsert: (value
         aria-label={item.label}
         onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); startPress(); }}
         onPointerMove={(e) => movePress(e.clientX, e.clientY)}
-        onPointerUp={(e) => endPress(e.clientX, e.clientY)}
+        onPointerUp={() => endPress()}
         onPointerCancel={() => { clearTimer(); setOpen(false); setActiveIdx(-1); longPressed.current = false; }}
         onContextMenu={(e) => e.preventDefault()}
       >

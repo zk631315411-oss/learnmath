@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.config import config
@@ -10,6 +11,7 @@ from app.db.connection import get_conn, init_db
 from app.services.manim_policy import validate_scene_source
 
 STATUSES = {"queued", "running", "repair_pending", "repairing", "completed", "failed"}
+ENQUEUE_RESERVATION_TTL_SECONDS = 120
 
 
 def create_artifact(*, user_id: str, chat_id: str | None, client_turn_id: str | None,
@@ -129,12 +131,123 @@ def claim_artifact_status(artifact_id: str, expected: str, new_status: str) -> b
 def count_active_artifacts(*, exclude_id: str | None = None) -> int:
     conn = get_conn()
     try:
-        sql = "SELECT COUNT(*) FROM manim_artifacts WHERE status IN ('queued','running','repair_pending','repairing')"
+        sql = """SELECT COUNT(*) FROM manim_artifacts
+                  WHERE status IN ('running','repair_pending','repairing')
+                     OR (status='queued' AND rq_job_id IS NOT NULL)"""
         params: list[Any] = []
         if exclude_id:
             sql += " AND id<>?"
             params.append(exclude_id)
         return int(conn.execute(sql, params).fetchone()[0])
+    finally:
+        conn.close()
+
+
+def reserve_enqueue_slot(
+    artifact_id: str,
+    max_queue: int,
+    *,
+    ttl_seconds: int = ENQUEUE_RESERVATION_TTL_SECONDS,
+) -> bool:
+    """Atomically reserve one enqueue slot before contacting Redis.
+
+    The artifact being enqueued is already in ``queued`` state, so it is
+    excluded from the active count and represented by the reservation.  A
+    write transaction serializes competing API workers; expired reservations
+    are reclaimed so a crashed worker cannot permanently consume capacity.
+    """
+
+    if max_queue < 1:
+        return False
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=max(1, ttl_seconds))
+    conn = get_conn()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            "DELETE FROM manim_enqueue_reservations WHERE expires_at <= CURRENT_TIMESTAMP"
+        )
+        active = conn.execute(
+            """SELECT COUNT(*) FROM manim_artifacts
+               WHERE id<>?
+                 AND (status IN ('running','repair_pending','repairing')
+                      OR (status='queued' AND rq_job_id IS NOT NULL))""",
+            (artifact_id,),
+        ).fetchone()[0]
+        reserved = conn.execute(
+            """SELECT COUNT(*) FROM manim_enqueue_reservations
+               WHERE artifact_id<>? AND expires_at > CURRENT_TIMESTAMP""",
+            (artifact_id,),
+        ).fetchone()[0]
+        if int(active) + int(reserved) >= max_queue:
+            conn.rollback()
+            return False
+        conn.execute(
+            """INSERT INTO manim_enqueue_reservations(artifact_id, expires_at)
+               VALUES (?, ?)
+               ON CONFLICT(artifact_id) DO UPDATE SET
+                 reserved_at=CURRENT_TIMESTAMP, expires_at=excluded.expires_at""",
+            (artifact_id, expires_at.strftime("%Y-%m-%d %H:%M:%S")),
+        )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def release_enqueue_slot(artifact_id: str) -> None:
+    conn = get_conn()
+    try:
+        conn.execute("DELETE FROM manim_enqueue_reservations WHERE artifact_id=?", (artifact_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def queue_artifact_deletion_tasks(conn, artifact_ids: list[str]) -> None:
+    """Add deletion intents inside the caller's chat/artifact transaction."""
+
+    for artifact_id in dict.fromkeys(str(value) for value in artifact_ids if value):
+        conn.execute(
+            "INSERT OR IGNORE INTO manim_deletion_tasks(artifact_id) VALUES (?)",
+            (artifact_id,),
+        )
+
+
+def list_pending_deletion_tasks(*, limit: int = 100) -> list[dict[str, Any]]:
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            """SELECT * FROM manim_deletion_tasks
+               ORDER BY updated_at ASC, artifact_id ASC LIMIT ?""",
+            (max(1, int(limit)),),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def mark_deletion_task_complete(artifact_id: str) -> None:
+    conn = get_conn()
+    try:
+        conn.execute("DELETE FROM manim_deletion_tasks WHERE artifact_id=?", (artifact_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def record_deletion_task_failure(artifact_id: str, error: str) -> None:
+    conn = get_conn()
+    try:
+        conn.execute(
+            """UPDATE manim_deletion_tasks
+               SET attempts=attempts+1, last_error=?, updated_at=CURRENT_TIMESTAMP
+               WHERE artifact_id=?""",
+            (str(error)[-500:], artifact_id),
+        )
+        conn.commit()
     finally:
         conn.close()
 

@@ -20,6 +20,19 @@ export function useQuestionList(user: User, chatMessageCount: number, textbookId
   const [error, setError] = useState<string | null>(null);
   const userId = user.userId || user.deviceId;
   const requestSequence = useRef(0);
+  // Keep a request-local tombstone for confirmed deletes.  A refresh that
+  // started before the DELETE response may still contain the old row.
+  const deletedItemIdsRef = useRef<Set<string>>(new Set());
+  const identityRef = useRef({ userId, textbookId });
+
+  useEffect(() => {
+    const previous = identityRef.current;
+    if (previous.userId === userId && previous.textbookId === textbookId) return;
+    identityRef.current = { userId, textbookId };
+    requestSequence.current += 1;
+    deletedItemIdsRef.current.clear();
+    setItems([]);
+  }, [textbookId, userId]);
 
   const refresh = useCallback(async () => {
     const requestId = ++requestSequence.current;
@@ -34,7 +47,10 @@ export function useQuestionList(user: User, chatMessageCount: number, textbookId
     try {
       // 透传教材 ID 过滤：侧栏只列当前教材的提问（NULL 老数据仍全教材可见，由后端统一处理）
       const data = await getAllChatHistory(userId, 500, textbookId);
-      if (requestId === requestSequence.current) setItems(Array.isArray(data) ? data.map(normalizeChatHistoryRecord) : []);
+      if (requestId === requestSequence.current) {
+        const normalized = Array.isArray(data) ? data.map(normalizeChatHistoryRecord) : [];
+        setItems(normalized.filter(item => !deletedItemIdsRef.current.has(item.id)));
+      }
     } catch {
       if (requestId === requestSequence.current) setError('提问记录加载失败');
     } finally {
@@ -45,11 +61,18 @@ export function useQuestionList(user: User, chatMessageCount: number, textbookId
     }
   }, [userId, textbookId]);
 
+  const remove = useCallback((id: string) => {
+    const cleanId = String(id || '').trim();
+    if (!cleanId) return;
+    deletedItemIdsRef.current.add(cleanId);
+    setItems(previous => previous.filter(item => item.id !== cleanId));
+  }, []);
+
   // user 变化或聊天消息条数变化时刷新；refresh 随 userId 变化，保证新用户数据不串号
   useEffect(() => {
     setItems([]);
     void refresh();
   }, [userId, chatMessageCount, refresh]);
 
-  return { items, loading, ready, error, refresh };
+  return { items, loading, ready, error, refresh, remove };
 }

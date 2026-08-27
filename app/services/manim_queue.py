@@ -13,11 +13,19 @@ from urllib.parse import quote
 
 from app.config import config
 from app.db.manim_artifact_db import (
-    count_active_artifacts,
     get_artifact,
     list_active_artifacts,
+    list_pending_deletion_tasks,
+    mark_deletion_task_complete,
+    record_deletion_task_failure,
+    release_enqueue_slot,
+    reserve_enqueue_slot,
     update_artifact,
 )
+
+
+class QueueFullError(RuntimeError):
+    """Internal distinction between capacity rejection and Redis failures."""
 
 
 def enqueue_artifact(artifact_id: str) -> str:
@@ -27,28 +35,31 @@ def enqueue_artifact(artifact_id: str) -> str:
         from rq import Queue
 
         artifact = get_artifact(artifact_id)
-        if count_active_artifacts(exclude_id=artifact_id) >= config.MANIM_MAX_QUEUE:
+        if not reserve_enqueue_slot(artifact_id, config.MANIM_MAX_QUEUE):
             update_artifact(
                 artifact_id, status="failed", error_code="busy", error_message="动画渲染队列已满",
             )
-            raise RuntimeError("动画渲染队列已满")
-        connection = Redis.from_url(config.MANIM_REDIS_URL)
-        connection.ping()
-        queue = Queue(config.MANIM_QUEUE, connection=connection)
-        job = queue.enqueue(
-            "app.workers.manim_dispatcher.dispatch_manim_artifact",
-            artifact_id,
-            artifact["source_code"],
-            float(artifact.get("duration_seconds") or config.MANIM_MAX_DURATION_SECONDS),
-            str(artifact.get("quality") or "low"),
-            job_timeout=15,
-            result_ttl=3600,
-            failure_ttl=86400,
-        )
-        update_artifact(artifact_id, rq_job_id=str(job.id))
-        return str(job.id)
-    except RuntimeError:
-        raise
+            raise QueueFullError("动画渲染队列已满")
+        try:
+            connection = Redis.from_url(config.MANIM_REDIS_URL)
+            connection.ping()
+            queue = Queue(config.MANIM_QUEUE, connection=connection)
+            job = queue.enqueue(
+                "app.workers.manim_dispatcher.dispatch_manim_artifact",
+                artifact_id,
+                artifact["source_code"],
+                float(artifact.get("duration_seconds") or config.MANIM_MAX_DURATION_SECONDS),
+                str(artifact.get("quality") or "low"),
+                job_timeout=15,
+                result_ttl=3600,
+                failure_ttl=86400,
+            )
+            update_artifact(artifact_id, rq_job_id=str(job.id))
+            return str(job.id)
+        finally:
+            release_enqueue_slot(artifact_id)
+    except QueueFullError:
+        raise RuntimeError("动画渲染队列已满")
     except Exception as exc:
         update_artifact(
             artifact_id,
@@ -192,12 +203,26 @@ async def reconcile_active_artifacts_loop(stop_event) -> None:
                 if updated.get("status") == "repair_pending":
                     from app.services.manim_repair import repair_artifact_once
                     await asyncio.to_thread(repair_artifact_once, artifact["id"])
+            await asyncio.to_thread(process_pending_deletions)
         except Exception:  # 单次对账失败不应终止后台循环
             logger.exception("manim reconcile pass failed")
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=RECONCILE_INTERVAL_SECONDS)
         except asyncio.TimeoutError:
             pass
+
+
+def process_pending_deletions() -> None:
+    """Retry filesystem cleanup recorded by the durable deletion outbox."""
+
+    for task in list_pending_deletion_tasks():
+        artifact_id = str(task["artifact_id"])
+        try:
+            clear_artifact_files(artifact_id, permanent=True)
+        except Exception as exc:  # leave the task for the next reconciliation pass
+            record_deletion_task_failure(artifact_id, _safe_error(exc))
+        else:
+            mark_deletion_task_complete(artifact_id)
 
 
 def clear_artifact_files(artifact_id: str, *, permanent: bool = False) -> None:

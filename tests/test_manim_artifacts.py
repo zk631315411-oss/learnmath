@@ -1,5 +1,6 @@
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,10 +12,23 @@ from app.auth.jwt_handler import create_access_token
 from app.config import config
 from app.db.chat_history_db import delete_chat_history, migrate_user_id, save_chat_history
 from app.db.connection import get_conn, init_db
-from app.db.manim_artifact_db import create_artifact, get_artifact, list_artifacts_for_chat, update_artifact
+from app.db.manim_artifact_db import (
+    create_artifact,
+    get_artifact,
+    list_artifacts_for_chat,
+    list_pending_deletion_tasks,
+    release_enqueue_slot,
+    reserve_enqueue_slot,
+    update_artifact,
+)
 from app.main import app
 from app.services.manim_policy import validate_scene_source
-from app.services.manim_queue import artifact_response, reconcile_artifact, validate_media_token
+from app.services.manim_queue import (
+    artifact_response,
+    process_pending_deletions,
+    reconcile_artifact,
+    validate_media_token,
+)
 from app.services.manim_repair import repair_artifact_once
 from app.workers.manim_dispatcher import dispatch_manim_artifact
 from app.workers.manim_worker import _process_deletion, _recover_running_requests
@@ -90,6 +104,61 @@ class PolicyTests(unittest.TestCase):
 
 
 class ArtifactLifecycleTests(ManimTestCase):
+    def test_enqueue_reservation_serializes_capacity(self):
+        first = self.create(client_turn_id="turn-1")
+        second = self.create(client_turn_id="turn-2")
+        update_artifact(first["id"], status="failed")
+        update_artifact(second["id"], status="failed")
+        barrier = threading.Barrier(2)
+        results = []
+
+        def reserve(artifact_id):
+            barrier.wait()
+            results.append(reserve_enqueue_slot(artifact_id, 1))
+
+        threads = [threading.Thread(target=reserve, args=(item["id"],)) for item in (first, second)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+        self.assertEqual(sorted(results), [False, True])
+        winner = first["id"] if results[0] else second["id"]
+        release_enqueue_slot(winner)
+
+    def test_precreated_queue_items_allow_only_capacity_number_of_reservations(self):
+        artifacts = [self.create(client_turn_id=f"turn-{index}") for index in range(3)]
+        barrier = threading.Barrier(3)
+        results = []
+
+        def reserve(artifact_id):
+            barrier.wait()
+            results.append(reserve_enqueue_slot(artifact_id, 2))
+
+        threads = [threading.Thread(target=reserve, args=(item["id"],)) for item in artifacts]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+        self.assertEqual(sorted(results), [False, True, True])
+        for artifact, result in zip(artifacts, results):
+            if result:
+                release_enqueue_slot(artifact["id"])
+
+    def test_redis_runtime_error_is_reported_as_queue_unavailable(self):
+        artifact = self.create()
+
+        class BrokenRedis:
+            def ping(self):
+                raise RuntimeError("redis down")
+
+        with patch("redis.Redis.from_url", return_value=BrokenRedis()):
+            with self.assertRaisesRegex(RuntimeError, "动画渲染服务当前不可用"):
+                from app.services.manim_queue import enqueue_artifact
+                enqueue_artifact(artifact["id"])
+        updated = get_artifact(artifact["id"])
+        self.assertEqual(updated["status"], "failed")
+        self.assertEqual(updated["error_code"], "queue_unavailable")
+
     def test_artifact_response_never_exposes_source(self):
         response = artifact_response(self.create())
         self.assertNotIn("source_code", response)
@@ -171,6 +240,30 @@ class ArtifactLifecycleTests(ManimTestCase):
         self.assertTrue((config.MANIM_SPOOL_DIR / "deletions" / f"{artifact['id']}.delete").is_file())
         _process_deletion(config.MANIM_SPOOL_DIR / "deletions" / f"{artifact['id']}.delete")
         self.assertTrue((config.MANIM_SPOOL_DIR / "deleted" / f"{artifact['id']}.tombstone").is_file())
+
+    def test_chat_delete_keeps_durable_task_when_file_cleanup_fails(self):
+        chat_id = save_chat_history(user_id="owner", question="q", answer="a")
+        artifact = self.create(chat_id=chat_id)
+        with patch("app.services.manim_queue.clear_artifact_files", side_effect=OSError("disk full")):
+            self.assertTrue(delete_chat_history(chat_id, "owner"))
+        self.assertEqual([item["artifact_id"] for item in list_pending_deletion_tasks()], [artifact["id"]])
+
+        with patch("app.services.manim_queue.clear_artifact_files"):
+            process_pending_deletions()
+        self.assertEqual(list_pending_deletion_tasks(), [])
+
+    def test_renderer_keeps_delete_marker_for_retry_when_storage_is_unavailable(self):
+        artifact = self.create()
+        output = config.MANIM_RENDER_DIR / artifact["id"]
+        output.mkdir(parents=True)
+        marker_dir = config.MANIM_SPOOL_DIR / "deletions"
+        marker_dir.mkdir(parents=True)
+        marker = marker_dir / f"{artifact['id']}.delete"
+        marker.touch()
+        with patch("app.workers.manim_worker.shutil.rmtree", side_effect=OSError("read-only")):
+            self.assertFalse(_process_deletion(marker))
+        self.assertTrue(marker.is_file())
+        self.assertTrue(output.is_dir())
 
     def test_migration_moves_artifact_owner(self):
         self.create(user_id="anonymous")

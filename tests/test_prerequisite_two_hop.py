@@ -112,6 +112,31 @@ class TwoHopPrerequisiteTests(unittest.TestCase):
         self.assertIsNone(risk)
         self.assertFalse(kg_available)
 
+    def test_shared_estimate_cache_reuses_overlapping_prerequisites(self):
+        calls = []
+
+        def fake_relationships(node_id, *, focus, textbook_id, limit_per_group):
+            return {
+                "explicit_prerequisites": {
+                    "book:T": [_rel("book:A", "A")],
+                    "book:U": [_rel("book:A", "A")],
+                    "book:A": [],
+                }.get(node_id, []),
+            }, {}
+
+        def fake_estimate(user_id, textbook_id, node_id):
+            calls.append(node_id)
+            return _estimate(0.5, "emerging", 1)
+
+        with patch.object(lms.kg_v44, "get_kg_relationships", side_effect=fake_relationships), \
+             patch.object(lms, "compute_node_estimate", side_effect=fake_estimate), \
+             patch.object(lms, "project_user_progress", return_value={"nodes": {}}):
+            cache = {}
+            lms._prerequisite_context("u1", "book", "book:T", estimate_cache=cache)
+            lms._prerequisite_context("u1", "book", "book:U", estimate_cache=cache)
+
+        self.assertEqual(calls.count("book:A"), 1)
+
 
 class PageNameRetryTests(unittest.TestCase):
     def test_sentence_query_corrected_to_page_node_name(self):

@@ -17,6 +17,10 @@ from app.services.agents.tools.report_turn_outcome import (
 )
 from app.services.agents.tool_def import ToolArgumentError
 from app.services.qa import evidence_reporting
+from app.services.learning.catalog import catalog_node_ids
+
+
+CATALOG_NODE = sorted(catalog_node_ids("gaodai_shang"))[0]
 
 
 class ReportTurnOutcomeToolTests(unittest.TestCase):
@@ -179,15 +183,15 @@ class EvidenceReportingTests(unittest.TestCase):
             written = evidence_reporting.validate_and_report(
                 user_id="u1", chat_id="c1", qa_turn_id="t1",
                 textbook_id="gaodai_shang",
-                node_ids=["gaodai_shang:真实节点"],
+                node_ids=[CATALOG_NODE],
                 scaffolding_level=3, outcome="assisted",
-                turn_resolved_node_ids={"gaodai_shang:真实节点"},
+                turn_resolved_node_ids={CATALOG_NODE},
                 thread_resolved_node_ids=set(),
             )
         self.assertEqual(written, 1)
         insert.assert_called_once()
         row = insert.call_args[0][0][0]
-        self.assertEqual(row["node_id"], "gaodai_shang:真实节点")
+        self.assertEqual(row["node_id"], CATALOG_NODE)
         self.assertEqual(row["outcome"], "assisted")
         self.assertEqual(row["source"], "agent_self_report")
         self.assertEqual(row["scaffolding_level"], 3)
@@ -205,6 +209,35 @@ class EvidenceReportingTests(unittest.TestCase):
             )
         self.assertEqual(written, 0)
         insert.assert_not_called()
+
+    def test_known_catalog_rejects_prefix_matching_external_node(self):
+        external = "gaodai_shang:not-in-catalog"
+        with patch.object(evidence_db, "insert_evidence_rows") as insert:
+            written = evidence_reporting.validate_and_report(
+                user_id="u1", chat_id="c1", qa_turn_id="t1",
+                textbook_id="gaodai_shang",
+                node_ids=[external],
+                scaffolding_level=0, outcome="unresolved",
+                turn_resolved_node_ids={external},
+                thread_resolved_node_ids=set(),
+            )
+        self.assertEqual(written, 0)
+        insert.assert_not_called()
+
+    def test_duplicate_nodes_are_one_logical_report_without_client_turn_id(self):
+        with patch.object(evidence_db, "insert_evidence_rows") as insert:
+            written = evidence_reporting.validate_and_report(
+                user_id="u1", chat_id="c1", qa_turn_id="t1",
+                textbook_id="gaodai_shang",
+                node_ids=[CATALOG_NODE, CATALOG_NODE],
+                scaffolding_level=0, outcome="independent",
+                turn_resolved_node_ids={CATALOG_NODE},
+                thread_resolved_node_ids=set(),
+            )
+        self.assertEqual(written, 1)
+        rows = insert.call_args[0][0]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["node_id"], CATALOG_NODE)
 
     def test_db_exception_is_swallowed(self):
         # 落库异常不得向上抛：返回 0 且不阻断
@@ -228,10 +261,10 @@ class EvidenceReportingTests(unittest.TestCase):
             written = evidence_reporting.validate_and_report(
                 user_id="u1", chat_id="c1", qa_turn_id="t2",
                 textbook_id="gaodai_shang",
-                node_ids=["gaodai_shang:上轮节点"],
+                node_ids=[CATALOG_NODE],
                 scaffolding_level=2, outcome="direct_taught",
                 turn_resolved_node_ids=set(),
-                thread_resolved_node_ids={"gaodai_shang:上轮节点"},
+                thread_resolved_node_ids={CATALOG_NODE},
             )
         self.assertEqual(written, 1)
         insert.assert_called_once()

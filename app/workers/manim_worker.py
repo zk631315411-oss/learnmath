@@ -168,22 +168,35 @@ def _next_deletion() -> Path | None:
     return None
 
 
-def _process_deletion(marker: Path) -> None:
+def _process_deletion(marker: Path) -> bool:
+    """Delete one artifact; leave the marker in place when storage is unavailable."""
     artifact_id = marker.stem
     output = (config.MANIM_RENDER_DIR / artifact_id).resolve()
     if output.parent == config.MANIM_RENDER_DIR.resolve() and output.is_dir():
-        shutil.rmtree(output)
+        try:
+            shutil.rmtree(output)
+        except OSError:
+            return False
     result = config.MANIM_SPOOL_DIR / "results" / f"{artifact_id}.json"
     try:
         result.unlink()
     except FileNotFoundError:
         pass
+    except OSError:
+        return False
     for folder in ("pending", "running"):
-        (config.MANIM_SPOOL_DIR / folder / f"{artifact_id}.json").unlink(missing_ok=True)
+        try:
+            (config.MANIM_SPOOL_DIR / folder / f"{artifact_id}.json").unlink(missing_ok=True)
+        except OSError:
+            return False
     deleted = config.MANIM_SPOOL_DIR / "deleted"
-    deleted.mkdir(parents=True, exist_ok=True)
-    (deleted / f"{artifact_id}.tombstone").touch(exist_ok=True)
-    marker.unlink(missing_ok=True)
+    try:
+        deleted.mkdir(parents=True, exist_ok=True)
+        (deleted / f"{artifact_id}.tombstone").touch(exist_ok=True)
+        marker.unlink(missing_ok=True)
+    except OSError:
+        return False
+    return True
 
 
 def _process_request(request_path: Path) -> None:

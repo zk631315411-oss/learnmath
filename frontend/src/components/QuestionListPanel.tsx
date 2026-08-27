@@ -2,7 +2,8 @@
  * 提问记录侧栏组件
  *
  * 职责：把某用户的全量提问按页码分组升序展示；点击条目回调 onSelect，由上层负责跳页与加载对话。
- * 桌面端作为左栏常驻列表、移动端作为抽屉内容复用同一组件，宽度与滚动由外层容器控制，本组件不感知形态差异。
+ * 桌面端作为左栏常驻列表、移动端作为抽屉内容复用同一组件；
+ * 组件只负责列表内的重命名和删除交互，外层负责宽度、滚动与面板开闭。
  */
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Camera, Check, Pencil, Trash2, Type, X } from 'lucide-react';
@@ -41,11 +42,15 @@ function groupByPage(items: Marker[]): Array<{ page: number; items: Marker[] }> 
     .map(([page, list]) => ({ page, items: list }));
 }
 
-// SQLite 的 CURRENT_TIMESTAMP 存 UTC 的 "YYYY-MM-DD HH:MM:SS"，手动补 Z 标记 UTC 再转本地，
-// 避免各浏览器对带空格日期字符串解析不一致；解析失败则返回空串（不显示时间）
+// SQLite 的 CURRENT_TIMESTAMP 存 UTC 的 "YYYY-MM-DD HH:MM:SS"；导入数据和新接口
+// 也可能携带 ISO 的 Z/offset。只给没有时区的值补 Z，避免把已有 offset 拼成非法日期。
 function formatTime(createdAt?: string | null): string {
   if (!createdAt) return '';
-  const date = new Date(createdAt.replace(' ', 'T') + 'Z');
+  const value = createdAt.trim();
+  if (!value) return '';
+  const iso = value.includes('T') ? value : value.replace(' ', 'T');
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(iso);
+  const date = new Date(hasTimezone ? iso : `${iso}Z`);
   if (Number.isNaN(date.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;

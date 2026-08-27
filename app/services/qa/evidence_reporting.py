@@ -12,6 +12,7 @@ import logging
 from typing import Any
 
 from app.db import evidence_db
+from app.services.learning.catalog import catalog_node_ids, get_catalog_entry
 
 # 统一 logger：P3 用日志统计上报率/非法丢弃数，三处计数共享同一命名空间
 logger = logging.getLogger("learnmath.evidence")
@@ -162,6 +163,33 @@ def _node_prefix_ok(node_id: str, textbook_id: str | None) -> bool:
     return node_id.startswith(f"{clean}:")
 
 
+def _catalog_scope(textbook_id: str | None) -> frozenset[str] | None:
+    """Return the catalog node scope for a known textbook.
+
+    ``None`` means the caller did not bind a known generated catalog.  That
+    preserves the legacy prefix-only behavior for internal callers using a
+    synthetic textbook id.  A known catalog is fail-closed: a missing or
+    unreadable manifest yields an empty scope so an unverified node cannot be
+    persisted as learning evidence.
+    """
+
+    clean = (textbook_id or "").strip()
+    if not clean:
+        return None
+    try:
+        if get_catalog_entry(clean) is None:
+            # Older internal/test callers may use a temporary textbook id;
+            # route-level textbook validation remains the authoritative gate.
+            return None
+        return catalog_node_ids(clean)
+    except Exception:
+        logger.exception(
+            "learnmath.evidence: 读取教材目录失败 textbook=%s，拒绝未验证节点",
+            clean,
+        )
+        return frozenset()
+
+
 def validate_and_report(
     *,
     user_id: str,
@@ -184,8 +212,23 @@ def validate_and_report(
     落库异常统一 try/except 记日志，绝不向调用链抛出。
     """
     valid_ids: list[str] = []
+    seen_ids: set[str] = set()
     allowed = turn_resolved_node_ids | thread_resolved_node_ids
+    catalog_scope = _catalog_scope(textbook_id)
     for node_id in node_ids:
+        node_id = str(node_id or "").strip()
+        if not node_id:
+            continue
+        if node_id in seen_ids:
+            # A repeated node in one report is one logical observation.  This
+            # matters for legacy calls without client_turn_id, where the DB
+            # uniqueness key cannot protect us from duplicate rows.
+            logger.info(
+                "learnmath.evidence: 同一上报中的重复 node_id 丢弃 user=%s node=%s",
+                user_id, node_id,
+            )
+            continue
+        seen_ids.add(node_id)
         if node_id not in allowed:
             logger.info(
                 "learnmath.evidence: 非法 node_id 丢弃 user=%s node=%s",
@@ -195,6 +238,12 @@ def validate_and_report(
         if not _node_prefix_ok(node_id, textbook_id):
             logger.info(
                 "learnmath.evidence: 教材前缀不匹配丢弃 user=%s node=%s textbook=%s",
+                user_id, node_id, textbook_id,
+            )
+            continue
+        if catalog_scope is not None and node_id not in catalog_scope:
+            logger.info(
+                "learnmath.evidence: 节点不在当前教材目录，丢弃 user=%s node=%s textbook=%s",
                 user_id, node_id, textbook_id,
             )
             continue

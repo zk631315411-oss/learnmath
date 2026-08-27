@@ -1,8 +1,7 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
-import { BookOpen, LoaderCircle, Map as MapIcon, MessageSquare, X } from 'lucide-react';
+import { BookOpen, Map as MapIcon, MessageSquare } from 'lucide-react';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
-import ChatPanel from './components/ChatPanel';
 import EmptyGuideCard from './components/EmptyGuideCard';
 import AuthModal from './components/AuthModal';
 import AuthControls from './components/AuthControls';
@@ -163,13 +162,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textbookId]);
 
-  const handleMarkerClick = (marker: Marker) => {
-    markers.handleMarkerClick(marker);
-    markers.setActiveMarker(marker);
-  };
-
-  // 点击提问记录条目：跳页 + 加载该串对话。直接设 active 态而非走 handleMarkerClick，
-  // 是为了避免移动端误弹 MarkerPopover；移动端改为展开 BottomSheet 展示对话。
+  // 点击提问记录条目：跳页 + 加载该串对话，并切换到对应的阅读面板。
   const handleQuestionSelect = (marker: Marker) => {
     capture.clearDraft();
     setOverlaySurface('none');
@@ -191,6 +184,9 @@ export default function App() {
       setOverlaySurface('sheet-half');
     }
   };
+
+  // PDF 徽标与提问记录使用同一条打开对话路径，确保桌面/移动端的面板状态一致。
+  const handleMarkerClick = (marker: Marker) => handleQuestionSelect(marker);
 
   useEffect(() => {
     const request = navigation.threadRestore;
@@ -279,11 +275,6 @@ export default function App() {
     markReaderStarted(page);
   };
 
-  const handleMapChatSelect = (chatId: string) => {
-    const marker = questionList.items.find(item => item.id === chatId);
-    if (marker) handleQuestionSelect(marker);
-  };
-
   const retryMap = () => {
     if (selectedMapChapter) void mapHome.openChapter(selectedMapChapter);
     else { mapHome.retryCatalog(); void mapHome.refresh(); }
@@ -295,6 +286,10 @@ export default function App() {
     if (!user.token || user.isAnonymous) throw new Error('登录后才能删除提问记录');
     const wasActive = markers.activeThreadId === marker.id;
     await markers.handleDeleteMarker(marker.id);
+    // Reflect the confirmed server delete immediately.  The subsequent
+    // refresh is still useful for reconciliation, but is no longer required
+    // for the record list to stop showing a row that is already gone.
+    questionList.remove(marker.id);
     await Promise.all([questionList.refresh(), markers.refreshMarkers()]);
     if (wasActive) {
       chat.clearMessages();
@@ -325,7 +320,7 @@ export default function App() {
       setMobileReaderPanel('toc');
       setOverlaySurface('sheet-full');
     }
-  }, [capture, interactionLocked, isDesktop]);
+  }, [capture.cancel, capture.clearDraft, interactionLocked, isDesktop]);
 
   const desktopTocPanel = <TableOfContents
     chapters={mapHome.tocChapters}

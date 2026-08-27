@@ -17,7 +17,7 @@ from app.db.evidence_db import (
     list_evidence_for_user,
     list_evidence_for_user_textbook_nodes,
 )
-from app.services.learning.catalog import catalog_version
+from app.services.learning.catalog import catalog_node_ids, catalog_version
 from app.services.learning.learner_model_types import (
     DEFAULT_PARAMETERS,
     LearnerEstimate,
@@ -42,7 +42,10 @@ def estimate_public_dict(
     value["learner_state"] = estimate.state
     value["node_id"] = node_id
     value["prerequisite_risk"] = prerequisite_risk
-    value["computed_at"] = estimate.last_observed_at
+    # ``computed_at`` is the read/evaluation time; ``last_observed_at`` stays
+    # the evidence timestamp.  Conflating them makes a read look like fresh
+    # student activity and breaks audit semantics.
+    value["computed_at"] = estimate.computed_at
     value["stale"] = 0
     return value
 
@@ -77,9 +80,13 @@ def list_node_estimates(
 
     rows = list_evidence_for_user(user_id, textbook_id=textbook_id)
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    catalog_ids = catalog_node_ids(textbook_id)
     for row in rows:
         node_id = str(row.get("node_id") or "").strip()
-        if node_id:
+        # Evidence is normally validated before insertion.  Keep the public
+        # overview defensive for legacy/imported rows that have a matching
+        # textbook column but are absent from the current static catalog.
+        if node_id and node_id in catalog_ids:
             grouped[node_id].append(row)
     now = datetime.now(UTC)
     return [
@@ -133,8 +140,18 @@ def replay_user_textbook(
             grouped[node_id].append(row)
     requested_nodes = grouped.keys() if requested_node_values is None else requested_node_values
     selected = {str(value).strip() for value in requested_nodes if str(value).strip()}
+    # A multi-node replay is one logical evaluation.  Reuse one timestamp so
+    # every node has identical decay and an auditable ``computed_at`` value.
+    evaluation_time = as_of if as_of is not None else datetime.now(UTC)
     computed = [
-        (node_id, replay_node_evidence(grouped.get(node_id, []), as_of=as_of, parameters=parameters))
+        (
+            node_id,
+            replay_node_evidence(
+                grouped.get(node_id, []),
+                as_of=evaluation_time,
+                parameters=parameters,
+            ),
+        )
         for node_id in sorted(selected)
     ]
     return {

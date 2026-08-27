@@ -67,7 +67,7 @@ export default function NodeFocusCard({ node, allNodes, edges, onJump, onStudy, 
     const list = withEdge.length ? withEdge.slice(-2) : before.slice(-1);
     const approx = !withEdge.length && list.length > 0;
     prereqBlock = <>
-      <h3 className="nfc-h">要先会</h3>
+      <h3 className="nfc-h">要先会{approx && <span className="ml-1 text-[11px] font-normal text-[var(--lm-text-muted)]">（按讲授顺序在前）</span>}</h3>
       {list.length > 0 ? <ul>{list.map(item => <JumpItem key={item.node_id} item={item} onJump={onJump} />)}</ul>
         : <p className="text-[13px] text-[var(--lm-text-muted)]">本节起点</p>}
     </>;

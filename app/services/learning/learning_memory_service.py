@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from app.config import config
@@ -106,28 +107,41 @@ def retrieve_learning_memory_index(
         for node_id in clean_ids
     }
 
+    try:
+        # Keep one progress snapshot for the complete index request.  The
+        # prerequisite walk can then reuse it instead of scanning the same
+        # textbook once per target node.
+        progress = project_user_progress(user_id, textbook_id)
+    except Exception:
+        logger.exception("learning memory progress read failed user=%s book=%s", user_id, textbook_id)
+        return {"status": "unavailable", "reason": "progress_read_failed", "nodes": []}
+
     # Read-time replay: new evidence is reflected immediately; only a
     # computation failure degrades the view to partial.
     estimates: dict[str, dict[str, Any] | None] = {}
     replay_failed = False
+    # One index response represents one evaluation moment.  Sharing this
+    # timestamp keeps decay and ``computed_at`` consistent across target nodes.
+    evaluation_time = datetime.now(timezone.utc)
     for node_id in clean_ids:
         try:
-            estimate = replay_node_evidence(canonical_by_node[node_id])
+            estimate = replay_node_evidence(
+                canonical_by_node[node_id],
+                as_of=evaluation_time,
+            )
             estimates[node_id] = estimate_public_dict(node_id, estimate)
         except Exception:
             replay_failed = True
             estimates[node_id] = None
             logger.exception("learning memory read-time replay failed user=%s node=%s", user_id, node_id)
 
-    try:
-        progress = project_user_progress(user_id, textbook_id)
-    except Exception:
-        logger.exception("learning memory progress read failed user=%s book=%s", user_id, textbook_id)
-        return {"status": "unavailable", "reason": "progress_read_failed", "nodes": []}
-
     result_nodes: list[dict[str, Any]] = []
     partial = replay_failed
     recent_candidates_by_node: dict[str, list[dict[str, Any]]] = {}
+    # Several target nodes often share the same prerequisite chain.  Reuse
+    # each prerequisite replay (including a failed lookup) for this request;
+    # the cache never crosses the request-local memory scope.
+    prerequisite_estimate_cache: dict[str, dict[str, Any] | None] = {}
     for node_id in clean_ids:
         canonical_rows = canonical_by_node[node_id]
         snapshot = estimates.get(node_id)
@@ -159,7 +173,11 @@ def retrieve_learning_memory_index(
         kg_available = False
         if snapshot is not None or not canonical_rows:
             prerequisites, risk, kg_available = _prerequisite_context(
-                user_id, textbook_id, node_id,
+                user_id,
+                textbook_id,
+                node_id,
+                progress_snapshot=progress,
+                estimate_cache=prerequisite_estimate_cache,
             )
 
         if snapshot is None:
@@ -307,11 +325,17 @@ def _memory_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         counts[adapted.raw_outcome] += 1
         effective_counts[adapted.effective_outcome] += 1
         created_at = row.get("created_at")
-        if created_at and (last_observed is None or str(created_at) > str(last_observed)):
+        if created_at and (
+            last_observed is None
+            or _timestamp_sort_key(created_at) > _timestamp_sort_key(last_observed)
+        ):
             last_observed = created_at
         if adapted.closed_observation:
             closed += 1
-            if created_at and (last_closed is None or str(created_at) > str(last_closed)):
+            if created_at and (
+                last_closed is None
+                or _timestamp_sort_key(created_at) > _timestamp_sort_key(last_closed)
+            ):
                 last_closed = created_at
     return {
         "observation_count": len(rows),

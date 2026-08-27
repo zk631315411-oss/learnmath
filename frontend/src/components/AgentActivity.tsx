@@ -15,8 +15,13 @@ interface Props {
 }
 
 // 后端内部工具名单：这些工具不面向学生，前端作为第二道保险过滤掉，
-// 防止后端展示过滤松动时泄漏到工具活动面板。
-const INTERNAL_TOOLS = new Set(['report_turn_outcome']);
+// 防止旧历史记录或后端展示过滤松动时泄漏到工具活动面板。
+const INTERNAL_TOOLS = new Set([
+  'report_turn_outcome',
+  'retrieve_learning_memory_index',
+  'retrieve_learning_memory_detail',
+  'retrieve_learner_model_context',
+]);
 
 const focusLabels: Record<KGRetrievalFocus, string> = {
   prerequisites: '明确前置',
