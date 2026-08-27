@@ -4,7 +4,9 @@
 > 版本：v7
 > 总时长：2 分 40 秒
 > 核心命题：**把记忆从聊天记录，变成知识图上的学习位置。**
-> 执行基准：本稿为唯一维护稿（[`PV_HOOK_DRAFT.md`](PV_HOOK_DRAFT.md) 已封存为历史稿，2026-08-26）；录屏操作清单、狐狸姿态、配音、剪辑、时间线与风险见 [`PV_PRODUCTION_PLAN.md`](PV_PRODUCTION_PLAN.md)
+> 完成状态：本稿对应的 PV 已于 2026-08-27 完成，正式成片为 `artifacts/pv/学数有道-PV-v3.6.mp4`（97 秒）。本稿保留为创作与审查记录，不再作为待执行任务。
+>
+> 执行基准：本稿为唯一维护稿（[`PV_HOOK_DRAFT.md`](archive/PV_HOOK_DRAFT.md) 已封存为历史稿，2026-08-26）；录屏操作清单、狐狸姿态、配音、剪辑、时间线与风险见 [`PV_PRODUCTION_PLAN.md`](PV_PRODUCTION_PLAN.md)
 
 ## 一、导演定稿
 

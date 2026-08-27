@@ -5,7 +5,9 @@
 > 前置：所有实机画面已在 localhost:8090（生产版）验证通过
 > 素材：小狐狸五姿态在 `artifacts/pv-character/`；旧动画 mp4（抛物线）仅作备选，本片动画按 §3.4 新渲染
 
-> 当前进度（2026-08-26）：[`PV_SCRIPT_FINAL.md`](PV_SCRIPT_FINAL.md) v7 为全片 0:00-2:40 分镜与逐字稿的唯一维护稿，作为本计划的执行基准；[`PV_HOOK_DRAFT.md`](PV_HOOK_DRAFT.md) v0.8 已封存为历史稿，仅作追溯；审查口径为 FINAL v7 第三节导演审查清单。通用 AI 开头素材见 `artifacts/pv/hook/hook-preview.mp4`；Manim 试拍候选与探针记录见 `artifacts/pv/animation/`、`artifacts/pv-reality/probe-turn4/`。素材索引见 [`artifacts/pv/README.md`](../../artifacts/pv/README.md)。
+> 完成状态（2026-08-27）：正式成片 `artifacts/pv/学数有道-PV-v3.6.mp4` 已完成，实际时长 97 秒。本计划归档为制作过程记录；最终交付与素材索引见 [`artifacts/pv/README.md`](../../../artifacts/pv/README.md)。
+>
+> 原执行基准（2026-08-26）：[`PV_SCRIPT_FINAL.md`](PV_SCRIPT_FINAL.md) v7 为全片分镜与逐字稿的唯一维护稿；[`PV_HOOK_DRAFT.md`](archive/PV_HOOK_DRAFT.md) v0.8 已封存为历史稿，仅作追溯；审查口径为 FINAL v7 第三节导演审查清单。通用 AI 开头素材见 `artifacts/pv/hook/hook-preview.mp4`；Manim 试拍候选与探针记录见 `artifacts/pv/animation/archive/`、`artifacts/pv-reality/probe-turn4/`。
 
 ## 1. 总览
 

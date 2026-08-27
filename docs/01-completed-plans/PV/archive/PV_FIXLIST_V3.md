@@ -137,13 +137,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make_pv_voice.ps1
 ```
 
 **其余待办**（沿用，未变）：
-- [ ] S1 补养成（话术见 §3.1）→ S2 前后态重取
-- [ ] S2 前后态分屏分拍（逆序数 学习中→已学过 + 两行互换 需要巩固）
-- [ ] S3 正式账号首页素材（`pv_formal_20260826b` 首页"需要巩固"）
-- [ ] S4 定位段 KG 卡片镜头（展开"已检索知识图谱"）
-- [ ] S5 开头句 TTS（见 §3.3）
+- [x] S1 补养成（正式账号已真实形成第 2 条 independent；逆序数当前 `mastered`）→ S2 前态需沿用归档的正式前态素材
+- [ ] S1b 2.2 完全展开式补养成：已执行第一轮真实确认，但系统上报 `unresolved`；已停止并回滚，需先在试拍账号验证新话术
+- [x] S2 前后态分屏分拍（`artifacts/pv-reality/v3-browser-assets/`：逆序数 学习中→已学过 + 两行互换 需要巩固）
+- [x] S3 正式账号首页素材（`v3-browser-assets/s3-home-needs-review.*`）
+- [x] S4 定位段 KG 卡片镜头（`v3-browser-assets/s4-kg-card-expanded.*`；“已思考”保持折叠）
+- [x] S5 开头句 TTS（`artifacts/pv/voice/01-hook.wav`，44.1kHz）
 - [ ] S6 小狸口播（声线待定）
-- [ ] S7 recording.png ✅ 已完成
+- [x] S7 recording.png ✅ 已完成（`artifacts/pv/character/cutout/recording.png`）
+- [x] S8 连续性旁白 TTS（`artifacts/pv/voice/08-continuity.wav`，44.1kHz）
 - [ ] E1–E10 剪辑（详 PV_V3_交接执行包.md §2）
 
 ## 四、红线复核（沿用，不变）
