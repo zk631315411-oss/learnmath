@@ -262,11 +262,17 @@ def delete_chat_history(chat_id: str, user_id: str | None = None) -> bool:
     artifact_ids: list[str] = []
     conn = get_conn()
     try:
+        from app.db.manim_artifact_db import queue_artifact_deletion_tasks
+
         where = "chat_id=?" + (" AND user_id=?" if user_id is not None else "")
         params = (chat_id, user_id) if user_id is not None else (chat_id,)
         artifact_ids = [str(row[0]) for row in conn.execute(
             f"SELECT id FROM manim_artifacts WHERE {where}", params,
         ).fetchall()]
+        # Record the filesystem deletion intent in the same transaction as the
+        # database deletion.  The API can retry the task if marker creation or
+        # local cleanup fails after this request has returned.
+        queue_artifact_deletion_tasks(conn, artifact_ids)
         conn.execute(f"DELETE FROM manim_artifacts WHERE {where}", params)
         chat_where = "id=?" + (" AND user_id=?" if user_id is not None else "")
         cursor = conn.execute(f"DELETE FROM chat_history WHERE {chat_where}", params)
@@ -275,8 +281,16 @@ def delete_chat_history(chat_id: str, user_id: str | None = None) -> bool:
         conn.close()
     if artifact_ids:
         from app.services.manim_queue import clear_artifact_files
+        from app.db.manim_artifact_db import mark_deletion_task_complete, record_deletion_task_failure
         for artifact_id in artifact_ids:
-            clear_artifact_files(artifact_id, permanent=True)
+            try:
+                clear_artifact_files(artifact_id, permanent=True)
+            except Exception as exc:
+                # Keep the durable outbox row.  The reconciliation loop will
+                # retry marker creation and cleanup without resurrecting data.
+                record_deletion_task_failure(artifact_id, str(exc))
+            else:
+                mark_deletion_task_complete(artifact_id)
     return cursor.rowcount == 1
 
 
@@ -350,8 +364,8 @@ def migrate_user_id(old_user_id: str, new_user_id: str) -> int:
                 (new_user_id, old_user_id),
             )
             # Keep historical learner-model runs attached to the anonymous
-            # identity as migration audit evidence.  The registered identity
-            # receives a new run after its merged evidence is replayed.
+            # identity as migration audit evidence.  Current estimates are
+            # replayed from the merged evidence ledger at read time.
             if migrated_evidence or skipped_evidence:
                 conn.execute(
                     "UPDATE learner_node_estimates SET stale=1 WHERE user_id IN (?, ?)",
@@ -385,21 +399,6 @@ def migrate_user_id(old_user_id: str, new_user_id: str) -> int:
             raise
     finally:
         conn.close()
-    # The evidence merge is the source-of-truth transaction.  Rebuild derived
-    # snapshots only after it commits, and never make account migration fail
-    # because a model/catalog replay is unavailable.
-    if (migrated_evidence or skipped_evidence) and affected_textbooks:
-        from app.config import config
-
-        if config.LEARNER_MODEL_ENABLED:
-            from app.db.learner_model_db import replay_user_textbook
-
-            for textbook_id in sorted(affected_textbooks):
-                try:
-                    replay_user_textbook(new_user_id, textbook_id)
-                except Exception:
-                    logger.exception(
-                        "learner migration replay failed old=%s new=%s textbook=%s",
-                        old_user_id, new_user_id, textbook_id,
-                    )
+    # ``evidence_turns`` is the source of truth and the online learner model
+    # is read-time replay.  There is no derived snapshot to rebuild here.
     return count

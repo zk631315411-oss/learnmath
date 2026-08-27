@@ -50,11 +50,11 @@
 | `frontend/src/hooks/useChat.ts` | 对话、后台回答任务和持久化协作 |
 | `frontend/src/services/streamQA.ts` | SSE 客户端 |
 | `frontend/src/hooks/useMapHomeData.ts` | 静态目录与用户进度合并 |
-| `frontend/src/components/MapHome.tsx` | 全书学习地图首页 |
-| `frontend/src/components/ChapterMapView.tsx` | 章节地图入口与列表/地图切换 |
-| `frontend/src/components/ChapterLadderView.tsx` | KG 章总览、节梯子、岛屿总览和列表兜底 |
-| `frontend/src/components/kg/NodeDetailCard.tsx` | 节点聚焦子图、关系详情和学习动作 |
-| `frontend/src/components/AgentActivity.tsx` | 学生可见的 KG 工具活动和通用工具状态；learning-memory 专用中文状态文案尚未单独接入 |
+| `frontend/src/components/MapHome.tsx` | 全书学习地图首页、章节展开和教材切换 |
+| `frontend/src/components/kg/SectionLadderPanel.tsx` | 章节小节的梯子、岛屿关系和节点详情组合入口 |
+| `frontend/src/components/kg/SectionLadder.tsx` | 小节主干梯子、节点选择和关系布局 |
+| `frontend/src/components/kg/NodeFocusCard.tsx` | 节点聚焦子图、关系详情和学习动作 |
+| `frontend/src/components/AgentActivity.tsx` | 学生可见的 KG 工具活动和 learning-memory 查询状态；内部记忆明细不直接展示 |
 | `frontend/src/components/formula/FormulaComposer.tsx` | 数学输入、结构导航和公式编辑 |
 | `frontend/src/components/formula/RecognizedContentCard.tsx` | 拍照混合内容识别结果编辑和插入 |
 | `frontend/src/components/ChatPlusMenu.tsx`、`PhotoPreviewSheet.tsx` | 拍照识别、相册识别和拍题提问入口 |

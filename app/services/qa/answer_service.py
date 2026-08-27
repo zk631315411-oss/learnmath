@@ -799,6 +799,12 @@ def _filter_evidence_fork_messages(messages: list[dict]) -> list[dict]:
             # Tool-call round content is not part of the student's observed
             # response; keep only non-memory tool calls for the fork.
             message.pop("content", None)
+            # If every call was an internal memory operation, retaining an
+            # empty assistant message leaves an invalid/no-op turn in the
+            # evidence fork.  Some providers reject that shape, and it adds
+            # no evidence for the one-shot evaluator.
+            if not kept_calls:
+                continue
         elif role == "assistant":
             # A completed assistant response must never become evidence-fork
             # input. Historical assistant messages are represented in the

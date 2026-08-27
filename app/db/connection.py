@@ -325,5 +325,37 @@ def init_db():
     ):
         _ensure_column(cursor, "manim_artifacts", column, definition)
 
+    # Queue reservations close the check-then-enqueue race in the API.  A
+    # reservation is short-lived and is reclaimed by the enqueue path when it
+    # succeeds/fails, or by the expiry query after an API process crash.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS manim_enqueue_reservations (
+          artifact_id TEXT PRIMARY KEY,
+          reserved_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          expires_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_manim_enqueue_reservations_expiry "
+        "ON manim_enqueue_reservations(expires_at)"
+    )
+
+    # Durable deletion intent.  The renderer consumes filesystem markers, but
+    # the API also keeps this outbox in SQLite so a marker creation failure can
+    # be retried after the request and after an API restart.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS manim_deletion_tasks (
+          artifact_id TEXT PRIMARY KEY,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          last_error TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+        )
+    """)
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_manim_deletion_tasks_updated "
+        "ON manim_deletion_tasks(updated_at)"
+    )
+
     conn.commit()
     conn.close()

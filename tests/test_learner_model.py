@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from app.services.learning.learner_model_types import DEFAULT_PARAMETERS
 from app.services.learning.model_adapter import adapt_evidence
 from app.services.learning.student_model import derive_state, project_snapshot_at, replay_node_evidence
+from app.services.learning.learner_model_service import _latest_observation_timestamp
 
 
 UTC = timezone.utc
@@ -51,6 +52,24 @@ class LearnerModelReplayTests(unittest.TestCase):
         self.assertAlmostEqual(estimate.estimate, 2 / 3)
         self.assertGreaterEqual(estimate.uncertainty, 0.0)
         self.assertLessEqual(estimate.uncertainty, 1.0)
+
+    def test_computed_at_is_evaluation_time_not_last_observation(self):
+        estimate = replay_node_evidence(
+            [row("a", "independent", created_at="2025-12-01T00:00:00+00:00")],
+            as_of="2026-01-01T12:34:56+08:00",
+        )
+        self.assertEqual(estimate.last_observed_at, "2025-12-01T00:00:00+00:00")
+        self.assertEqual(estimate.computed_at, "2026-01-01T04:34:56.000000+00:00")
+
+    def test_latest_observation_timestamp_compares_instants(self):
+        estimates = [
+            {"node_id": "a", "last_observed_at": "2026-01-01T23:30:00-05:00"},
+            {"node_id": "b", "last_observed_at": "2026-01-02T02:00:00+00:00"},
+        ]
+        self.assertEqual(
+            _latest_observation_timestamp(estimates),
+            "2026-01-01T23:30:00-05:00",
+        )
 
     def test_two_independent_do_not_reach_likely_ready(self):
         estimate = replay_node_evidence(

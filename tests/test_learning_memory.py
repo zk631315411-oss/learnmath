@@ -16,6 +16,7 @@ from app.services.learning.learning_memory_scope import (
     reset_memory_scope,
 )
 from app.services.learning.learning_memory_service import (
+    _memory_summary,
     retrieve_learning_memory_detail,
     retrieve_learning_memory_index,
 )
@@ -39,6 +40,24 @@ class LearningMemoryTests(unittest.TestCase):
 
     def _scope(self):
         return begin_memory_scope(self.user, self.book, qa_turn_id="turn-1")
+
+    def test_memory_summary_compares_instants_across_timezones(self):
+        rows = [
+            {
+                "id": "later",
+                "outcome": "independent",
+                "scaffolding_level": 0,
+                "created_at": "2026-01-01T23:30:00-05:00",
+            },
+            {
+                "id": "earlier",
+                "outcome": "assisted",
+                "scaffolding_level": 1,
+                "created_at": "2026-01-02T02:00:00+00:00",
+            },
+        ]
+        summary = _memory_summary(rows)
+        self.assertEqual(summary["last_observed_at"], "2026-01-01T23:30:00-05:00")
 
     def test_index_registers_refs_and_detail_returns_safe_excerpt(self):
         chat_id = save_chat_history(

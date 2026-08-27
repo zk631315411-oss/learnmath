@@ -7,12 +7,14 @@ from typing import Any, Iterable
 
 from app.config import config
 from app.db import kg_v44
+from app.db.evidence_db import get_learning_progress_revision
 from app.db.learner_model_db import compute_node_estimate, list_node_estimates
-from app.services.learning.catalog import catalog_version
+from app.services.learning.catalog import catalog_node_ids, catalog_version
 from app.services.learning.learner_model_types import (
     DEFAULT_PARAMETERS,
 )
 from app.services.learning.progress import project_user_progress
+from app.services.learning.student_model import _timestamp_sort_key
 
 
 logger = logging.getLogger("learnmath.learner_model")
@@ -68,12 +70,27 @@ def get_public_model(
         logger.exception("learner model read-time replay failed user=%s book=%s", user_id, textbook_id)
         return neutral_response(textbook_id, status="unavailable", catalog_version_value=version)
     if not estimates:
+        try:
+            revision = get_learning_progress_revision(user_id, textbook_id)
+        except Exception:
+            # The model endpoint is intentionally best-effort.  An empty
+            # evidence set must not turn a revision-store outage into a 500.
+            logger.exception(
+                "learner model revision read failed user=%s book=%s",
+                user_id,
+                textbook_id,
+            )
+            return neutral_response(
+                textbook_id,
+                status="unavailable",
+                catalog_version_value=version,
+            )
         return {
             "status": "ok",
             "available": True,
             "textbook_id": textbook_id,
             "catalog_version": version,
-            "revision": 0,
+            "revision": revision,
             "nodes": [],
             "updated_at": None,
         }
@@ -98,7 +115,10 @@ def get_public_model(
         "catalog_version": version,
         "revision": progress.get("revision"),
         "nodes": nodes,
-        "updated_at": max((item.get("computed_at") or "" for item in estimates), default=None),
+        # ``updated_at`` is the latest learner observation for UI purposes;
+        # ``computed_at`` remains available in development debug for the
+        # read-time evaluation timestamp.
+        "updated_at": _latest_observation_timestamp(estimates),
     }
 
 
@@ -132,7 +152,12 @@ def get_public_node(
         }
     map_status = (progress.get("nodes", {}).get(node_id, {}) or {}).get("status", "unexplored")
     node = _public_snapshot(snapshot, map_status=map_status, debug=debug and model_debug_enabled())
-    prerequisites, risk, kg_available = _prerequisite_context(user_id, textbook_id, node_id)
+    prerequisites, risk, kg_available = _prerequisite_context(
+        user_id,
+        textbook_id,
+        node_id,
+        progress_snapshot=progress,
+    )
     node["next_action"] = _next_action(node.get("learner_state"), risk, snapshot.get("estimate"))
     node["prerequisite_hint"] = _prerequisite_hint(node.get("learner_state"), risk, kg_available)
     node["prerequisites"] = [
@@ -166,7 +191,8 @@ def _public_snapshot(estimate: dict[str, Any], *, map_status: str, debug: bool) 
         "map_status": map_status,
         "learner_state": state,
         "next_action": _next_action(state, None, estimate.get("estimate")),
-        "updated_at": estimate.get("computed_at"),
+        # Do not make a passive GET look like new learning activity.
+        "updated_at": estimate.get("last_observed_at"),
         "available": True,
     }
     if debug:
@@ -181,10 +207,32 @@ def _public_snapshot(estimate: dict[str, Any], *, map_status: str, debug: bool) 
     return value
 
 
+def _latest_observation_timestamp(estimates: Iterable[dict[str, Any]]) -> str | None:
+    """Return the newest observation without comparing offset strings lexically."""
+
+    candidates = [
+        item for item in estimates
+        if item.get("last_observed_at")
+    ]
+    if not candidates:
+        return None
+    latest = max(
+        candidates,
+        key=lambda item: (
+            _timestamp_sort_key(item.get("last_observed_at")),
+            str(item.get("node_id") or ""),
+        ),
+    )
+    return latest.get("last_observed_at")
+
+
 def _prerequisite_context(
     user_id: str,
     textbook_id: str,
     node_id: str,
+    *,
+    progress_snapshot: dict[str, Any] | None = None,
+    estimate_cache: dict[str, dict[str, Any] | None] | None = None,
 ) -> tuple[list[dict[str, Any]], float | None, bool]:
     """沿 PREREQUISITE_OF 入边递归到深度 2，返回带去重与 hop 标注的前置上下文。
 
@@ -195,11 +243,19 @@ def _prerequisite_context(
     于纯 KG 推断节点，其余按 hop 升序、风险降序，保证教学上最相关的薄弱
     前置排在前面。
     """
-    try:
-        progress = project_user_progress(user_id, textbook_id)
-    except Exception:
-        return [], None, False
+    if progress_snapshot is None:
+        try:
+            progress = project_user_progress(user_id, textbook_id)
+        except Exception:
+            return [], None, False
+    else:
+        progress = progress_snapshot
 
+    # KG data is authoritative for relationships, but the static catalog is
+    # the tenant boundary for nodes exposed to the learner model.  Unknown
+    # textbook IDs are left compatible for internal callers/tests; public
+    # routes validate the textbook before reaching this function.
+    catalog_ids = catalog_node_ids(textbook_id)
     contexts: list[dict[str, Any]] = []
     seen: set[str] = {node_id}
     frontier = [node_id]
@@ -232,19 +288,26 @@ def _prerequisite_context(
                 if not isinstance(prereq, dict) or not prereq.get("node_id"):
                     continue
                 prereq_id = str(prereq["node_id"])
-                if not prereq_id.startswith(f"{textbook_id}:") or prereq_id in seen:
+                if (
+                    not prereq_id.startswith(f"{textbook_id}:")
+                    or (catalog_ids and prereq_id not in catalog_ids)
+                    or prereq_id in seen
+                ):
                     continue
                 seen.add(prereq_id)
                 next_frontier.append(prereq_id)
-                try:
-                    snapshot = compute_node_estimate(user_id, textbook_id, prereq_id)
-                except Exception:
+                snapshot = _cached_prerequisite_estimate(
+                    user_id,
+                    textbook_id,
+                    prereq_id,
+                    estimate_cache,
+                )
+                if snapshot is None:
                     estimate = 0.5
                     state = "unknown"
                     map_status = "unexplored"
                     risk = 1.0
                     evidence_count = 0
-                    snapshot = None
                 if snapshot is not None:
                     estimate = float(snapshot.get("estimate") or 0.5)
                     state = str(snapshot.get("learner_state") or "unknown")
@@ -270,6 +333,36 @@ def _prerequisite_context(
 
     contexts.sort(key=_prerequisite_sort_key)
     return contexts, aggregate_prerequisite_risk(item["risk"] for item in contexts), True
+
+
+def _cached_prerequisite_estimate(
+    user_id: str,
+    textbook_id: str,
+    node_id: str,
+    estimate_cache: dict[str, dict[str, Any] | None] | None,
+) -> dict[str, Any] | None:
+    """Load one prerequisite estimate, reusing it across target nodes.
+
+    A memory-index request can contain three targets whose prerequisite
+    neighborhoods overlap.  Caching both successful and failed lookups keeps
+    that bounded request from repeating identical SQLite reads while leaving
+    the single-node compatibility path unchanged when no cache is supplied.
+    """
+
+    if estimate_cache is not None and node_id in estimate_cache:
+        return estimate_cache[node_id]
+    try:
+        snapshot = compute_node_estimate(user_id, textbook_id, node_id)
+    except Exception:
+        logger.exception(
+            "learner model prerequisite replay failed user=%s node=%s",
+            user_id,
+            node_id,
+        )
+        snapshot = None
+    if estimate_cache is not None:
+        estimate_cache[node_id] = snapshot
+    return snapshot
 
 
 def _prerequisite_sort_key(item: dict[str, Any]) -> tuple[int, int, float, str]:

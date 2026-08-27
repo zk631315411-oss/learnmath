@@ -76,6 +76,10 @@ class LearnerEstimate:
     last_outcome: Outcome | None
     last_observed_at: str | None
     last_closed_at: str | None
+    # Evaluation timestamp, distinct from the timestamp of the latest
+    # evidence row.  It makes read-time snapshots auditable without implying
+    # that a new observation was created during the read.
+    computed_at: str | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)

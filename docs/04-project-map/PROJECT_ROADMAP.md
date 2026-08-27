@@ -40,7 +40,7 @@ LearnMath 要验证：以教材知识图谱为核心的 AI 教学 Agent，是否
 - 节点级 `unknown / emerging / likely_ready / model_needs_review` 状态、不确定性和 14 天时间衰减；
 - 只读 `/api/learner-model` 接口；
 - memory-first Agent 工具 `retrieve_learning_memory_index` 和 `retrieve_learning_memory_detail`；
-- 当前轮 scope、用户/教材/节点隔离和脱敏的 learning-memory 状态活动；前端专用的四态学习记录文案尚未在主树 `AgentActivity.tsx` 中单独渲染。
+- 当前轮 scope、用户/教材/节点隔离和脱敏的 learning-memory 状态活动；`AgentActivity.tsx` 已将查询中的运行、成功、部分可用和失败状态用中性文案呈现，内部模型参数仍不对学生公开。
 
 当前实现边界：模型估计从 evidence 读时重算，`learner_node_estimates` 和 `learner_model_runs` 仅保留兼容表结构，不作为当前写入快照；`LEARNER_MODEL_ENABLED=true` 为默认值，阶段 3 节点级模型和 memory-first Agent 已进入生产。真实学生证据闭合、真实 LLM 链路和干净设备部署仍需持续验收，但不再是默认启用的前置条件。完整学生画像、反馈接口、自动出题和 Bloom/SOLO 等高阶诊断不在本阶段。
 

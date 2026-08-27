@@ -19,6 +19,7 @@ from app.services.learning.learning_memory_scope import (
     reset_memory_scope,
 )
 from app.services.learning.learning_memory_service import retrieve_learning_memory_index
+from app.services.learning.learner_model_service import _latest_observation_timestamp
 from app.services.learning.catalog import catalog_node_ids
 
 
@@ -79,13 +80,13 @@ class LearnerModelApiTests(unittest.TestCase):
 
     def test_new_evidence_is_reflected_immediately_in_model(self):
         insert_evidence_rows([{
-            "id": "e1", "user_id": "u1", "node_id": "gaodai_shang:n",
+            "id": "e1", "user_id": "u1", "node_id": self.catalog_node,
             "textbook_id": "gaodai_shang", "outcome": "independent",
             "scaffolding_level": 0,
         }])
-        replay_user_textbook("u1", "gaodai_shang", node_ids=["gaodai_shang:n"])
+        replay_user_textbook("u1", "gaodai_shang", node_ids=[self.catalog_node])
         insert_evidence_rows([{
-            "id": "e2", "user_id": "u1", "node_id": "gaodai_shang:n",
+            "id": "e2", "user_id": "u1", "node_id": self.catalog_node,
             "textbook_id": "gaodai_shang", "outcome": "assisted",
             "scaffolding_level": 1,
         }])
@@ -98,14 +99,66 @@ class LearnerModelApiTests(unittest.TestCase):
         self.assertEqual(body["status"], "ok")
         self.assertTrue(body["available"])
         # The second evidence row is already part of the read-time estimate.
-        node = next(item for item in body["nodes"] if item["node_id"] == "gaodai_shang:n")
+        node = next(item for item in body["nodes"] if item["node_id"] == self.catalog_node)
         self.assertEqual(node["learner_state"], "emerging")
         self.assertTrue(node["available"])
+
+    def test_public_updated_at_is_last_observation_not_read_time(self):
+        observed_at = "2026-01-01T00:00:00+00:00"
+        insert_evidence_rows([{
+            "id": "dated-evidence",
+            "user_id": "u1",
+            "node_id": self.catalog_node,
+            "textbook_id": "gaodai_shang",
+            "outcome": "independent",
+            "scaffolding_level": 0,
+            "created_at": observed_at,
+        }])
+        with patch.object(config, "LEARNER_MODEL_ENABLED", True):
+            response = self.client.get(
+                "/api/learner-model?textbook_id=gaodai_shang", headers=self.headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["updated_at"], observed_at)
+        self.assertEqual(response.json()["nodes"][0]["updated_at"], observed_at)
+
+    def test_empty_public_overview_keeps_revision_for_catalog_external_rows(self):
+        insert_evidence_rows([{
+            "id": "external-evidence",
+            "user_id": "u1",
+            "node_id": "gaodai_shang:not-in-catalog",
+            "textbook_id": "gaodai_shang",
+            "outcome": "independent",
+            "scaffolding_level": 0,
+        }])
+        with patch.object(config, "LEARNER_MODEL_ENABLED", True):
+            response = self.client.get(
+                "/api/learner-model?textbook_id=gaodai_shang", headers=self.headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["nodes"], [])
+        self.assertEqual(body["revision"], 1)
+
+    def test_empty_public_overview_revision_failure_is_neutral(self):
+        with patch.object(config, "LEARNER_MODEL_ENABLED", True), \
+             patch(
+                 "app.services.learning.learner_model_service.get_learning_progress_revision",
+                 side_effect=RuntimeError("revision store unavailable"),
+             ):
+            response = self.client.get(
+                "/api/learner-model?textbook_id=gaodai_shang", headers=self.headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["status"], "unavailable")
+        self.assertFalse(body["available"])
+        self.assertEqual(body["nodes"], [])
 
     def test_enabled_replay_failure_is_neutral_200(self):
         insert_evidence_rows([{
             "id": "invalid-evidence", "user_id": "u1",
-            "node_id": "gaodai_shang:n", "textbook_id": "gaodai_shang",
+            "node_id": self.catalog_node, "textbook_id": "gaodai_shang",
             "outcome": "invalid", "scaffolding_level": 0,
         }])
         with patch.object(config, "LEARNER_MODEL_ENABLED", True):
@@ -119,11 +172,11 @@ class LearnerModelApiTests(unittest.TestCase):
 
     def test_debug_fields_require_development_switch(self):
         insert_evidence_rows([{
-            "id": "e1", "user_id": "u1", "node_id": "gaodai_shang:n",
+            "id": "e1", "user_id": "u1", "node_id": self.catalog_node,
             "textbook_id": "gaodai_shang", "outcome": "independent",
             "scaffolding_level": 0,
         }])
-        replay_user_textbook("u1", "gaodai_shang", node_ids=["gaodai_shang:n"])
+        replay_user_textbook("u1", "gaodai_shang", node_ids=[self.catalog_node])
         with patch.object(config, "LEARNER_MODEL_ENABLED", True), \
              patch.object(config, "LEARNER_MODEL_DEBUG", True):
             response = self.client.get(

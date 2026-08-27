@@ -152,21 +152,21 @@ export default function BottomSheet({
     setPageDraft('');
   };
 
-  const toolButtons = (draggable: boolean) => (
+  const toolButtons = () => (
     <>
-      <ToolButton tool="zoom" label={`缩放，当前 ${zoomPercent}%`} disabled={!controls} draggable={draggable} mode={mode} onClick={keyboardAction}>
+      <ToolButton tool="zoom" label={`缩放，当前 ${zoomPercent}%`} disabled={!controls} mode={mode} onClick={keyboardAction}>
         <Focus className="h-5 w-5" />
       </ToolButton>
-      <ToolButton tool="chat" label="AI 旁批" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction} badge={pendingCount} unread={unread}>
+      <ToolButton tool="chat" label="AI 旁批" disabled={interactionLocked} mode={mode} onClick={keyboardAction} badge={pendingCount} unread={unread}>
         <MessageCircle className="h-5 w-5" />
       </ToolButton>
-      <ToolButton tool="capture" label="框选" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction} accent>
+      <ToolButton tool="capture" label="框选" disabled={interactionLocked} mode={mode} onClick={keyboardAction} accent>
         <Scissors className="h-5 w-5" />
       </ToolButton>
-      <ToolButton tool="toc" label="教材目录" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction}>
+      <ToolButton tool="toc" label="教材目录" disabled={interactionLocked} mode={mode} onClick={keyboardAction}>
         <ListTree className="h-5 w-5" />
       </ToolButton>
-      <ToolButton tool="utility" label="提问记录" disabled={interactionLocked} draggable={draggable} mode={mode} onClick={keyboardAction}>
+      <ToolButton tool="utility" label="提问记录" disabled={interactionLocked} mode={mode} onClick={keyboardAction}>
         <PanelLeft className="h-5 w-5" />
       </ToolButton>
     </>
@@ -220,7 +220,7 @@ export default function BottomSheet({
               {ballIcon}
               {pendingCount > 0 ? <Badge mode="free" count={pendingCount} /> : unread ? <UnreadDot mode="free" /> : null}
             </button>
-          ) : toolButtons(true)}
+          ) : toolButtons()}
         </div>
       )}
 
@@ -233,7 +233,7 @@ export default function BottomSheet({
           className="fixed z-[72] flex h-12 items-center gap-0.5 rounded-full border border-slate-200/80 bg-white/[0.97] px-1.5 shadow-xl backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/[0.97]"
         >
           {popup === 'tools' ? (
-            <>{toolButtons(false)}<button type="button" onClick={() => setPopup(null)} className="icon-button h-10 w-10 rounded-full" title="收起" aria-label="收起阅读工具"><X className="h-4 w-4" /></button></>
+            <>{toolButtons()}<button type="button" onClick={() => setPopup(null)} className="icon-button h-10 w-10 rounded-full" title="收起" aria-label="收起阅读工具"><X className="h-4 w-4" /></button></>
           ) : (
             <>
               <button type="button" onClick={() => controls?.zoomOut()} disabled={!controls || zoomPercent <= 75} className="icon-button h-10 w-10 rounded-full" title="缩小" aria-label="缩小"><Minus className="h-4 w-4" /></button>
@@ -271,11 +271,10 @@ export default function BottomSheet({
   );
 }
 
-function ToolButton({ tool, label, disabled, draggable: _draggable, mode, onClick, badge = 0, unread, accent, children }: {
+function ToolButton({ tool, label, disabled, mode, onClick, badge = 0, unread, accent, children }: {
   tool: Exclude<ToolId, 'open'>;
   label: string;
   disabled?: boolean;
-  draggable: boolean;
   mode: ReaderDockMode;
   onClick: (event: React.MouseEvent<HTMLButtonElement>, tool: ToolId) => void;
   badge?: number;

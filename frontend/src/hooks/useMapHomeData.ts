@@ -6,10 +6,6 @@ import type { ChapterMapItem, NodeMapResponse } from '../services/api';
 import { useLearningProgress } from './useLearningProgress';
 import { normalizeSectionKey } from '../utils/sectionKey';
 
-export function clearMapHomeCache(): void {
-  // Static assets are browser-cached. Progress is owned by useLearningProgress.
-}
-
 export function useMapHomeData(
   token: string | undefined,
   textbookId: string,

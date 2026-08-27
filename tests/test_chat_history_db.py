@@ -11,6 +11,7 @@ from app.config import config
 from app.db.chat_history_db import get_chat_history, migrate_user_id, save_chat_history, update_chat_answer
 from app.db.evidence_db import insert_evidence_rows, list_evidence_for_user
 from app.db.connection import get_conn, init_db
+from app.db.learner_model_db import compute_node_estimate
 from app.main import app
 
 
@@ -160,11 +161,9 @@ class ChatHistoryTests(unittest.TestCase):
         self.assertEqual(revision, 1)
         self.assertEqual(run_user, "anonymous")
 
-    def test_enabled_model_replays_formal_user_after_evidence_migration(self):
+    def test_read_time_model_sees_formal_user_after_evidence_migration(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            with patch.object(config, "DB_PATH", str(Path(temp_dir) / "learning.db")), \
-                 patch.object(config, "LEARNER_MODEL_ENABLED", True), \
-                 patch("app.db.learner_model_db.replay_user_textbook") as replay:
+            with patch.object(config, "DB_PATH", str(Path(temp_dir) / "learning.db")):
                 init_db()
                 insert_evidence_rows([{
                     "id": "source-e",
@@ -174,7 +173,10 @@ class ChatHistoryTests(unittest.TestCase):
                     "outcome": "independent",
                 }])
                 migrate_user_id("anonymous", "registered")
-        replay.assert_called_once_with("registered", "gaodai_shang")
+                estimate = compute_node_estimate(
+                    "registered", "gaodai_shang", "gaodai_shang:n",
+                )
+        self.assertEqual(estimate["evidence_count"], 1)
 
     def test_migration_marks_both_identity_snapshots_stale(self):
         with tempfile.TemporaryDirectory() as temp_dir:
