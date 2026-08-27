@@ -1,5 +1,8 @@
 FROM node:22-alpine AS build
 
+ARG VITE_PV_BILIBILI_URL=
+ENV VITE_PV_BILIBILI_URL=${VITE_PV_BILIBILI_URL}
+
 WORKDIR /workspace/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -16,4 +19,3 @@ EXPOSE 80
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=12 \
   CMD wget -q -O /dev/null http://127.0.0.1/health || exit 1
-

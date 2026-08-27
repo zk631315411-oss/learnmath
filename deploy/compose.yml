@@ -38,7 +38,10 @@ services:
       MANIM_MAX_DURATION_SECONDS: ${MANIM_MAX_DURATION_SECONDS:-30}
       MANIM_RENDER_TIMEOUT_SECONDS: ${MANIM_RENDER_TIMEOUT_SECONDS:-90}
     volumes:
-      - app-data:/app/data
+      # Keep the named volume as the safe default. For a full server migration,
+      # set LEARNMATH_DATA_VOLUME to an absolute host directory containing
+      # learning.db (for example /opt/learnmath/data).
+      - ${LEARNMATH_DATA_VOLUME:-app-data}:/app/data
       # API 端页码→小节解析、截图上下文需要读教材 PDF；与 web 容器共用同一教材目录，
       # 挂载点对齐 shared/textbooks.json 里 pdf_path 的 "frontend/public/" 前缀。
       # 主机目录用 LEARNMATH_TEXTBOOKS_DIR 显式指定，默认保持本机仓库布局。

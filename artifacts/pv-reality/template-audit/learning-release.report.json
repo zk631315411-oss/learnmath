@@ -1,0 +1,38 @@
+{
+  "source": "data\\learning.db",
+  "output": "artifacts\\pv-reality\\template-audit\\learning-release.db",
+  "sample_users": [
+    "student_solid",
+    "student_struggle",
+    "kz",
+    "tester_qa"
+  ],
+  "target_user": "merged_test",
+  "removed_failed_rows": {
+    "chat_history": [
+      "644bfe67-8a43-4623-b368-deab385b54cc"
+    ],
+    "manim_artifacts": [
+      "851e948c-a279-4346-b4dd-88872d63218c",
+      "e66e8284-9b45-45ae-8f77-e03b83d938c8",
+      "ea0c87ac-2d41-4670-8478-5f2436080209"
+    ]
+  },
+  "merged_rows": {
+    "chat_history": 10,
+    "evidence_turns": 81,
+    "manim_artifacts": 3,
+    "screenshot_context_cache": 0,
+    "learner_model_runs": 0,
+    "user_profiles": 1,
+    "learner_node_estimates": 19,
+    "dangling_evidence_chat_refs_cleared": 80,
+    "dangling_manim_chat_refs_cleared": 1,
+    "learning_progress_revisions": 1
+  },
+  "notes": [
+    "Source accounts remain in the copied DB for auditability.",
+    "learner_node_estimates are marked stale=1 and should be recomputed by the learner model.",
+    "No formal PV account was included."
+  ]
+}

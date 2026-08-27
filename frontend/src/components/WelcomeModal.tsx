@@ -1,5 +1,9 @@
 import { ArrowRight, Check, ExternalLink, MessageSquare, X } from 'lucide-react';
 
+// Inject the published BV URL at build time; an empty value keeps the local
+// player usable while the external link is still being confirmed.
+const PV_BILIBILI_URL = (import.meta.env.VITE_PV_BILIBILI_URL || '').trim();
+
 interface Props {
   onClose: () => void;
   onDismiss: () => void;
@@ -29,14 +33,23 @@ export default function WelcomeModal({ onClose, onDismiss, onOpenFeedback }: Pro
               <div key={item} className="flex items-start gap-2 rounded-lg bg-[var(--lm-bg)] px-2.5 py-2 text-xs leading-5 text-[var(--lm-text)]"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--lm-success)]" />{item}</div>
             ))}
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-[var(--lm-border)] bg-[var(--lm-bg)] p-3 text-sm text-[var(--lm-text)]">
               <p className="font-semibold text-[var(--lm-text-strong)]">内测账号</p>
               <p className="mt-1 text-xs leading-5 text-[var(--lm-text-muted)]">可直接使用 <code className="rounded bg-[var(--lm-canvas)] px-1">test_001</code> 至 <code className="rounded bg-[var(--lm-canvas)] px-1">test_010</code>，统一密码为 <code className="rounded bg-[var(--lm-canvas)] px-1">123456</code>。</p>
             </div>
-            <div className="rounded-lg border border-dashed border-[var(--lm-border)] p-3 text-sm text-[var(--lm-text-muted)]">
+            <div className="rounded-lg border border-[var(--lm-border)] bg-[var(--lm-bg)] p-3 text-sm text-[var(--lm-text-muted)]">
               <div className="flex items-center gap-2 font-medium text-[var(--lm-text)]"><ExternalLink className="h-4 w-4" />产品预览视频</div>
-              <p className="mt-1 text-xs">视频入口正在准备中，可先直接体验核心功能。</p>
+              <video className="mt-2 aspect-video w-full rounded-md bg-black object-contain" controls preload="metadata" playsInline poster="/pv/brand-card.png">
+                <source src="/videos/pv-v3.6.mp4" type="video/mp4" />
+                当前浏览器不支持视频播放。
+              </video>
+              <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                <span>本地播放 · 97 秒</span>
+                {PV_BILIBILI_URL && <a href={PV_BILIBILI_URL} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 font-medium text-[var(--lm-brand)] hover:underline">
+                  在哔哩哔哩观看 <ExternalLink className="h-3.5 w-3.5" />
+                </a>}
+              </div>
             </div>
           </div>
         </div>

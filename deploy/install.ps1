@@ -126,6 +126,8 @@ if (-not $values.ContainsKey("NEO4J_PASSWORD") -or -not $values["NEO4J_PASSWORD"
 }
 if (-not $values["NEO4J_PASSWORD"]) { throw "Neo4j Aura password is required." }
 if (-not $values.ContainsKey("LEARNMATH_PORT")) { $values["LEARNMATH_PORT"] = Find-FreePort }
+if (-not $values.ContainsKey("LEARNMATH_DATA_VOLUME")) { $values["LEARNMATH_DATA_VOLUME"] = "app-data" }
+if (-not $values.ContainsKey("VITE_PV_BILIBILI_URL")) { $values["VITE_PV_BILIBILI_URL"] = "" }
 if (-not $values.ContainsKey("LEARNMATH_VERSION")) { $values["LEARNMATH_VERSION"] = "local" }
 if (-not $values.ContainsKey("JWT_SECRET")) { $values["JWT_SECRET"] = Get-RandomHex 48 }
 if (-not $values.ContainsKey("QA_LLM_API_BASE")) { $values["QA_LLM_API_BASE"] = "https://dashscope.aliyuncs.com/compatible-mode/v1" }
@@ -153,7 +155,7 @@ if (-not $values.ContainsKey("MANIM_MAX_DURATION_SECONDS")) { $values["MANIM_MAX
 if (-not $values.ContainsKey("MANIM_RENDER_TIMEOUT_SECONDS")) { $values["MANIM_RENDER_TIMEOUT_SECONDS"] = "90" }
 
 $order = @(
-    "LEARNMATH_VERSION", "LEARNMATH_PORT", "JWT_SECRET", "NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD",
+    "LEARNMATH_VERSION", "LEARNMATH_PORT", "LEARNMATH_DATA_VOLUME", "VITE_PV_BILIBILI_URL", "JWT_SECRET", "NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD",
     "QA_LLM_API_KEY", "QA_LLM_API_BASE", "QA_LLM_MODEL", "FORMULA_API_KEY",
     "FORMULA_API_BASE", "FORMULA_MODEL", "FORMULA_CONVERSION_TIMEOUT_SECONDS",
     "FORMULA_CONVERSION_TOTAL_TIMEOUT_SECONDS", "FORMULA_VISION_API_KEY", "FORMULA_VISION_API_BASE",
