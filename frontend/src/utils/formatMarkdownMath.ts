@@ -1,6 +1,11 @@
 export function formatMarkdownMath(text: string | undefined): string {
   if (!text) return '';
 
+  text = text.replace(
+    /`(\$[^`\n]+\$|\\\([^`\n]+\\\)|\\\[[^`\n]+\\\])`/g,
+    '$1',
+  );
+
   let formatted = '';
   for (let i = 0; i < text.length; i += 1) {
     const current = text[i];

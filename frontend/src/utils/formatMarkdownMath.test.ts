@@ -19,4 +19,9 @@ describe('formatMarkdownMath', () => {
   it('converts bracket and parenthesis math delimiters for markdown rendering', () => {
     expect(formatMarkdownMath('Let \\(x\\) satisfy \\[x^2=1\\].')).toBe('Let $x$ satisfy $$x^2=1$$.');
   });
+
+  it('unwraps inline code when it only contains a math expression', () => {
+    expect(formatMarkdownMath('函数 `$y=\\sin x$` 的图像')).toBe('函数 $y=\\sin x$ 的图像');
+    expect(formatMarkdownMath('命令 `npm run build` 保持代码格式')).toBe('命令 `npm run build` 保持代码格式');
+  });
 });
