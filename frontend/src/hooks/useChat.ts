@@ -373,7 +373,26 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         });
         chatId = res.id;
         taskStore.update(turnId, { chatId });
-      } catch { /* 落库失败不阻断问答 */ }
+      } catch (e) {
+        const detail = errorMessage(e, '');
+        const msg = detail ? `创建提问记录失败：${detail}，请重试` : '创建提问记录失败，请重试';
+        controller.abort();
+        taskStore.finish(turnId, 'interrupted', { errorMessage: msg });
+        if (!explicitCapture && pending) {
+          setPendingImages(prev => [pending, ...prev]);
+        }
+        if (isMountedRef.current) {
+          if (isTaskVisible(task)) {
+            setMessages(prev => prev.map(message => message.id === assistantMsgId ? { ...message, failed: true } : message));
+            setIsLoading(false);
+            setError(msg);
+          }
+          setIsThinking(false);
+          setThinkingStage('');
+          setThinkingStageKey('');
+        }
+        return null;
+      }
     }
 
     // 追问先落 pending 项（服务端按 turn_id 幂等追加）；落库失败不阻断问答
@@ -562,13 +581,14 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
     } catch (e) {
       const msg = errorMessage(e, '回答失败，请重试');
       const terminalStatus = controller.signal.aborted ? 'cancelled' : 'interrupted';
-      taskStore.finish(turnId, terminalStatus, { answer: partialAnswer, errorMessage: msg });
+      const latestAnswer = taskStore.get(turnId)?.answer || partialAnswer;
+      taskStore.finish(turnId, terminalStatus, { answer: latestAnswer, errorMessage: msg });
       if (isMountedRef.current && isTaskVisible(task)) setError(msg);
       // 失败不再把 [错误] 文案写进 answer：落库已流出的部分正文 + 结构化状态
       if (chatId && isNewThread) {
         try {
           await patchChatHistory(chatId, {
-            answer: partialAnswer,
+            answer: latestAnswer,
             generation_status: terminalStatus,
             generation_error: msg,
           });
@@ -576,7 +596,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       } else if (chatId) {
         try {
           await updateFollowUp(chatId, turnId, {
-            answer: partialAnswer || null,
+            answer: latestAnswer || null,
             status: terminalStatus,
             error_message: msg,
           });

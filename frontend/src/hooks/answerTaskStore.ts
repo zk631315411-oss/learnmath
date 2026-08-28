@@ -95,7 +95,6 @@ export class AnswerTaskStore {
   cancel(clientTurnId: string) {
     const task = this.tasks.get(clientTurnId);
     if (task && this.isActive(clientTurnId)) {
-      this.finish(clientTurnId, 'cancelled');
       task.controller.abort();
     }
   }

@@ -82,7 +82,7 @@ export async function createChatHistory(data: {
   // 稳定逻辑 turn ID（Batch 1）：贯穿 pending 落库、重试幂等与 evidence 去重
   client_turn_id?: string;
 }): Promise<{ id: string }> {
-  return post('/chat/history', data);
+  return post('/chat/history', data, undefined, { maxRetries: 0, timeout: 10_000 });
 }
 
 export async function patchChatHistory(chatId: string, data: Record<string, unknown>): Promise<void> {
