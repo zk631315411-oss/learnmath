@@ -4,12 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-
-// LaTeX 分隔符转换：\( → $, \[ → $$
-const formatMath = (text: string | undefined) => {
-  if (!text) return '';
-  return text.split('\\(').join('$').split('\\)').join('$').split('\\[').join('$$').split('\\]').join('$$');
-};
+import { formatMarkdownMath } from '../utils/formatMarkdownMath';
 
 interface Props {
   children: string;
@@ -18,7 +13,7 @@ interface Props {
 }
 
 function MarkdownRenderer({ children, className, applyFormatMath = true }: Props) {
-  const content = applyFormatMath ? formatMath(children) : children;
+  const content = applyFormatMath ? formatMarkdownMath(children) : children;
   return (
     <ReactMarkdown
       className={className}

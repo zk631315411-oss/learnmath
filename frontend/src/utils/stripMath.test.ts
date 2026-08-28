@@ -4,6 +4,7 @@ import { stripMath } from '../components/kg/shared';
 describe('stripMath', () => {
   it('removes $ wrappers and keeps plain text', () => {
     expect(stripMath('2.2 $n$  阶行列式的定义')).toBe('2.2 n 阶行列式的定义');
+    expect(stripMath('2.6 行列式按 $k$ 行(列)展开')).toBe('2.6 行列式按 k 行(列)展开');
   });
 
   it('unwraps single-argument format commands', () => {

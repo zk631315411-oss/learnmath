@@ -2,6 +2,7 @@ import { ChevronDown, ChevronRight, ListTree, LoaderCircle, X } from 'lucide-rea
 import { useCallback, useState } from 'react';
 
 import type { CatalogChapter, CatalogChapterSummary, TextbookCatalog } from '../catalog/types';
+import { stripMath } from './kg/shared';
 
 export interface TableOfContentsProps {
   chapters: CatalogChapterSummary[];
@@ -89,6 +90,7 @@ export default function TableOfContents({
               const isExpanded = expanded === chapter.name;
               const isCurrent = chapterIsCurrent(chapters, index, currentPage);
               const detail = details[chapter.name];
+              const chapterTitle = stripMath(chapter.name);
               return (
                 <li key={chapter.id || chapter.name}>
                   <div className={`flex items-stretch gap-1 ${isCurrent ? 'bg-[var(--lm-brand)]/8' : ''}`}>
@@ -98,9 +100,9 @@ export default function TableOfContents({
                       onClick={() => selectPage(chapter.first_page)}
                       disabled={chapter.first_page == null}
                       className="min-w-0 flex-1 px-4 py-3 text-left transition hover:bg-[var(--lm-brand)]/8 disabled:cursor-not-allowed disabled:opacity-50"
-                      title={chapter.first_page == null ? '暂无页码' : `跳转到${chapter.name}`}
+                      title={chapter.first_page == null ? '暂无页码' : `跳转到${chapterTitle}`}
                     >
-                      <span className="block truncate text-sm font-medium text-[var(--lm-text)]">{chapter.name}</span>
+                      <span className="block truncate text-sm font-medium text-[var(--lm-text)]">{chapterTitle}</span>
                       <span className="mt-0.5 block text-xs text-[var(--lm-text-muted)]">{pageLabel(chapter.first_page)} · {chapter.node_count} 个知识点</span>
                     </button>
                     {loadChapter && <button
@@ -108,7 +110,7 @@ export default function TableOfContents({
                       onClick={() => void toggleChapter(chapter)}
                       className="flex w-11 shrink-0 items-center justify-center text-[var(--lm-text-muted)] transition hover:bg-[var(--lm-brand)]/8 hover:text-[var(--lm-brand)]"
                       aria-expanded={isExpanded}
-                      aria-label={`${isExpanded ? '收起' : '展开'}${chapter.name}小节`}
+                      aria-label={`${isExpanded ? '收起' : '展开'}${chapterTitle}小节`}
                       title={`${isExpanded ? '收起' : '展开'}小节`}
                     >
                       {loading === chapter.name ? <LoaderCircle className="h-4 w-4 animate-spin" /> : isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -118,21 +120,24 @@ export default function TableOfContents({
                     <div className="border-t border-[var(--lm-border)] bg-[var(--lm-bg)] px-4 py-2">
                       {detail?.sections.length ? (
                         <ul className="space-y-0.5">
-                          {detail.sections.map(section => (
-                            <li key={section.id || section.name}>
-                              <button
-                                type="button"
-                                data-testid={`toc-section-${index}-${section.id || section.name}`}
-                                onClick={() => selectPage(section.page)}
-                                disabled={section.page == null}
-                                className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-xs text-[var(--lm-text-muted)] transition hover:bg-[var(--lm-brand)]/8 hover:text-[var(--lm-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                                title={section.page == null ? '暂无页码' : `跳转到${section.name}`}
-                              >
-                                <span className="min-w-0 truncate">{section.name}</span>
-                                <span className="shrink-0 tabular-nums">{pageLabel(section.page)}</span>
-                              </button>
-                            </li>
-                          ))}
+                          {detail.sections.map(section => {
+                            const sectionTitle = stripMath(section.name);
+                            return (
+                              <li key={section.id || section.name}>
+                                <button
+                                  type="button"
+                                  data-testid={`toc-section-${index}-${section.id || section.name}`}
+                                  onClick={() => selectPage(section.page)}
+                                  disabled={section.page == null}
+                                  className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left text-xs text-[var(--lm-text-muted)] transition hover:bg-[var(--lm-brand)]/8 hover:text-[var(--lm-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                                  title={section.page == null ? '暂无页码' : `跳转到${sectionTitle}`}
+                                >
+                                  <span className="min-w-0 truncate">{sectionTitle}</span>
+                                  <span className="shrink-0 tabular-nums">{pageLabel(section.page)}</span>
+                                </button>
+                              </li>
+                            );
+                          })}
                         </ul>
                       ) : loading === chapter.name ? (
                         <p className="flex items-center gap-2 px-2 py-2 text-xs text-[var(--lm-text-muted)]"><LoaderCircle className="h-3.5 w-3.5 animate-spin" />正在加载小节…</p>
