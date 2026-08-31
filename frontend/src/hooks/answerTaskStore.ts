@@ -1,7 +1,7 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react';
 
 import type { FetchWithStageRequest } from '../services/api';
-import type { ManimArtifact, ToolActivity } from '../types';
+import type { ManimArtifact, Source, ToolActivity } from '../types';
 import type { Marker } from '../components/PageMarker';
 
 export type AnswerTaskStatus = 'pending' | 'streaming' | 'completed' | 'interrupted' | 'cancelled';
@@ -23,6 +23,7 @@ export interface AnswerTask {
   thinking: string;
   toolActivities: ToolActivity[];
   artifacts: ManimArtifact[];
+  sources: Source[];
   errorMessage?: string;
   startedAt: number;
   controller: AbortController;
@@ -96,6 +97,8 @@ export class AnswerTaskStore {
     const task = this.tasks.get(clientTurnId);
     if (task && this.isActive(clientTurnId)) {
       task.controller.abort();
+      this.tasks.set(clientTurnId, { ...task, status: 'cancelled' });
+      this.publish();
     }
   }
 

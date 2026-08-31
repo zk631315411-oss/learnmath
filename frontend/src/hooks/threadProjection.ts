@@ -40,6 +40,7 @@ export function projectThreadMessages(base: Message[], tasks: AnswerTask[], cont
       thinking: task.thinking || undefined,
       toolActivities: task.toolActivities,
       artifacts: task.artifacts,
+      sources: task.sources,
       pending: task.status === 'pending' || task.status === 'streaming' || undefined,
       failed: task.status === 'interrupted' || task.status === 'cancelled' || undefined,
     };

@@ -37,7 +37,9 @@ import PhotoPreviewSheet from './components/PhotoPreviewSheet';
 import WelcomeModal from './components/WelcomeModal';
 import FeedbackForm from './components/FeedbackForm';
 import TableOfContents from './components/TableOfContents';
+import SourcePreview from './components/SourcePreview';
 import { applyProgressDelta } from './hooks/useLearningProgress';
+import type { Source } from './types';
 
 const PDFViewer = lazy(() => import('./components/PDFViewer'));
 const ScreenCapture = lazy(() => import('./components/ScreenCapture'));
@@ -77,6 +79,7 @@ export default function App() {
   const [tocOpen, setTocOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [previewSource, setPreviewSource] = useState<Source | null>(null);
 
   // 换教材时清除残留高亮和目录状态，避免跨教材串页。
   useEffect(() => {
@@ -275,6 +278,46 @@ export default function App() {
     markReaderStarted(page);
   };
 
+  const viewSourceInTextbook = useCallback(async (source: Source) => {
+    if (!source.textbook_id || !source.node_id || !source.section) {
+      throw new Error('这条历史出处缺少定位信息');
+    }
+    let highlight: Awaited<ReturnType<typeof getNodeHighlight>> = null;
+    try {
+      highlight = await getNodeHighlight(source.textbook_id, source.node_id);
+    } catch { /* continue with canonical section lookup */ }
+
+    let page = highlight?.page ?? null;
+    if (page == null && source.textbook_id === textbookId) {
+      const sectionKey = normalizeSectionKey(source.section);
+      const catalog = source.chapter ? await mapHome.openChapter(source.chapter) : null;
+      page = catalog?.chapters
+        .flatMap(chapter => chapter.sections)
+        .find(section => normalizeSectionKey(section.name) === sectionKey)?.page
+        ?? (sectionKey ? mapHome.sectionPages[sectionKey] : null)
+        ?? null;
+    }
+    if (page == null && user.token) {
+      try {
+        const resolved = await getSectionPage(source.textbook_id, source.section, user.token);
+        page = resolved.page ?? null;
+      } catch { /* preserve preview and report deterministic failure below */ }
+    }
+    if (page == null) throw new Error('暂时无法定位到该小节，未跳转到猜测页码');
+
+    if (source.textbook_id !== textbookId) {
+      setTextbookPage(source.textbook_id, page);
+      setTextbookId(source.textbook_id as TextbookId);
+    } else {
+      setCurrentPage(page);
+    }
+    setHighlightNodeId(highlight ? source.node_id : null);
+    navigatePage('reader', null, { textbookId: source.textbook_id, page });
+    saveWorkspace(source.textbook_id, { view: 'reader', page });
+    setPreviewSource(null);
+    if (!isDesktop) setOverlaySurface('none');
+  }, [isDesktop, mapHome, navigatePage, setCurrentPage, setTextbookId, setTextbookPage, textbookId, user.token]);
+
   const retryMap = () => {
     if (selectedMapChapter) void mapHome.openChapter(selectedMapChapter);
     else { mapHome.retryCatalog(); void mapHome.refresh(); }
@@ -416,6 +459,7 @@ export default function App() {
       externalFormulaQueue: capture.externalFormulaQueue,
       onExternalFormulaQueueConsumed: capture.consumeExternalFormula,
     }}
+    onOpenSource={setPreviewSource}
   />;
 
   useEffect(() => {
@@ -600,6 +644,7 @@ export default function App() {
           onOpenFeedback={() => { setWelcomeOpen(false); setFeedbackOpen(true); }}
         />}
         {feedbackOpen && <FeedbackForm token={user.token || undefined} onClose={() => setFeedbackOpen(false)} />}
+        <SourcePreview source={previewSource} onClose={() => setPreviewSource(null)} onViewInTextbook={viewSourceInTextbook} />
       </div>
     </ErrorBoundary>
   );

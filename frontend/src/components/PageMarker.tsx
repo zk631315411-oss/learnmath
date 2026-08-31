@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import type { CropBBox, ManimArtifact, ToolActivity } from '../types';
+import type { CropBBox, ManimArtifact, Source, ToolActivity } from '../types';
 
 export interface Marker {
   id: string;
@@ -21,6 +21,7 @@ export interface Marker {
   question: string;
   answer: string | null;  // null = AI 思考中
   thinking: string | null;  // AI 思维链
+  sources?: Source[];
   tool_activities?: ToolActivity[] | string | null;
   artifacts?: ManimArtifact[];
   follow_ups: Array<{
@@ -28,6 +29,7 @@ export interface Marker {
     answer: string | null;
     thinking: string | null;
     tool_activities?: ToolActivity[] | string | null;
+    sources?: Source[];
     image?: string | null;
     crop_bbox?: CropBBox | string | null;
     screenshot_context_id?: string | null;

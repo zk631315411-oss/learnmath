@@ -170,6 +170,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       msgs.push({
         id: `${activeMarker.id}-a`, role: 'assistant', content: collapseExactRepeatedAnswer(activeMarker.answer),
         thinking: activeMarker.thinking || undefined,
+        sources: activeMarker.sources,
         toolActivities: Array.isArray(activeMarker.tool_activities) ? activeMarker.tool_activities : [],
         artifacts: activeMarker.artifacts,
         failed: rootFailed || undefined,
@@ -188,6 +189,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       if (fu.answer) msgs.push({
         id: `${activeMarker.id}-${turnId}-answer`,
         role: 'assistant', content: collapseExactRepeatedAnswer(fu.answer), thinking: fu.thinking || undefined,
+        sources: fu.sources,
         toolActivities: Array.isArray(fu.tool_activities) ? fu.tool_activities : [],
         artifacts: fu.artifacts,
         failed: fuFailed || undefined,
@@ -348,6 +350,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
       thinking: '',
       toolActivities: [],
       artifacts: [],
+      sources: [],
       startedAt: Date.now(),
       controller,
     };
@@ -452,6 +455,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
             thinking: snapshot.thinking,
             toolActivities: snapshot.toolActivities,
             artifacts: snapshot.artifacts,
+            sources: snapshot.sources,
           });
           // 消息列表归属当前对话：翻页/切视图不算切换对话，流式增量必须落进 messages
           if (!isMountedRef.current) return;
@@ -461,6 +465,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
             thinking: snapshot.thinking,
             toolActivities: snapshot.toolActivities,
             artifacts: snapshot.artifacts,
+            sources: snapshot.sources,
           } : message));
         },
       });
@@ -476,11 +481,12 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
         thinking: fullThinking,
         toolActivities: fullToolActivities,
         artifacts: result.artifacts,
+        sources: result.sources,
       });
       onProgressDelta?.(result.progress_delta, task.textbookId);
       if (isMountedRef.current) {
         setMessages(prev => prev.map(m => m.id === assistantMsgId
-          ? { ...m, content: fullAnswer, thinking: fullThinking, toolActivities: fullToolActivities, artifacts: result.artifacts }
+          ? { ...m, content: fullAnswer, thinking: fullThinking, toolActivities: fullToolActivities, artifacts: result.artifacts, sources: result.sources }
           : m));
       }
 
@@ -492,6 +498,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
               answer: fullAnswer,
               thinking: fullThinking,
               tool_activities: JSON.stringify(fullToolActivities),
+              sources: result.sources,
               screenshot_context_id: result.screenshot_context_id || undefined,
               generation_status: 'completed',
               generation_error: null,
@@ -510,6 +517,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           answer: fullAnswer || null,
           thinking: fullThinking || null,
           tool_activities: fullToolActivities,
+          sources: result.sources,
           artifacts: result.artifacts,
           thumbnail: image || null,
           crop_bbox: cropBBox || null,
@@ -531,6 +539,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
           answer: fullAnswer || null,
           thinking: fullThinking || null,
           tool_activities: fullToolActivities,
+          sources: result.sources,
           image: image || null,
           crop_bbox: cropBBox || null,
           screenshot_context_id: result.screenshot_context_id || null,
@@ -557,6 +566,7 @@ export function useChat({ user, currentPage, textbookId, chatVisible, markersSta
             answer: fullAnswer,
             thinking: fullThinking || null,
             tool_activities: fullToolActivities,
+            sources: result.sources,
             qa_turn_id: result.qa_turn_id || null,
             status: 'completed',
             error_message: null,

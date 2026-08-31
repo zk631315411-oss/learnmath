@@ -104,6 +104,7 @@ export interface FollowUpTurnPayload {
   answer?: string | null;
   thinking?: string | null;
   tool_activities?: ToolActivity[];
+  sources?: Source[];
   image?: string | null;
   crop_bbox?: CropBBox | null;
   screenshot_context_id?: string | null;

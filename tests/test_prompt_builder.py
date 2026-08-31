@@ -35,6 +35,9 @@ class PromptBuilderTests(unittest.TestCase):
         self.assertIn("\\lambda$ 可以为零", prompt)
         self.assertIn("什么是 X", prompt)
         self.assertIn("最多提出一个", prompt)
+        self.assertIn("[[cite:<source_code>]]", prompt)
+        self.assertIn("不要自己编造 URL、章节号", prompt)
+        self.assertIn("没有真实 KG 命中就不要输出引用标记", prompt)
 
     def test_explain_phrasing_still_requires_first_turn_probe(self):
         prompt = build_system_prompt()

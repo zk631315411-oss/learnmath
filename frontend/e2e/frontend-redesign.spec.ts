@@ -32,6 +32,13 @@ type MockOptions = {
   showWelcome?: boolean;
   authenticated?: boolean;
   deleteFailure?: boolean;
+  streamSources?: Record<string, unknown>[];
+};
+
+const SOURCE_FIXTURE = {
+  textbook_id: 'gaodai_shang', textbook_name: '高等代数上册', node_id: 'n1', node_name: '逆序数',
+  chapter: '第2章 行列式', section: '2.1 n 元排列', source_code: 'gaodai_shang:C02:S01:U01:L986-L1059',
+  snippet: '逆序数是排列中较大数排在较小数前面的序数。',
 };
 
 const R1: Record<string, unknown> = {
@@ -64,6 +71,7 @@ function normalizedHistoryRecord(id: string, data: Record<string, unknown>): Rec
     follow_ups: data.follow_ups ?? [],
     thinking: data.thinking ?? null,
     tool_activities: data.tool_activities ?? [],
+    sources: data.sources ?? [],
     generation_status: data.generation_status ?? (data.answer ? 'completed' : 'pending'),
     created_at: data.created_at || '2026-08-18 10:00:00',
   };
@@ -222,6 +230,10 @@ async function mockApp(page: Page, options: MockOptions = {}) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(manimArtifacts.filter(artifact => artifact.chat_id === chatId)) });
   });
   await page.route('**/mock-manim.mp4', route => route.fulfill({ status: 200, contentType: 'video/mp4', body: Buffer.from([]) }));
+  await page.route('**/highlights/*.json', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ n1: { page: 26, bbox: [10, 10, 120, 40] } }),
+  }));
   await page.route('**/api/chat/history**', async route => {
     const method = route.request().method();
     // Batch 1：追问 turn 级端点 /api/chat/history/{id}/follow-ups[/{turnId}]
@@ -289,7 +301,7 @@ async function mockApp(page: Page, options: MockOptions = {}) {
       `data: ${JSON.stringify({ stage: 'evidence_report', text: '正在记录学习进度…' })}`,
       '',
       'event: done',
-      `data: ${JSON.stringify({ full_text: '先观察系数矩阵的秩。', sources: [], tool_activities: [], qa_turn_id: 'mock-qa-turn-1', progress_delta: options.progressDelta || null, artifacts: options.streamArtifact ? [options.streamArtifact] : [] })}`,
+      `data: ${JSON.stringify({ full_text: '先观察系数矩阵的秩。', sources: options.streamSources || [], tool_activities: [], qa_turn_id: 'mock-qa-turn-1', progress_delta: options.progressDelta || null, artifacts: options.streamArtifact ? [options.streamArtifact] : [] })}`,
       '',
       '',
     ].join('\n');
@@ -519,6 +531,36 @@ test('Manim artifact restores inside its assistant message and retry is containe
   expect(box?.width || 0).toBeLessThanOrEqual(page.viewportSize()?.width || 1440);
   await page.getByRole('button', { name: '重新生成动画' }).click();
   await expect(page.getByTestId('manim-artifact-animation-2').getByText('等待渲染')).toBeVisible();
+});
+
+test('validated textbook citation opens preview and jumps to node highlight', async ({ page }) => {
+  await mockApp(page, {
+    initialHistory: [{
+      ...R1,
+      answer: `先回忆逆序数 [[cite:${SOURCE_FIXTURE.source_code}]]，伪造项 [[cite:fake:C99]]。`,
+      sources: [SOURCE_FIXTURE],
+    }],
+  });
+  await page.goto('/');
+  await enterReader(page);
+  await openQuestionFromHistory(page, '什么是秩？');
+
+  await expect(page.getByRole('button', { name: '教材 §2.1' }).first()).toBeVisible();
+  await expect(page.getByText('fake:C99', { exact: false })).toHaveCount(0);
+  await page.getByRole('button', { name: '教材 §2.1' }).first().click();
+  const preview = page.getByRole('dialog', { name: '教材出处预览' });
+  await expect(preview).toBeVisible();
+  await expect(preview).toContainText('高等代数上册');
+  await expect(preview).toContainText('2.1 n 元排列');
+  await expect(preview).toContainText('逆序数');
+  await preview.getByRole('button', { name: '在教材中查看' }).click();
+  await expect(preview).toBeHidden();
+  await expect.poll(async () => {
+    const desktopPager = page.getByRole('textbox', { name: '当前页码' });
+    if (await desktopPager.count()) return desktopPager.inputValue();
+    return (await page.locator('[aria-label*="当前第 26 页"]').count()) > 0 ? '26' : '';
+  }).toBe('26');
+  await expect(page.getByTestId('pdf-node-highlight')).toBeVisible();
 });
 
 test('Manim artifact SSE event appears before the text answer finishes', async ({ page }, testInfo) => {

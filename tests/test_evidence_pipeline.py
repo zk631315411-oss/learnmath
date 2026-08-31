@@ -124,7 +124,53 @@ class _EvidenceForkLLM:
         return [_chunk(content="可见回答")]
 
 
+class _CitationLLM:
+    def __init__(self, source_code):
+        self.source_code = source_code
+        self.calls = 0
+
+    def is_available(self):
+        return True
+
+    def chat_with_tools(self, messages, tools, tool_choice="auto", **kwargs):
+        if kwargs.get("stream") is False:
+            return _completion_tool_call("report_turn_outcome", {
+                "node_ids": [CATALOG_NODE],
+                "scaffolding_level": 1,
+                "student_outcome": "assisted",
+            })
+        if self.calls == 0:
+            self.calls += 1
+            return [_chunk(tool_calls=[_call("retrieve_kg_context", {"query": "目标", "focus": ["overview"]})])]
+        return [_chunk(content=f"真实依据 [[cite:{self.source_code}]]，伪造依据 [[cite:fake:C99]]")]
+
+
 class EvidencePipelineTests(unittest.IsolatedAsyncioTestCase):
+    async def test_done_sources_reject_model_fabricated_citation(self):
+        source_code = "gaodai_shang:C02:S03:U01:L1430-L1623"
+        resolved = {
+            "status": "resolved", "kg_basis_available": True,
+            "scope": {"textbook_id": "gaodai_shang"},
+            "selected_node": {
+                "node_id": CATALOG_NODE, "name": "两行互换行列式反号",
+                "chapter": "第2章 行列式", "section": "2.3 行列式的性质",
+                "source_code": source_code, "evidence_span": "性质4 两行互换，行列式反号。",
+            },
+            "relationships": {},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(config, "DB_PATH", str(Path(tmp) / "learning.db")):
+                init_db()
+                fake = _CitationLLM(source_code)
+                with patch("app.services.qa.answer_service.llm_service", fake), \
+                     patch("app.services.agents.tools.retrieve_kg_context.retrieve_kg_context", return_value=resolved):
+                    events = [event async for event in answer_turn_with_tools(QATurnInput(
+                        user_id="u1", question="为什么？", textbook_id="gaodai_shang",
+                    ))]
+        done = json.loads(next(event["data"] for event in events if event["event"] == "done"))
+        self.assertEqual([item["source_code"] for item in done["sources"]], [source_code])
+        self.assertNotIn("fake:C99", json.dumps(done["sources"], ensure_ascii=False))
+
     def test_memory_tools_are_removed_from_evidence_fork_messages(self):
         messages = [
             {

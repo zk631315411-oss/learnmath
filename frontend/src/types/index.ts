@@ -4,8 +4,13 @@
 export interface Source {
   textbook_id?: string;
   textbook_name?: string;
+  node_id?: string;
+  node_name?: string;
   chapter?: string;
+  section?: string;
+  source_code?: string;
   snippet?: string;
+  // Legacy fields remain readable but do not make an entry clickable.
   page_number?: number;
   score?: number;
 }
@@ -29,6 +34,7 @@ export interface ChatHistoryRecord {
   question: string;
   answer: string | null;
   thinking?: string | null;
+  sources?: unknown;
   tool_activities?: unknown;
   follow_ups?: unknown;
 }

@@ -199,11 +199,18 @@ class ChatHistoryApiContractTests(TempDbTestCase):
 
         resp = self.client.patch(f"/api/chat/history/{chat_id}", json={
             "answer": "秩是……", "generation_status": "completed", "generation_error": None,
+            "sources": [{
+                "textbook_id": "gaodai_shang", "textbook_name": "高等代数上册",
+                "node_id": "n1", "node_name": "矩阵的秩", "chapter": "第3章",
+                "section": "3.2 矩阵的秩", "source_code": "book:C03:S02",
+                "snippet": "矩阵的秩定义如下。",
+            }],
         })
         self.assertEqual(resp.status_code, 200)
         row = get_chat_history("u1", chat_id=chat_id)[0]
         self.assertEqual(row["generation_status"], "completed")
         self.assertIsNone(row["generation_error"])
+        self.assertEqual(json.loads(row["sources"])[0]["node_id"], "n1")
 
         # 追问：POST pending（幂等）→ PATCH completed
         resp = self.client.post(f"/api/chat/history/{chat_id}/follow-ups", json={
@@ -219,11 +226,18 @@ class ChatHistoryApiContractTests(TempDbTestCase):
 
         resp = self.client.patch(f"/api/chat/history/{chat_id}/follow-ups/t-1", json={
             "answer": "因为……", "status": "completed", "qa_turn_id": "qa-1",
+            "sources": [{
+                "textbook_id": "gaodai_shang", "textbook_name": "高等代数上册",
+                "node_id": "n2", "node_name": "逆序数", "chapter": "第2章",
+                "section": "2.1 n 元排列", "source_code": "book:C02:S01",
+                "snippet": "逆序数定义如下。",
+            }],
         })
         self.assertEqual(resp.status_code, 200)
         stored = json.loads(get_chat_history("u1", chat_id=chat_id)[0]["follow_ups"])[0]
         self.assertEqual(stored["status"], "completed")
         self.assertEqual(stored["qa_turn_id"], "qa-1")
+        self.assertEqual(stored["sources"][0]["node_name"], "逆序数")
 
         # 中断与取消也可 round-trip
         resp = self.client.patch(f"/api/chat/history/{chat_id}/follow-ups/t-1", json={

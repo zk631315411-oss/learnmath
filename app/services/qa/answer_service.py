@@ -34,6 +34,7 @@ from app.services.qa.prompt_builder import (
     build_user_message,
     build_user_message_with_image,
 )
+from app.services.qa.source_citations import collect_kg_sources, finalize_sources
 from app.services.qa.streaming_service import (
     sse_done,
     sse_error,
@@ -277,11 +278,31 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
                 stream=False,
             )
 
+        kg_source_candidates: list[dict[str, str]] = []
+        selected_source_codes: list[str] = []
+
+        async def _collect_private_kg_sources(trace: dict) -> None:
+            outcome = trace.get("outcome")
+            if (
+                outcome is None
+                or outcome.tool_name != "retrieve_kg_context"
+                or outcome.status != "success"
+            ):
+                return
+            sources, selected_code = collect_kg_sources(
+                outcome.model_payload,
+                bound_textbook_id=turn_input.textbook_id,
+            )
+            kg_source_candidates.extend(sources)
+            if selected_code and selected_code not in selected_source_codes:
+                selected_source_codes.append(selected_code)
+
         # ---- 启动 ToolRuntime ----
         runtime = ToolRuntime(
             tools=tool_defs,
             model_call=model_call,
             artifact_handler=_accept_manim_artifact,
+            trace_handler=_collect_private_kg_sources,
             round_injector=_inject_learning_memory,
             round_injection_status=_memory_injection_status,
             config=ToolRuntimeConfig(
@@ -591,8 +612,13 @@ async def answer_turn_with_tools(turn_input: QATurnInput) -> AsyncIterator[dict]
             "learnmath.evidence.turn_metrics %s",
             json.dumps(turn_metrics, ensure_ascii=False, sort_keys=True),
         )
+        sources = finalize_sources(
+            full_answer,
+            kg_source_candidates,
+            selected_source_codes,
+        )
         yield sse_done(
-            full_text=full_answer, thinking=full_thinking, sources=[],
+            full_text=full_answer, thinking=full_thinking, sources=sources,
             tool_activities=list(tool_activities.values()),
             screenshot_context_id=cache_id or None,
             qa_turn_id=turn_id, latency_ms=latency_ms,

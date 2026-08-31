@@ -114,7 +114,7 @@ def save_chat_history(user_id: str, question: str, answer: Optional[str] = None,
 # update_chat_record 允许更新的列白名单（防 SQL 注入与误写字段）
 _UPDATABLE_COLUMNS = {
     "answer", "screenshot_context_id", "thumbnail", "crop_bbox",
-    "thinking", "tool_activities", "follow_ups",
+    "thinking", "tool_activities", "follow_ups", "sources",
     "generation_status", "generation_error", "client_turn_id",
     "title",
 }

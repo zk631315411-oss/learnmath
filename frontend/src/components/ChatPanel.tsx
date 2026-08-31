@@ -5,10 +5,11 @@ import FormulaComposer, { type FormulaComposerHandle } from './formula/FormulaCo
 import type { ExternalFormulaDraft } from './formula/FormulaComposer';
 import EmptyGuideCard from './EmptyGuideCard';
 import AgentActivity from './AgentActivity';
-import type { Message, PendingImage, RecognizedBlock } from '../types';
+import type { Message, PendingImage, RecognizedBlock, Source } from '../types';
 import { MAX_PENDING_IMAGES } from '../hooks/useChat';
 import ChatPlusMenu from './ChatPlusMenu';
 import ManimArtifactCard from './ManimArtifactCard';
+import { sourceLabel, uniqueClickableSources } from '../utils/sourceCitations';
 
 interface Props {
   messages: Message[];
@@ -35,6 +36,7 @@ interface Props {
   onOpenPhoto?: (file: File) => void;
   externalContent?: { blocks: RecognizedBlock[]; nonce: string } | null;
   onExternalContentConsumed?: (nonce: string) => void;
+  onOpenSource?: (source: Source) => void;
 }
 
 function ThinkingBlock({ content, active }: { content: string; active: boolean }) {
@@ -88,6 +90,7 @@ function ChatPanelInner({
   onCancelGeneration,
   onOpenPhoto,
   externalContent, onExternalContentConsumed,
+  onOpenSource,
 }: Props) {
   const [input, setInput] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -200,7 +203,7 @@ function ChatPanelInner({
                   <ThinkingBlock content={msg.thinking} active={isActiveAssistant && isThinking} />
                 )}
                 {msg.content ? (
-                  <MarkdownRenderer className="text-sm leading-relaxed markdown-body">{msg.content}</MarkdownRenderer>
+                  <MarkdownRenderer className="text-sm leading-relaxed markdown-body" sources={msg.sources} streaming={isActiveAssistant} onOpenSource={onOpenSource}>{msg.content}</MarkdownRenderer>
                 ) : isActiveAssistant ? (
                   <LoadingStatus text={thinkingStage} />
                 ) : msg.pending ? (
@@ -219,6 +222,15 @@ function ChatPanelInner({
                 {msg.role === 'assistant' && msg.artifacts?.map(artifact => (
                   <ManimArtifactCard key={artifact.id} artifact={artifact} token={token} />
                 ))}
+                {msg.role === 'assistant' && uniqueClickableSources(msg.sources).length > 0 && !isActiveAssistant && (
+                  <div className="mt-3 border-t border-[var(--lm-border)] pt-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="mr-2">出处</span>
+                    {uniqueClickableSources(msg.sources).map((source, sourceIndex) => <span key={source.source_code}>
+                      {sourceIndex > 0 && <span className="mx-1.5 text-slate-300 dark:text-slate-600">·</span>}
+                      <button type="button" onClick={() => onOpenSource?.(source)} className="font-medium text-indigo-600 hover:underline dark:text-indigo-300">{sourceLabel(source)}</button>
+                    </span>)}
+                  </div>
+                )}
               </div>
             </div>
           </div>

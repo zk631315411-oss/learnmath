@@ -20,6 +20,7 @@ function task(overrides: Partial<AnswerTask> = {}): AnswerTask {
     thinking: '',
     toolActivities: [],
     artifacts: [],
+    sources: [],
     startedAt: 1,
     controller: new AbortController(),
     ...overrides,

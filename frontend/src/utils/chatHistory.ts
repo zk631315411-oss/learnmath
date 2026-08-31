@@ -5,7 +5,7 @@
  * 对象/数组。徽标列表（useMarkers）与提问记录侧栏（useQuestionList）都要做同样的转换，
  * 故收敛到这一个函数，避免两处各复制一份、后续字段演进时改漏。
  */
-import type { ChatHistoryRecord, CropBBox, ToolActivity } from '../types';
+import type { ChatHistoryRecord, CropBBox, Source, ToolActivity } from '../types';
 import type { Marker } from '../components/PageMarker';
 
 // 把「JSON 字符串 / 已解析对象 / 缺失」统一成确定值：
@@ -28,6 +28,13 @@ function normalizeToolActivities(value: unknown): ToolActivity[] {
   return Array.isArray(parsed) ? (parsed as ToolActivity[]) : [];
 }
 
+function normalizeSources(value: unknown): Source[] {
+  const parsed = parseJsonOrPassthrough(value, []);
+  return Array.isArray(parsed)
+    ? parsed.filter((item): item is Source => Boolean(item) && typeof item === 'object')
+    : [];
+}
+
 export function normalizeChatHistoryRecord(record: ChatHistoryRecord): Marker {
   const followUpsRaw = parseJsonOrPassthrough(record.follow_ups, []);
   const followUps: Record<string, unknown>[] = Array.isArray(followUpsRaw)
@@ -38,6 +45,7 @@ export function normalizeChatHistoryRecord(record: ChatHistoryRecord): Marker {
     ...record,
     crop_bbox: parseJsonOrPassthrough(record.crop_bbox, null) as CropBBox | null,
     thinking: record.thinking || null,
+    sources: normalizeSources(record.sources),
     tool_activities: normalizeToolActivities(record.tool_activities),
     // 老 follow-up 没有 turn_id：归一化层补 legacy-${index} 供 UI key 使用，
     // 只读兼容，不回写旧数据；新数据的身份在发送时由客户端生成并落库
@@ -47,6 +55,7 @@ export function normalizeChatHistoryRecord(record: ChatHistoryRecord): Marker {
       answer: typeof fu.answer === 'string' ? fu.answer : null,
       turn_id: typeof fu.turn_id === 'string' && fu.turn_id ? fu.turn_id : `legacy-${index}`,
       thinking: typeof fu.thinking === 'string' ? fu.thinking : null,
+      sources: normalizeSources(fu.sources),
       tool_activities: normalizeToolActivities(fu.tool_activities),
       image: typeof fu.image === 'string' ? fu.image : null,
       crop_bbox: parseJsonOrPassthrough(fu.crop_bbox, null) as CropBBox | null,

@@ -1,4 +1,5 @@
 """问答历史 API — 聊天记录 CRUD 与匿名→登录账号迁移。"""
+import json
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Header, HTTPException
@@ -23,6 +24,26 @@ router = APIRouter(prefix="/api/chat", tags=["智能问答"])
 GenerationStatus = Literal["pending", "completed", "interrupted", "cancelled"]
 
 
+class SourceIn(BaseModel):
+    textbook_id: str
+    textbook_name: str
+    node_id: str
+    node_name: str
+    chapter: str
+    section: str
+    source_code: str
+    snippet: str
+
+
+def _serialize_sources(value):
+    if value is None or isinstance(value, str):
+        return value
+    return json.dumps(
+        [item.model_dump() if isinstance(item, SourceIn) else item for item in value],
+        ensure_ascii=False,
+    )
+
+
 class SaveChatRequest(BaseModel):
     user_id: str
     question: str
@@ -34,7 +55,7 @@ class SaveChatRequest(BaseModel):
     thumbnail: Optional[str] = None
     crop_bbox: Optional[str] = None
     screenshot_context_id: Optional[str] = None
-    sources: Optional[str] = None
+    sources: Optional[str | List[SourceIn]] = None
     knowledge_points: Optional[str] = None
     thinking: Optional[str] = None
     tool_activities: Optional[str] = None
@@ -52,6 +73,7 @@ class UpdateChatRequest(BaseModel):
     crop_bbox: Optional[str] = None
     thinking: Optional[str] = None
     tool_activities: Optional[str] = None
+    sources: Optional[List[SourceIn]] = None
     follow_ups: Optional[str] = None
     generation_status: Optional[GenerationStatus] = None
     generation_error: Optional[str] = None
@@ -68,6 +90,7 @@ class FollowUpTurnIn(BaseModel):
     answer: Optional[str] = None
     thinking: Optional[str] = None
     tool_activities: Optional[List[dict]] = None
+    sources: Optional[List[SourceIn]] = None
     image: Optional[str] = None
     crop_bbox: Optional[dict] = None
     screenshot_context_id: Optional[str] = None
@@ -83,6 +106,7 @@ class FollowUpUpdateIn(BaseModel):
     answer: Optional[str] = None
     thinking: Optional[str] = None
     tool_activities: Optional[List[dict]] = None
+    sources: Optional[List[SourceIn]] = None
     image: Optional[str] = None
     crop_bbox: Optional[dict] = None
     screenshot_context_id: Optional[str] = None
@@ -114,7 +138,7 @@ def create_history(req: SaveChatRequest):
         page_number=req.page_number, marker_y_ratio=req.marker_y_ratio,
         marker_type=req.marker_type, thumbnail=req.thumbnail,
         crop_bbox=req.crop_bbox, screenshot_context_id=req.screenshot_context_id,
-        sources=req.sources, knowledge_points=req.knowledge_points,
+        sources=_serialize_sources(req.sources), knowledge_points=req.knowledge_points,
         thinking=req.thinking,
         tool_activities=req.tool_activities,
         follow_ups=req.follow_ups or "[]",
@@ -129,6 +153,8 @@ def create_history(req: SaveChatRequest):
 def update_history(chat_id: str, req: UpdateChatRequest):
     """SSE 完成后更新记录：只更新请求体里显式出现的字段（显式 null = 清空）。"""
     fields = req.model_dump(include=req.model_fields_set)
+    if "sources" in fields:
+        fields["sources"] = _serialize_sources(fields["sources"])
     # 自定义标题：strip 后为空则视为清除，回到沿用 question 原文
     if "title" in fields:
         title = fields["title"]
