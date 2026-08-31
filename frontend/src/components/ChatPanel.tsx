@@ -9,7 +9,7 @@ import type { Message, PendingImage, RecognizedBlock, Source } from '../types';
 import { MAX_PENDING_IMAGES } from '../hooks/useChat';
 import ChatPlusMenu from './ChatPlusMenu';
 import ManimArtifactCard from './ManimArtifactCard';
-import { sourceLabel, uniqueClickableSources } from '../utils/sourceCitations';
+import { citedSourceCodes, sourceLabel, uniqueClickableSources } from '../utils/sourceCitations';
 
 interface Props {
   messages: Message[];
@@ -222,15 +222,19 @@ function ChatPanelInner({
                 {msg.role === 'assistant' && msg.artifacts?.map(artifact => (
                   <ManimArtifactCard key={artifact.id} artifact={artifact} token={token} />
                 ))}
-                {msg.role === 'assistant' && uniqueClickableSources(msg.sources).length > 0 && !isActiveAssistant && (
-                  <div className="mt-3 border-t border-[var(--lm-border)] pt-2 text-xs text-slate-500 dark:text-slate-400">
+                {msg.role === 'assistant' && (() => {
+                  // 去重：正文已内嵌引用的 source 不再在底部重复；全部引用过则整行隐藏
+                  const cited = citedSourceCodes(msg.content || '');
+                  const uncited = uniqueClickableSources(msg.sources).filter(source => !cited.has(source.source_code!));
+                  if (uncited.length === 0 || isActiveAssistant) return null;
+                  return <div className="mt-3 border-t border-[var(--lm-border)] pt-2 text-xs text-slate-500 dark:text-slate-400">
                     <span className="mr-2">出处</span>
-                    {uniqueClickableSources(msg.sources).map((source, sourceIndex) => <span key={source.source_code}>
+                    {uncited.map((source, sourceIndex) => <span key={source.source_code}>
                       {sourceIndex > 0 && <span className="mx-1.5 text-slate-300 dark:text-slate-600">·</span>}
                       <button type="button" onClick={() => onOpenSource?.(source)} className="font-medium text-indigo-600 hover:underline dark:text-indigo-300">{sourceLabel(source)}</button>
                     </span>)}
-                  </div>
-                )}
+                  </div>;
+                })()}
               </div>
             </div>
           </div>

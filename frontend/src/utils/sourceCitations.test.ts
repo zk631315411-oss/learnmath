@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Source } from '../types';
 import {
+  citedSourceCodes,
   renderCitationMarkers,
   sourceCodeFromHref,
   sourceHref,
@@ -16,14 +17,19 @@ const source: Source = {
 };
 
 describe('source citations', () => {
-  it('renders canonical labels only for matching complete sources', () => {
+  it('renders short pill labels only for matching complete sources', () => {
     const answer = renderCitationMarkers(
       '有效 [[cite:gaodai_shang:C02:S01:U01:L986-L1059]] 无效 [[cite:fake:C99]]',
       [source],
     );
-    expect(answer).toContain('[教材 §2.1](');
+    expect(answer).toContain('[§2.1](');
     expect(answer).not.toContain('fake');
     expect(answer).not.toContain('[[cite:');
+  });
+
+  it('collects inline cited source codes for footer de-duplication', () => {
+    expect(citedSourceCodes('有 [[cite:a:1]] 和 [[cite:b:2]] 及 [[cite:a:1]]')).toEqual(new Set(['a:1', 'b:2']));
+    expect(citedSourceCodes('没有引用')).toEqual(new Set());
   });
 
   it('hides citation markers while the assistant is streaming', () => {

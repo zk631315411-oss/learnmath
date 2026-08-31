@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -36,7 +37,14 @@ function MarkdownRenderer({ children, className, applyFormatMath = true, sources
           const sourceCode = sourceCodeFromHref(href);
           const source = sourceCode ? sources.find(item => item.source_code === sourceCode) : undefined;
           if (sourceCode && source) {
-            return <button type="button" onClick={() => onOpenSource?.(source)} className="font-medium text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800 dark:text-indigo-300 dark:hover:text-indigo-200">{children}</button>;
+            // 引用徽标：淡靛蓝底小药丸 + 书图标 + 短标签(§2.1)，无下划线，hover 加深
+            return <button
+              type="button"
+              onClick={() => onOpenSource?.(source)}
+              title={`${source.textbook_name} ${source.section} · ${source.node_name}`}
+              aria-label={`教材出处 ${source.section} ${source.node_name}`}
+              className="mx-0.5 inline-flex translate-y-[-1px] items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 align-baseline text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 hover:text-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/70 dark:hover:text-indigo-100"
+            ><BookOpen className="h-3 w-3 shrink-0" aria-hidden />{children}</button>;
           }
           return <a href={href} target="_blank" rel="noreferrer">{children}</a>;
         },

@@ -1,12 +1,32 @@
-import { BookOpen, ExternalLink, X } from 'lucide-react';
+import { BookOpen, ChevronRight, ExternalLink, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import MarkdownRenderer from './MarkdownRenderer';
 import type { Source } from '../types';
 
 interface Props {
   source: Source | null;
   onClose: () => void;
   onViewInTextbook: (source: Source) => Promise<void>;
+}
+
+/** 面包屑路径：教材 › 章节 › 小节 › 知识点，段内 LaTeX 经 KaTeX 渲染 */
+function SourceBreadcrumb({ source }: { source: Source }) {
+  const segments = [source.textbook_name, source.chapter, source.section, source.node_name].filter(Boolean) as string[];
+  return (
+    <nav aria-label="出处路径" className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm">
+      {segments.map((segment, index) => (
+        <span key={index} className="flex min-w-0 items-center gap-1">
+          {index > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600" aria-hidden />}
+          <span className={`min-w-0 [&_p]:mb-0 [&_p]:inline ${index === segments.length - 1
+            ? 'font-medium text-slate-800 dark:text-slate-100'
+            : 'text-slate-500 dark:text-slate-400'}`}>
+            <MarkdownRenderer>{segment}</MarkdownRenderer>
+          </span>
+        </span>
+      ))}
+    </nav>
+  );
 }
 
 export default function SourcePreview({ source, onClose, onViewInTextbook }: Props) {
@@ -36,13 +56,10 @@ export default function SourcePreview({ source, onClose, onViewInTextbook }: Pro
         <button type="button" className="icon-button" onClick={onClose} aria-label="关闭出处预览" title="关闭"><X className="h-4 w-4" /></button>
       </div>
       <div className="space-y-4 px-4 py-4">
-        <dl className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-          <dt className="text-slate-400">教材</dt><dd className="font-medium text-slate-800 dark:text-slate-100">{source.textbook_name}</dd>
-          <dt className="text-slate-400">章节</dt><dd className="text-slate-700 dark:text-slate-200">{source.chapter}</dd>
-          <dt className="text-slate-400">小节</dt><dd className="text-slate-700 dark:text-slate-200">{source.section}</dd>
-          <dt className="text-slate-400">知识点</dt><dd className="text-slate-700 dark:text-slate-200">{source.node_name}</dd>
-        </dl>
-        <blockquote className="border-l-2 border-indigo-300 bg-[var(--lm-bg)] px-3 py-3 text-sm leading-6 text-slate-600 dark:border-indigo-700 dark:text-slate-300">{source.snippet}</blockquote>
+        <SourceBreadcrumb source={source} />
+        <blockquote className="border-l-2 border-indigo-300 bg-[var(--lm-bg)] px-3 py-3 text-sm leading-6 text-slate-600 dark:border-indigo-700 dark:text-slate-300">
+          <MarkdownRenderer>{source.snippet || ''}</MarkdownRenderer>
+        </blockquote>
         {error && <p role="alert" className="text-sm text-rose-600 dark:text-rose-300">{error}</p>}
         <div className="flex justify-end">
           <button type="button" onClick={() => void handleView()} disabled={loading} className="flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">

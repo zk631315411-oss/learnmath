@@ -30,7 +30,13 @@ export function sourceCodeFromHref(href: string): string | null {
   }
 }
 
-/** Convert only server-validated markers; unmatched and streaming markers stay hidden. */
+/** Short label for inline citation pills, e.g. "§2.1" (falls back to "教材出处"). */
+export function sourceShortLabel(source: Source): string {
+  return sourceLabel(source).replace(/^教材\s*/, '');
+}
+
+/** Convert only server-validated markers; unmatched and streaming markers stay hidden.
+ *  Inline citations render as pill badges carrying the short label (§2.1). */
 export function renderCitationMarkers(content: string, sources: Source[] = [], streaming = false): string {
   const byCode = new Map(
     sources.filter(isClickableSource).map(source => [source.source_code, source]),
@@ -38,8 +44,17 @@ export function renderCitationMarkers(content: string, sources: Source[] = [], s
   return content.replace(CITATION_RE, (_marker, code: string) => {
     if (streaming) return '';
     const source = byCode.get(code);
-    return source ? `[${sourceLabel(source)}](${sourceHref(code)})` : '';
+    return source ? `[${sourceShortLabel(source)}](${sourceHref(code)})` : '';
   });
+}
+
+/** Source codes actually cited inline in the message content (for footer de-duplication). */
+export function citedSourceCodes(content: string): Set<string> {
+  const codes = new Set<string>();
+  for (const match of content.matchAll(new RegExp(CITATION_RE.source, 'g'))) {
+    codes.add(match[1]);
+  }
+  return codes;
 }
 
 export function uniqueClickableSources(sources: Source[] = []): Source[] {
