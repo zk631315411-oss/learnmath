@@ -343,6 +343,45 @@ async function enterReader(page: Page) {
   await expect(page.getByRole('button', { name: '下一页' }).first()).toBeEnabled();
 }
 
+async function expectPdfCanvasPainted(page: Page) {
+  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('canvas.react-pdf__Page__canvas')].some(canvas => {
+    if (getComputedStyle(canvas).visibility === 'hidden' || canvas.width < 1 || canvas.height < 1) return false;
+    const context = canvas.getContext('2d');
+    if (!context) return false;
+    const step = Math.max(12, Math.floor(Math.min(canvas.width, canvas.height) / 24));
+    for (let y = 0; y < canvas.height; y += step) {
+      for (let x = 0; x < canvas.width; x += step) {
+        const pixel = context.getImageData(x, y, 1, 1).data;
+        if (pixel[0] < 220 || pixel[1] < 220 || pixel[2] < 220) return true;
+      }
+    }
+    return false;
+  })), { timeout: 15_000 }).toBe(true);
+}
+
+async function readFocalPdfPage(page: Page) {
+  return page.evaluate(() => {
+    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]');
+    if (!container) return null;
+    const viewport = container.getBoundingClientRect();
+    const x = viewport.left + viewport.width / 2;
+    const y = viewport.top + viewport.height / 2;
+    const candidates = [...document.querySelectorAll<HTMLElement>('[data-mobile-pdf-page]')]
+      .map(element => {
+        const rect = element.getBoundingClientRect();
+        const visibleWidth = Math.max(0, Math.min(rect.right, viewport.right) - Math.max(rect.left, viewport.left));
+        const visibleHeight = Math.max(0, Math.min(rect.bottom, viewport.bottom) - Math.max(rect.top, viewport.top));
+        return { element, rect, area: visibleWidth * visibleHeight };
+      })
+      .filter(candidate => candidate.area > 0)
+      .sort((left, right) => right.area - left.area);
+    const target = candidates.find(candidate => x >= candidate.rect.left && x <= candidate.rect.right && y >= candidate.rect.top && y <= candidate.rect.bottom) || candidates[0];
+    if (!target || target.rect.height <= 0) return null;
+    const focalY = Math.max(target.rect.top, Math.min(y, target.rect.bottom));
+    return { page: target.element.dataset.mobilePdfPage || '', ratio: (focalY - target.rect.top) / target.rect.height };
+  });
+}
+
 async function resetMobileDock(page: Page, xRatio = 0.5, yRatio = 0.5) {
   await page.evaluate(({ x, y }) => {
     localStorage.setItem('learnmath.mobileReaderDock.v2', JSON.stringify({ version: 2, mode: 'free', xRatio: x, yRatio: y }));
@@ -601,6 +640,26 @@ test('mobile floating tools open the half and full learning panels', async ({ pa
   await expect(page.getByRole('toolbar', { name: '阅读工具' })).toBeVisible();
 });
 
+test('mobile direct reader URL starts with the requested page and paints it', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium-mobile');
+  await mockApp(page);
+  await page.addInitScript(() => {
+    localStorage.clear();
+    localStorage.setItem('learnmath.welcome.dismissed', '1');
+  });
+
+  await page.goto('/?view=reader&textbook=gaodai_shang&page=52');
+  await expect(page.getByTestId('mobile-page-pager')).toBeVisible();
+  await expect(page.getByRole('button', { name: '当前第 52 页，共 421 页' })).toBeVisible();
+  await page.waitForSelector('.react-pdf__Page canvas');
+
+  const renderedPageNumbers = await page.evaluate(() => [...document.querySelectorAll('.react-pdf__Page canvas')]
+    .map(canvas => canvas.parentElement?.dataset.pageNumber));
+  expect(renderedPageNumbers).toContain('52');
+  expect(renderedPageNumbers).not.toContain('1');
+  await expectPdfCanvasPainted(page);
+});
+
 test('mobile continuous reader stays virtualized and compact across portrait and landscape', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-mobile');
   await mockApp(page);
@@ -622,6 +681,7 @@ test('mobile continuous reader stays virtualized and compact across portrait and
     await expect(page.getByTestId('pdf-scroll-container')).toHaveAttribute('data-mobile-continuous', 'true');
     expect(await page.locator('[data-mobile-pdf-page]').count()).toBe(421);
     expect(await page.locator('.react-pdf__Page canvas').count()).toBeLessThanOrEqual(5);
+    await expectPdfCanvasPainted(page);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
     if (viewport.width === 390) {
@@ -674,6 +734,7 @@ test('mobile reader supports continuous page tracking, direct jumps and anchored
   await page.getByRole('spinbutton', { name: '跳转页码' }).press('Enter');
   await expect(page.getByRole('button', { name: '当前第 120 页，共 421 页' })).toBeVisible();
   expect(await page.locator('.react-pdf__Page canvas').count()).toBeLessThanOrEqual(5);
+  await expectPdfCanvasPainted(page);
 
   const container = page.getByTestId('pdf-scroll-container');
   const scrollBefore = await container.evaluate(element => element.scrollTop);
@@ -681,29 +742,15 @@ test('mobile reader supports continuous page tracking, direct jumps and anchored
   await expect.poll(() => container.evaluate(element => element.scrollTop)).toBeGreaterThan(scrollBefore + 200);
   await page.waitForTimeout(800);
 
-  const focalBefore = await page.evaluate(() => {
-    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]')!;
-    const rect = container.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const target = document.elementsFromPoint(x, y).map(element => element.closest<HTMLElement>('[data-mobile-pdf-page]')).find(Boolean)!;
-    const targetRect = target.getBoundingClientRect();
-    return { page: target.dataset.mobilePdfPage, ratio: (y - targetRect.top) / targetRect.height };
-  });
+  const focalBefore = await readFocalPdfPage(page);
+  expect(focalBefore).not.toBeNull();
   await pinchMobilePdf(page, 80, 176);
   await expect(container).toHaveAttribute('data-zoom-percent', '220');
   expect(await page.evaluate(() => window.visualViewport?.scale || 1)).toBe(1);
-  const focalAfter = await page.evaluate(() => {
-    const container = document.querySelector<HTMLElement>('[data-testid="pdf-scroll-container"]')!;
-    const rect = container.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    const target = document.elementsFromPoint(x, y).map(element => element.closest<HTMLElement>('[data-mobile-pdf-page]')).find(Boolean)!;
-    const targetRect = target.getBoundingClientRect();
-    return { page: target.dataset.mobilePdfPage, ratio: (y - targetRect.top) / targetRect.height };
-  });
-  expect(focalAfter.page).toBe(focalBefore.page);
-  expect(focalAfter.ratio).toBeCloseTo(focalBefore.ratio, 1);
+  const focalAfter = await readFocalPdfPage(page);
+  expect(focalAfter).not.toBeNull();
+  expect(focalAfter!.page).toBe(focalBefore!.page);
+  expect(focalAfter!.ratio).toBeCloseTo(focalBefore!.ratio, 1);
 
   await pinchMobilePdf(page, 160, 40);
   await expect(container).toHaveAttribute('data-zoom-percent', '75');

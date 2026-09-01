@@ -19,6 +19,7 @@ const LOADING_OPTIONS: DocumentProps['options'] = {
 };
 
 type PageSize = { width: number; height: number };
+type PageRenderState = 'loading' | 'ready' | 'error';
 type TouchGesture = {
   distance: number;
   factor: number;
@@ -74,6 +75,7 @@ export default function MobileContinuousPDFViewer({
   const pageRefs = useRef(new Map<number, HTMLDivElement>());
   const reportTimer = useRef<number | null>(null);
   const scrollFrame = useRef<number | null>(null);
+  const pendingJumpPage = useRef<number | null>(null);
   const lastReportedPage = useRef(page);
   const externalPage = useRef(page);
   const pinchRef = useRef<TouchGesture | null>(null);
@@ -98,6 +100,7 @@ export default function MobileContinuousPDFViewer({
   const [previewOrigin, setPreviewOrigin] = useState({ x: 0, y: 0 });
   const [contentWidth, setContentWidth] = useState(320);
   const [pageSizes, setPageSizes] = useState<Record<number, PageSize>>({});
+  const [pageRenderStates, setPageRenderStates] = useState<Record<number, PageRenderState>>({});
   const [pdfError, setPdfError] = useState('');
   const [loadingProgress, setLoadingProgress] = useState<number | null>(null);
 
@@ -124,6 +127,11 @@ export default function MobileContinuousPDFViewer({
   }, [textbookId]);
 
   useEffect(() => {
+    setPageSizes({});
+    setPageRenderStates({});
+  }, [pdfUrl, textbookId]);
+
+  useEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
     const measure = () => {
@@ -140,6 +148,22 @@ export default function MobileContinuousPDFViewer({
     const container = scrollRef.current;
     if (!container || !numPages) return;
     const viewport = container.getBoundingClientRect();
+    const pendingPage = pendingJumpPage.current;
+    if (pendingPage !== null) {
+      const target = pageRefs.current.get(pendingPage);
+      if (!target) return;
+      const targetRect = target.getBoundingClientRect();
+      const targetTop = container.scrollTop + targetRect.top - viewport.top;
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const desiredTop = Math.min(
+        maxScrollTop,
+        Math.max(0, targetTop + targetRect.height / 2 - container.clientHeight / 2 - mobileInsets.top / 2),
+      );
+      // Ignore intermediate scroll events until the explicit target reaches
+      // the same position requested by jumpToPage.
+      if (Math.abs(container.scrollTop - desiredTop) > 2) return;
+      pendingJumpPage.current = null;
+    }
     const entries: Array<readonly [number, number]> = [];
     for (const [pageNumber, element] of pageRefs.current) {
       const rect = element.getBoundingClientRect();
@@ -154,6 +178,7 @@ export default function MobileContinuousPDFViewer({
     setVisiblePage(winner);
     if (reportTimer.current !== null) window.clearTimeout(reportTimer.current);
     reportTimer.current = window.setTimeout(() => {
+      reportTimer.current = null;
       lastReportedPage.current = winner;
       onPageRequest(winner);
     }, REPORT_DELAY_MS);
@@ -168,7 +193,14 @@ export default function MobileContinuousPDFViewer({
   }, [updateVisiblePage]);
 
   const jumpToPage = useCallback((target: number, behavior: ScrollBehavior = 'smooth', report = true) => {
+    // An explicit jump supersedes a delayed scroll report from the previous page.
+    // Otherwise a fast scroll-then-jump can apply the stale page after the jump.
+    if (reportTimer.current !== null) {
+      window.clearTimeout(reportTimer.current);
+      reportTimer.current = null;
+    }
     const normalized = Math.max(1, Math.min(Math.max(1, numPages), Math.floor(target)));
+    pendingJumpPage.current = normalized;
     visiblePageRef.current = normalized;
     setVisiblePage(normalized);
     if (report) {
@@ -183,7 +215,10 @@ export default function MobileContinuousPDFViewer({
       const elementRect = element.getBoundingClientRect();
       const elementTop = container.scrollTop + elementRect.top - containerRect.top;
       const centeredTop = elementTop + elementRect.height / 2 - container.clientHeight / 2;
-      container.scrollTo({ top: Math.max(0, centeredTop - mobileInsets.top / 2), behavior });
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const targetTop = Math.min(maxScrollTop, Math.max(0, centeredTop - mobileInsets.top / 2));
+      if (Math.abs(container.scrollTop - targetTop) <= 2) pendingJumpPage.current = null;
+      container.scrollTo({ top: targetTop, behavior });
     }));
   }, [mobileInsets.top, numPages, onPageRequest]);
 
@@ -354,6 +389,7 @@ export default function MobileContinuousPDFViewer({
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'touch') return;
       event.preventDefault();
+      pendingJumpPage.current = null;
       stopMomentum();
       activePointers.current.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY });
       container.setPointerCapture(event.pointerId);
@@ -470,6 +506,12 @@ export default function MobileContinuousPDFViewer({
     });
   }, []);
 
+  const updatePageRenderState = useCallback((pageNumber: number, state: PageRenderState) => {
+    setPageRenderStates(previous => previous[pageNumber] === state
+      ? previous
+      : { ...previous, [pageNumber]: state });
+  }, []);
+
   const loadingText = loadingProgress === null ? '加载PDF中...' : `加载PDF中... ${loadingProgress}%`;
 
   return (
@@ -513,6 +555,7 @@ export default function MobileContinuousPDFViewer({
               const height = width * size.height / size.width;
               const effectiveScale = width / size.width;
               const active = pageNumber === visiblePage;
+              const renderState = pageRenderStates[pageNumber] || 'loading';
               return (
                 <div
                   key={pageNumber}
@@ -521,6 +564,7 @@ export default function MobileContinuousPDFViewer({
                     else pageRefs.current.delete(pageNumber);
                   }}
                   data-mobile-pdf-page={pageNumber}
+                  data-pdf-render-state={renderState}
                   className="relative shrink-0 bg-white shadow-md"
                   style={{ width, height }}
                 >
@@ -531,10 +575,27 @@ export default function MobileContinuousPDFViewer({
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                       onLoadSuccess={loadedPage => {
+                        updatePageRenderState(pageNumber, 'loading');
                         const viewport = loadedPage.getViewport({ scale: 1 });
                         updatePageSize(pageNumber, { width: viewport.width, height: viewport.height });
                       }}
+                      onRenderSuccess={() => updatePageRenderState(pageNumber, 'ready')}
+                      onRenderError={() => updatePageRenderState(pageNumber, 'error')}
                     />
+                  )}
+                  {renderedPages.has(pageNumber) && renderState !== 'ready' && (
+                    <div
+                      data-testid="pdf-page-render-status"
+                      role={renderState === 'error' ? 'alert' : 'status'}
+                      aria-label={renderState === 'error' ? 'PDF页面渲染失败' : '正在渲染PDF页面'}
+                      className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-white/70"
+                    >
+                      {renderState === 'error' ? (
+                        <span className="text-xs text-slate-500">PDF页面渲染失败</span>
+                      ) : (
+                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500" />
+                      )}
+                    </div>
                   )}
                   {active && markers && onMarkerClick && (
                     <PageMarker markers={markers} currentPage={pageNumber} containerHeight={height} onMarkerClick={onMarkerClick} />
